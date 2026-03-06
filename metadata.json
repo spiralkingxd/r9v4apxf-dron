@@ -1,0 +1,5 @@
+{
+  "name": "Madness Arena",
+  "description": "Plataforma web de gerenciamento de torneios PvP para o jogo Sea of Thieves.",
+  "requestFramePermissions": []
+}
