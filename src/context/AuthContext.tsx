@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Segurança: Axios configurado para enviar cookies (Sessão HttpOnly) automaticamente
 const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '',
   withCredentials: true,
 });
 
@@ -84,8 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         alert('Por favor, permita popups para este site para conectar sua conta.');
       }
     } catch (error) {
-      console.error('Erro ao iniciar login.');
-      alert('Erro ao iniciar login. Verifique as configurações.');
+      console.error('Erro ao iniciar login:', error);
+      alert('Erro ao iniciar login. Verifique as configurações e se o servidor backend está rodando.');
     }
   };
 
