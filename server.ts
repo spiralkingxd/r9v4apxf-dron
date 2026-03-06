@@ -1,5 +1,5 @@
 import express from 'express';
-import session from 'express-session';
+import cookieSession from 'cookie-session';
 import cookieParser from 'cookie-parser';
 import axios from 'axios';
 import dotenv from 'dotenv';
@@ -17,6 +17,9 @@ dotenv.config();
 
 const app = express();
 const PORT = 3000;
+
+// Segurança: Trust Proxy (Necessário para Vercel e Rate Limiting)
+app.set('trust proxy', 1);
 
 // Segurança: Headers HTTP e CSP (Helmet)
 app.use(securityHeaders);
@@ -39,30 +42,30 @@ app.use(cookieParser());
 // Segurança: Armazenamento de Tokens e Sessão
 // O token JWT/Access Token do Discord não vai para o localStorage do cliente.
 // Ele fica armazenado na sessão do servidor, e o cliente recebe apenas um Cookie HttpOnly.
+// Usamos cookie-session para compatibilidade com Serverless (Vercel).
 app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'madness_arena_secret_key_123',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production', // True em produção (HTTPS obrigatório)
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Strict ou Lax dependendo do fluxo OAuth
-      httpOnly: true, // Impede acesso via JavaScript (Mitiga XSS)
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
-    },
+  cookieSession({
+    name: 'session',
+    keys: [process.env.SESSION_SECRET || 'madness_arena_secret_key_123'],
+    maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    secure: process.env.NODE_ENV === 'production', // True em produção (HTTPS obrigatório)
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Strict ou Lax dependendo do fluxo OAuth
+    httpOnly: true, // Impede acesso via JavaScript (Mitiga XSS)
   })
 );
 
 // Types for session
-declare module 'express-session' {
-  interface SessionData {
-    user: {
-      id: string;
-      username: string;
-      avatar: string;
-      email: string;
-    };
-    accessToken: string;
+declare module 'express-serve-static-core' {
+  interface Request {
+    session?: {
+      user?: {
+        id: string;
+        username: string;
+        avatar: string;
+        email: string;
+      };
+      accessToken?: string;
+    } | null;
   }
 }
 
@@ -83,7 +86,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/auth/url', authLimiter, (req, res) => {
   if (!DISCORD_CLIENT_ID) {
     // Segurança: Erro genérico em produção
-    return res.status(500).json({ error: 'Erro de configuração do servidor' });
+    return res.status(500).json({ error: 'Erro de configuração do servidor: DISCORD_CLIENT_ID ausente. Configure as variáveis de ambiente na Vercel.' });
   }
 
   const params = new URLSearchParams({
@@ -136,13 +139,15 @@ app.get(['/auth/callback', '/auth/callback/'], authLimiter, async (req, res) => 
 
     // Segurança: Minimização de Dados
     // Salvamos apenas o necessário na sessão. O Access Token fica no backend.
-    req.session.user = {
-      id: userData.id,
-      username: userData.username,
-      avatar: userData.avatar,
-      email: userData.email,
+    req.session = {
+      user: {
+        id: userData.id,
+        username: userData.username,
+        avatar: userData.avatar,
+        email: userData.email,
+      },
+      accessToken: access_token
     };
-    req.session.accessToken = access_token;
 
     // Auditoria: Log de Login
     console.log(`[AUDIT] Usuário ${userData.id} (${userData.username}) fez login.`);
@@ -181,15 +186,10 @@ app.get('/api/auth/me', isAuthenticated, (req, res) => {
 // Logout
 app.post('/api/auth/logout', isAuthenticated, (req, res) => {
   const userId = req.user?.id;
-  req.session.destroy((err) => {
-    if (err) {
-      console.error(`[SECURITY] Erro ao destruir sessão do usuário ${userId}`);
-      return res.status(500).json({ error: 'Falha ao encerrar sessão' });
-    }
-    res.clearCookie('connect.sid');
-    console.log(`[AUDIT] Usuário ${userId} fez logout.`);
-    res.json({ success: true });
-  });
+  req.session = null;
+  res.clearCookie('session');
+  console.log(`[AUDIT] Usuário ${userId} fez logout.`);
+  res.json({ success: true });
 });
 
 // Rotas Modulares
