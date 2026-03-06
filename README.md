@@ -1,121 +1,107 @@
-# Madness Arena 🏴‍☠️
+# Madness Arena 🏴‍☠️ (Supabase + Next.js + Vercel)
 
-Plataforma web de gerenciamento de torneios PvP para o jogo "Sea of Thieves". Construída com React, TypeScript, Tailwind CSS e integração de login via Discord OAuth2.
+Plataforma web de gerenciamento de torneios PvP para o jogo "Sea of Thieves". Arquitetura modernizada para utilizar **Supabase** (Backend/DB/Auth) e **Vercel** (Frontend/Deploy).
 
 ## ⚓ Funcionalidades
 
 - **Nautical Dark Mode:** Interface imersiva com tema pirata, texturas sutis e paleta de cores oceano/ouro.
-- **Autenticação Discord:** Login seguro utilizando OAuth2 do Discord.
+- **Autenticação Discord:** Login seguro utilizando OAuth2 do Discord integrado ao Supabase Auth.
 - **Gestão de Equipes:** Registro de tripulações com gamertags e tipo de navio.
 - **Calendário de Eventos:** Acompanhamento de próximos torneios e regras.
 - **Chaveamento (Brackets):** Visualização em tempo real do progresso do torneio.
 - **Ranking Global (Leaderboard):** Tabela classificatória com as melhores equipes da temporada.
 - **Painéis Exclusivos:**
   - **User Dashboard:** Para jogadores gerenciarem suas equipes e histórico.
-  - **Admin Dashboard:** Acesso restrito para gerenciamento total da plataforma.
+  - **Admin Dashboard:** Acesso restrito via Row Level Security (RLS) no banco de dados.
 
-## 🛠️ Pré-requisitos
+---
 
-Antes de começar, você precisará ter instalado em sua máquina:
+## 🛠️ A. Pré-requisitos
+
+Antes de começar, você precisará ter:
 - [Node.js](https://nodejs.org/) (versão 18 ou superior)
-- npm, yarn ou pnpm
+- Conta na [Vercel](https://vercel.com)
+- Conta no [Supabase](https://supabase.com)
+- Aplicação criada no [Discord Developer Portal](https://discord.com/developers/applications)
 
-## 🚀 Instalação e Execução Local
+---
 
-1. **Clone o repositório:**
-   ```bash
-   git clone https://github.com/seu-usuario/madness-arena.git
-   cd madness-arena
+## 🗄️ B. Configuração Supabase
+
+1. **Criar projeto:** Crie um novo projeto no Supabase (escolha uma região próxima, ex: São Paulo).
+2. **Configurar Discord OAuth2 Provider:**
+   - Vá no Discord Developer Portal e crie uma aplicação.
+   - Configure a Redirect URI no Discord: `https://[PROJECT_REF].supabase.co/auth/v1/callback`
+   - Copie o **Client ID** e **Client Secret** do Discord.
+   - No painel do Supabase, vá em **Authentication > Providers > Discord** e cole as credenciais.
+3. **Rodar Migrations SQL:**
+   - Vá em **SQL Editor** no painel do Supabase.
+   - Copie o conteúdo do arquivo `supabase/migrations/20240306000000_initial_schema.sql` (encontrado na raiz deste projeto) e execute. Isso criará todas as tabelas, RLS policies e triggers de auditoria.
+4. **Segurança (RLS):**
+   - O script SQL já habilita o Row Level Security (RLS) em todas as tabelas.
+   - O Admin (ID `717425697005502534`) já está configurado nas policies para ter acesso total.
+
+---
+
+## 🚀 C. Configuração Vercel
+
+1. **Conectar Repositório:** Conecte seu repositório GitHub na Vercel.
+2. **Configurar Variáveis de Ambiente:** No painel da Vercel (Settings > Environment Variables), adicione:
+   ```env
+   NEXT_PUBLIC_APP_URL=https://sua-url-na-vercel.vercel.app
+   NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT_REF].supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=[SUA_ANON_KEY]
+   SUPABASE_SERVICE_ROLE_KEY=[SUA_SERVICE_ROLE_KEY]
+   NEXT_PUBLIC_ADMIN_DISCORD_ID=717425697005502534
    ```
+   *Nota: Nunca exponha a `SUPABASE_SERVICE_ROLE_KEY` no frontend.*
+3. **Deploy:** Clique em Deploy. A Vercel cuidará do build automaticamente.
 
-2. **Instale as dependências:**
+---
+
+## 🎮 D. Configuração Discord Developer Portal
+
+1. Acesse o [Discord Developer Portal](https://discord.com/developers/applications).
+2. Clique em **"New Application"** e dê o nome de "Madness Arena".
+3. Vá em **"OAuth2" -> "General"**.
+4. Em **Redirects**, adicione a URL do seu Supabase:
+   `https://[PROJECT_REF].supabase.co/auth/v1/callback`
+5. Salve as alterações.
+6. Os escopos necessários (`identify`, `email`) já são solicitados automaticamente pelo Supabase Auth.
+
+---
+
+## 💻 E. Testes Locais
+
+1. Clone o repositório e instale as dependências:
    ```bash
    npm install
    ```
-
-3. **Configure as Variáveis de Ambiente:**
-   Copie o arquivo `.env.example` para `.env` e preencha com suas credenciais (veja o tutorial do Discord abaixo).
+2. Copie o arquivo `.env.example` para `.env.local` (ou `.env` se estiver usando Vite):
    ```bash
-   cp .env.example .env
+   cp .env.example .env.local
    ```
-
-4. **Inicie o servidor de desenvolvimento:**
+3. Preencha as variáveis com os dados do seu projeto Supabase.
+4. Inicie o servidor de desenvolvimento:
    ```bash
    npm run dev
    ```
-   A aplicação estará disponível em `http://localhost:3000`.
-
-## 🎮 Tutorial: Configuração do Discord OAuth2
-
-Para que o login com Discord funcione, você precisa criar uma aplicação no portal de desenvolvedores do Discord.
-
-### Passo 1: Criar a Aplicação
-1. Acesse o [Discord Developer Portal](https://discord.com/developers/applications).
-2. Faça login com sua conta do Discord.
-3. Clique no botão **"New Application"** no canto superior direito.
-4. Dê o nome de "Madness Arena" (ou o nome que preferir) e concorde com os termos. Clique em **"Create"**.
-
-### Passo 2: Obter Credenciais
-1. No menu lateral esquerdo, vá em **"OAuth2"** -> **"General"**.
-2. Aqui você encontrará o **Client ID** e o **Client Secret** (clique em "Reset Secret" se for a primeira vez).
-3. Copie esses valores e cole no seu arquivo `.env`:
-   ```env
-   DISCORD_CLIENT_ID="seu_client_id_aqui"
-   DISCORD_CLIENT_SECRET="seu_client_secret_aqui"
-   ```
-
-### Passo 3: Configurar Redirect URIs
-Ainda na página **"OAuth2"** -> **"General"**:
-1. Encontre a seção **"Redirects"**.
-2. Clique em **"Add Redirect"**.
-3. Adicione as seguintes URLs (dependendo do seu ambiente):
-   - Para desenvolvimento local: `http://localhost:3000/auth/callback`
-   - Para produção (exemplo Vercel): `https://sua-url-de-producao.vercel.app/auth/callback`
-4. **IMPORTANTE:** Salve as alterações clicando no botão verde "Save Changes" que aparece na parte inferior da tela.
-
-## 👑 Configuração do Administrador Oficial
-
-O acesso ao Painel Admin é restrito ao ID do Discord do administrador oficial, configurado via variável de ambiente.
-
-1. Abra o arquivo `.env`.
-2. Modifique a variável `ADMIN_DISCORD_ID` com o seu ID do Discord:
-   ```env
-   ADMIN_DISCORD_ID="seu_discord_id_aqui"
-   ```
-3. O Backend validará automaticamente se o usuário logado possui esse ID antes de permitir o acesso às rotas administrativas.
-
-## 📁 Estrutura de Pastas
-
-```text
-madness-arena/
-├── public/             # Assets estáticos
-├── src/
-│   ├── components/     # Componentes reutilizáveis (Layout, etc)
-│   ├── context/        # Contextos React (AuthContext)
-│   ├── pages/          # Páginas da aplicação (Home, Teams, Admin, etc)
-│   ├── App.tsx         # Configuração de Rotas
-│   ├── index.css       # Estilos globais (Tailwind + Custom CSS)
-│   └── main.tsx        # Ponto de entrada do React
-├── server.ts           # Servidor Express (Backend/API/OAuth2)
-├── .env.example        # Exemplo de variáveis de ambiente
-├── package.json        # Dependências e scripts
-└── vite.config.ts      # Configuração do Vite
-```
-
-## 🌐 Guia de Deploy (Produção)
-
-A aplicação é Full-Stack (Express + Vite). Para fazer o deploy em plataformas como Vercel ou Render:
-
-### Deploy no Render (Recomendado para Full-Stack Node.js)
-1. Crie uma conta no [Render](https://render.com/).
-2. Conecte seu repositório GitHub.
-3. Crie um novo **"Web Service"**.
-4. Configurações:
-   - **Build Command:** `npm install && npm run build`
-   - **Start Command:** `npm run start`
-5. Adicione as variáveis de ambiente (`.env`) na aba "Environment" do Render.
-   - Não esqueça de atualizar a variável `APP_URL` com a URL fornecida pelo Render.
-   - Atualize a Redirect URI no Discord Developer Portal com a nova URL do Render.
 
 ---
-*Que os ventos sejam favoráveis e seus canhões nunca falhem!* 🏴‍☠️
+
+## 🛡️ F. Segurança e AppSec
+
+Este projeto foi desenhado com foco em segurança (Zero Trust):
+- **Row Level Security (RLS):** O banco de dados rejeita qualquer operação que não obedeça às regras. Mesmo que um usuário mal-intencionado descubra a URL da API, o banco negará a leitura/escrita.
+- **Prevenção de IDOR:** As policies do Supabase garantem que `auth.uid()` seja o dono do registro antes de permitir `UPDATE` ou `DELETE`.
+- **Admin Verification:** O ID do administrador oficial é validado diretamente no PostgreSQL via RLS (`EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534')`).
+- **Audit Logs:** Triggers no banco de dados registram automaticamente quem alterou o quê (tabela `audit_logs`), sem depender do frontend enviar logs.
+- **CSP e Headers:** O arquivo `next.config.js` injeta headers de segurança HTTP (XSS Protection, NoSniff, etc).
+
+---
+
+## ❓ G. Troubleshooting
+
+- **Login não funciona (Redireciona para localhost):** Verifique se o *Site URL* no painel do Supabase (Authentication > URL Configuration) está apontando para a sua URL da Vercel.
+- **Erro 401/403 ao criar equipe:** Certifique-se de que o RLS está ativado e que o usuário está autenticado.
+- **Admin não vê o painel:** Verifique se o seu Discord ID bate exatamente com o configurado nas policies SQL e no `.env`.

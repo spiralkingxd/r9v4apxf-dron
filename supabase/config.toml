@@ -1,0 +1,13 @@
+project_id = "madness-arena"
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+port = 54323
+
+[auth]
+port = 54324
