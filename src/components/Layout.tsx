@@ -65,7 +65,12 @@ export default function Layout() {
                     className="flex items-center space-x-2 px-3 py-2 bg-ocean-lighter/50 border border-gold/20 text-parchment rounded-md text-sm font-medium hover:bg-ocean-lighter transition-colors"
                   >
                     {user.avatar ? (
-                      <img src={`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`} alt="Avatar" className="w-6 h-6 rounded-full" />
+                      <img 
+                        src={user.avatar.startsWith('http') ? user.avatar : `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`} 
+                        alt="Avatar" 
+                        className="w-6 h-6 rounded-full" 
+                        referrerPolicy="no-referrer"
+                      />
                     ) : (
                       <UserCircle className="w-5 h-5 text-gold" />
                     )}
