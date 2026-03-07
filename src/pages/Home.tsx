@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 interface Event {
   id: string;
   title: string;
-  date: string;
+  start_date: string;
   status: string;
 }
 
@@ -46,7 +46,7 @@ export default function Home() {
           .from('events')
           .select('*')
           .eq('status', 'upcoming')
-          .order('date', { ascending: true })
+          .order('start_date', { ascending: true })
           .limit(1);
 
         if (eventError) throw eventError;
@@ -83,7 +83,7 @@ export default function Home() {
     if (!nextEvent) return;
 
     const calculateTimeLeft = () => {
-      const eventDate = new Date(nextEvent.date);
+      const eventDate = new Date(nextEvent.start_date);
       const now = new Date();
       const diff = eventDate.getTime() - now.getTime();
       
