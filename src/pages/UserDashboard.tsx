@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import Avatar from '../components/Avatar';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { Modal } from '../components/Modal';
+import { TeamForm } from '../components/teams/TeamForm';
 
 interface Team {
   id: string;
@@ -17,6 +19,7 @@ export default function UserDashboard() {
   const { user } = useAuth();
   const [myTeams, setMyTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +62,9 @@ export default function UserDashboard() {
 
   return (
     <div className="space-y-8">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registrar Equipe">
+        <TeamForm />
+      </Modal>
       {/* Header Profile */}
       <div className="glass-panel rounded-2xl p-8 border border-gold/20 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
@@ -95,12 +101,12 @@ export default function UserDashboard() {
               <Shield className="w-5 h-5 mr-2" />
               Minhas Equipes
             </h2>
-            <Link
-              to="/teams"
+            <button
+              onClick={() => setIsModalOpen(true)}
               className="px-4 py-2 bg-gold text-ocean font-bold rounded-lg text-sm hover:bg-gold-light transition-colors"
             >
               Registrar Equipe
-            </Link>
+            </button>
           </div>
           
           {myTeams.length > 0 ? (
