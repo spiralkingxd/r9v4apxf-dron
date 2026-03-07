@@ -2,8 +2,15 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { isAuthenticated, isAdmin } from '../middleware/auth';
 import { supabaseAdmin } from '../lib/supabase';
+import { rateLimit } from 'express-rate-limit';
 
 const router = Router();
+
+const teamCreationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3, // limit each IP to 3 requests per windowMs
+  message: 'Muitas tentativas de criação de equipe. Tente novamente mais tarde.',
+});
 
 /**
  * Segurança: Sanitização e Validação de Entrada
@@ -11,18 +18,18 @@ const router = Router();
  * e não contenham scripts maliciosos (XSS) ou injeções (SQLi).
  */
 const CreateTeamSchema = z.object({
-  name: z.string().min(3).max(50).trim().regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido (apenas letras, números, espaços, - e _)'),
-  ship_name: z.string().min(3).max(50).trim(),
-  gamertag: z.string().min(3).max(50).trim(), // Gamertag do capitão
+  name: z.string().min(3).max(50).regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido (apenas letras, números, espaços, - e _)').trim().transform(val => val.replace(/<[^>]*>?/gm, '')),
+  ship_name: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')),
+  gamertag: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')), // Gamertag do capitão
 });
 
 const UpdateTeamSchema = z.object({
-  name: z.string().min(3).max(50).trim().regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido').optional(),
-  ship_name: z.string().min(3).max(50).trim().optional(),
+  name: z.string().min(3).max(50).regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido').trim().transform(val => val.replace(/<[^>]*>?/gm, '')).optional(),
+  ship_name: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')).optional(),
 });
 
 const AddMemberSchema = z.object({
-  gamertag: z.string().min(3).max(50).trim(),
+  gamertag: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')),
   discord_id: z.string().optional(), // Opcional se for convite por link/busca
 });
 
@@ -121,7 +128,7 @@ router.get('/:id', isAuthenticated, async (req, res) => {
  * Proteção: Apenas usuários autenticados.
  * Validação: Zod Schema.
  */
-router.post('/', isAuthenticated, async (req, res) => {
+router.post('/', isAuthenticated, teamCreationLimiter, async (req, res) => {
   try {
     // Valida o body da requisição
     const validatedData = CreateTeamSchema.parse(req.body);

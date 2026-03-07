@@ -7,7 +7,8 @@ import {
   Swords, 
   AlertTriangle, 
   Settings, 
-  FileText 
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -55,6 +56,16 @@ export function AdminSidebar() {
           );
         })}
       </nav>
+
+      <div className="p-4 border-t border-slate-800">
+        <Link
+          to="/"
+          className="flex items-center px-4 py-3 text-sm font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="mr-3 h-5 w-5" />
+          Voltar ao Site
+        </Link>
+      </div>
     </aside>
   );
 }
