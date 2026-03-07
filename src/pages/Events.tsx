@@ -1,55 +1,83 @@
-import { Calendar, Clock, MapPin, AlertCircle, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, AlertCircle, ChevronRight, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+interface Event {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  status: string;
+  type: string;
+  prize: string;
+}
 
 export default function Events() {
-  const events = [
-    {
-      id: 1,
-      title: 'Batalha de The Wilds',
-      date: '15 de Abril, 2026',
-      time: '20:00 UTC',
-      location: 'The Wilds',
-      status: 'Inscrições Abertas',
-      type: 'Galeão 4v4',
-      prize: '50.000 Ouro + Título Exclusivo',
-      description: 'Navegue pelas águas escuras e traiçoeiras de The Wilds. Apenas as tripulações mais endurecidas sobreviverão a este confronto épico.',
-    },
-    {
-      id: 2,
-      title: 'Confronto em Shores of Plenty',
-      date: '02 de Maio, 2026',
-      time: '18:00 UTC',
-      location: 'Shores of Plenty',
-      status: 'Agendado',
-      type: 'Brigantim 3v3',
-      prize: '30.000 Ouro',
-      description: 'Águas cristalinas e areias brancas serão manchadas de vermelho. Um torneio rápido e letal para tripulações ágeis.',
-    },
-    {
-      id: 3,
-      title: 'Duelo Vulcânico',
-      date: '20 de Março, 2026',
-      time: '21:00 UTC',
-      location: 'The Devil\'s Roar',
-      status: 'Finalizado',
-      type: 'Sloop 2v2',
-      prize: '20.000 Ouro',
-      description: 'Sobreviva aos vulcões e aos seus inimigos. Um teste de resistência e habilidade de navegação extrema.',
-    },
-  ];
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  const fetchEvents = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar eventos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Inscrições Abertas':
+      case 'upcoming':
         return 'text-emerald-light bg-emerald-light/10 border-emerald-light/30';
-      case 'Agendado':
+      case 'ongoing':
         return 'text-gold bg-gold/10 border-gold/30';
-      case 'Finalizado':
+      case 'completed':
         return 'text-parchment-muted bg-ocean-lighter border-ocean-light';
       default:
         return 'text-parchment bg-ocean-lighter border-ocean-light';
     }
   };
+
+  const formatStatus = (status: string) => {
+    switch (status) {
+      case 'upcoming': return 'Inscrições Abertas';
+      case 'ongoing': return 'Em Andamento';
+      case 'completed': return 'Finalizado';
+      default: return status;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' UTC';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -65,67 +93,73 @@ export default function Events() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Events List */}
         <div className="lg:col-span-2 space-y-6">
-          {events.map((event, index) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="glass-panel rounded-2xl p-6 border border-gold/20 hover:border-gold/50 transition-all group relative overflow-hidden cursor-pointer"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-gold/10 transition-all"></div>
-              
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 relative z-10">
-                <div>
-                  <div className="flex items-center space-x-3 mb-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(event.status)}`}>
-                      {event.status}
-                    </span>
-                    <span className="px-3 py-1 rounded-full text-xs font-mono text-parchment-muted bg-ocean-lighter border border-ocean-light">
-                      {event.type}
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-serif font-bold text-parchment group-hover:text-gold transition-colors">
-                    {event.title}
-                  </h2>
-                </div>
+          {events.length > 0 ? (
+            events.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="glass-panel rounded-2xl p-6 border border-gold/20 hover:border-gold/50 transition-all group relative overflow-hidden cursor-pointer"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-3xl -mr-10 -mt-10 group-hover:bg-gold/10 transition-all"></div>
                 
-                <div className="flex flex-col items-start md:items-end text-sm font-mono text-parchment-muted space-y-1">
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-gold/70" />
-                    {event.date}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 relative z-10">
+                  <div>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(event.status)}`}>
+                        {formatStatus(event.status)}
+                      </span>
+                      <span className="px-3 py-1 rounded-full text-xs font-mono text-parchment-muted bg-ocean-lighter border border-ocean-light">
+                        {event.type}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-serif font-bold text-parchment group-hover:text-gold transition-colors">
+                      {event.title}
+                    </h2>
                   </div>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-gold/70" />
-                    {event.time}
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-parchment-muted text-sm mb-6 leading-relaxed relative z-10">
-                {event.description}
-              </p>
-
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-ocean-lighter relative z-10">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center text-sm font-medium text-parchment">
-                    <MapPin className="w-4 h-4 mr-2 text-gold" />
-                    {event.location}
-                  </div>
-                  <div className="hidden sm:block w-px h-4 bg-ocean-lighter"></div>
-                  <div className="flex items-center text-sm font-medium text-gold">
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    Prêmio: {event.prize}
+                  
+                  <div className="flex flex-col items-start md:items-end text-sm font-mono text-parchment-muted space-y-1">
+                    <div className="flex items-center">
+                      <Calendar className="w-4 h-4 mr-2 text-gold/70" />
+                      {formatDate(event.date)}
+                    </div>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 mr-2 text-gold/70" />
+                      {formatTime(event.date)}
+                    </div>
                   </div>
                 </div>
-                
-                <button className="flex items-center text-sm font-serif font-bold uppercase tracking-wider text-gold hover:text-gold-light transition-colors">
-                  Ver Detalhes
-                  <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-            </motion.div>
-          ))}
+
+                <p className="text-parchment-muted text-sm mb-6 leading-relaxed relative z-10">
+                  {event.description}
+                </p>
+
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-4 border-t border-ocean-lighter relative z-10">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center text-sm font-medium text-parchment">
+                      <MapPin className="w-4 h-4 mr-2 text-gold" />
+                      {event.location}
+                    </div>
+                    <div className="hidden sm:block w-px h-4 bg-ocean-lighter"></div>
+                    <div className="flex items-center text-sm font-medium text-gold">
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Prêmio: {event.prize}
+                    </div>
+                  </div>
+                  
+                  <button className="flex items-center text-sm font-serif font-bold uppercase tracking-wider text-gold hover:text-gold-light transition-colors">
+                    Ver Detalhes
+                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </motion.div>
+            ))
+          ) : (
+            <div className="glass-panel rounded-2xl p-8 border border-gold/10 text-center">
+              <p className="text-parchment-muted">Nenhum evento encontrado.</p>
+            </div>
+          )}
         </div>
 
         {/* Sidebar / Rules Summary */}

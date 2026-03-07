@@ -1,12 +1,33 @@
 import { motion } from 'motion/react';
-import { Anchor, Trophy, Swords, Skull, ArrowRight } from 'lucide-react';
+import { Anchor, Trophy, Swords, Skull, ArrowRight, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+}
+
+interface TeamStats {
+  name: string;
+  stats: {
+    wins: number;
+    losses: number;
+    points: number;
+  };
+  ship_name: string;
+}
 
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [nextEvent, setNextEvent] = useState<Event | null>(null);
+  const [champion, setChampion] = useState<TeamStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Redireciona para o dashboard se o usuário já estiver logado
   useEffect(() => {
@@ -15,14 +36,86 @@ export default function Home() {
     }
   }, [user, navigate]);
 
-  // Mock countdown data
-  const nextEventDate = new Date('2026-04-15T20:00:00Z');
-  const now = new Date();
-  const diff = nextEventDate.getTime() - now.getTime();
-  
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Fetch Next Event
+        const { data: events, error: eventError } = await supabase
+          .from('events')
+          .select('*')
+          .eq('status', 'upcoming')
+          .order('date', { ascending: true })
+          .limit(1);
+
+        if (eventError) throw eventError;
+        if (events && events.length > 0) {
+          setNextEvent(events[0]);
+        }
+
+        // Fetch Champion (Team with most points)
+        const { data: teams, error: teamError } = await supabase
+          .from('teams')
+          .select('*')
+          .order('stats->points', { ascending: false }) // Note: This assumes JSONB query works, otherwise might need code sort
+          .limit(1);
+
+        if (teamError) throw teamError;
+        if (teams && teams.length > 0) {
+          setChampion(teams[0]);
+        }
+
+      } catch (error) {
+        console.error('Erro ao carregar dados da Home:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Countdown Logic
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+
+  useEffect(() => {
+    if (!nextEvent) return;
+
+    const calculateTimeLeft = () => {
+      const eventDate = new Date(nextEvent.date);
+      const now = new Date();
+      const diff = eventDate.getTime() - now.getTime();
+      
+      if (diff > 0) {
+        setTimeLeft({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0 });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [nextEvent]);
+
+  const calculateKD = (wins: number, losses: number) => {
+    if (losses === 0) return wins > 0 ? wins : 0;
+    return (wins / losses).toFixed(1);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 text-gold animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-16 pb-12">
@@ -48,25 +141,32 @@ export default function Home() {
           </p>
 
           {/* Countdown */}
-          <div className="glass-panel rounded-2xl p-6 mb-12 border border-gold/20 inline-block">
-            <h3 className="text-gold font-serif text-lg mb-4 uppercase tracking-widest">Próximo Torneio Em</h3>
-            <div className="flex space-x-6 text-center">
-              <div className="flex flex-col">
-                <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{Math.max(0, days)}</span>
-                <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Dias</span>
-              </div>
-              <span className="text-4xl md:text-5xl font-mono font-bold text-gold/50">:</span>
-              <div className="flex flex-col">
-                <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{Math.max(0, hours).toString().padStart(2, '0')}</span>
-                <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Horas</span>
-              </div>
-              <span className="text-4xl md:text-5xl font-mono font-bold text-gold/50">:</span>
-              <div className="flex flex-col">
-                <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{Math.max(0, minutes).toString().padStart(2, '0')}</span>
-                <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Minutos</span>
+          {nextEvent ? (
+            <div className="glass-panel rounded-2xl p-6 mb-12 border border-gold/20 inline-block">
+              <h3 className="text-gold font-serif text-lg mb-4 uppercase tracking-widest">Próximo Torneio: {nextEvent.title}</h3>
+              <div className="flex space-x-6 text-center justify-center">
+                <div className="flex flex-col">
+                  <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{timeLeft.days}</span>
+                  <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Dias</span>
+                </div>
+                <span className="text-4xl md:text-5xl font-mono font-bold text-gold/50">:</span>
+                <div className="flex flex-col">
+                  <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{timeLeft.hours.toString().padStart(2, '0')}</span>
+                  <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Horas</span>
+                </div>
+                <span className="text-4xl md:text-5xl font-mono font-bold text-gold/50">:</span>
+                <div className="flex flex-col">
+                  <span className="text-4xl md:text-5xl font-mono font-bold text-parchment">{timeLeft.minutes.toString().padStart(2, '0')}</span>
+                  <span className="text-sm text-parchment-muted uppercase tracking-wider mt-1">Minutos</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="glass-panel rounded-2xl p-6 mb-12 border border-gold/20 inline-block">
+              <h3 className="text-gold font-serif text-lg uppercase tracking-widest">Nenhum torneio agendado</h3>
+              <p className="text-parchment-muted mt-2">Fique atento para novidades!</p>
+            </div>
+          )}
 
           <Link
             to="/teams"
@@ -96,24 +196,32 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-ocean-lighter pb-4">
-              <span className="text-parchment font-medium text-xl">The Salty Dogs</span>
-              <span className="px-3 py-1 bg-emerald-light/20 text-emerald-light rounded-full text-xs font-bold border border-emerald-light/30">
-                Galeão
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div>
-                <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">Vitórias</p>
-                <p className="font-mono text-xl text-parchment">12</p>
+          {champion ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-ocean-lighter pb-4">
+                <span className="text-parchment font-medium text-xl">{champion.name}</span>
+                <span className="px-3 py-1 bg-emerald-light/20 text-emerald-light rounded-full text-xs font-bold border border-emerald-light/30">
+                  {champion.ship_name}
+                </span>
               </div>
-              <div>
-                <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">K/D Ratio</p>
-                <p className="font-mono text-xl text-parchment">3.4</p>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">Vitórias</p>
+                  <p className="font-mono text-xl text-parchment">{champion.stats.wins}</p>
+                </div>
+                <div>
+                  <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">K/D Ratio</p>
+                  <p className="font-mono text-xl text-parchment">
+                    {calculateKD(champion.stats.wins, champion.stats.losses)}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="text-center py-8 text-parchment-muted">
+              <p>Ainda não há um campeão definido.</p>
+            </div>
+          )}
         </div>
 
         {/* Quick Links */}

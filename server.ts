@@ -1,4 +1,5 @@
 import express from 'express';
+import fs from 'fs';
 import cookieSession from 'cookie-session';
 import cookieParser from 'cookie-parser';
 import axios from 'axios';
@@ -100,6 +101,22 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+    
+    // Fallback handler for SPA in dev mode
+    app.use('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      try {
+        // 1. Read index.html
+        let template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+        // 2. Apply Vite HTML transforms
+        template = await vite.transformIndexHtml(url, template);
+        // 3. Send the rendered HTML
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
   } else {
     // Segurança: Produção Limpa
     // Serve arquivos estáticos sem expor stack traces ou ferramentas de dev

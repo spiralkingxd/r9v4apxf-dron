@@ -75,6 +75,7 @@ export default function Teams() {
           {
             name: teamName,
             ship_name: shipName,
+            discord_link: discordLink,
             captain_id: user.id,
             members: activeMembers,
             stats: { wins: 0, losses: 0 }
