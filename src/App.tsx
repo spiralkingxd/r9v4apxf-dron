@@ -6,19 +6,27 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ReactNode } from 'react';
 import Layout from './components/Layout';
+import AdminLayout from './layouts/AdminLayout';
 import Home from './pages/Home';
 import Teams from './pages/Teams';
 import Events from './pages/Events';
 import Brackets from './pages/Brackets';
 import Leaderboard from './pages/Leaderboard';
 import UserDashboard from './pages/UserDashboard';
-import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import TeamsPage from './pages/dashboard/teams';
 import CreateTeamPage from './pages/dashboard/teams/create';
 import TeamDetailsPage from './pages/dashboard/teams/details';
-import AdminTeamsPage from './pages/admin/teams';
+
+import AdminDashboard from './pages/admin/Dashboard';
+import UsersPage from './pages/admin/Users';
+import AdminTeamsPage from './pages/admin/Teams';
+import AdminEventsPage from './pages/admin/Events';
+import AdminMatchesPage from './pages/admin/Matches';
+import AdminReportsPage from './pages/admin/Reports';
+import AdminLogsPage from './pages/admin/Logs';
+import AdminSettingsPage from './pages/admin/Settings';
 
 // Protected Route Component
 function ProtectedRoute({ children, adminOnly = false }: { children: ReactNode, adminOnly?: boolean }) {
@@ -44,6 +52,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public & User Routes */}
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="teams" element={<Teams />} />
@@ -51,7 +60,7 @@ export default function App() {
             <Route path="brackets" element={<Brackets />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             
-            {/* Protected Routes */}
+            {/* User Dashboard Routes */}
             <Route 
               path="dashboard" 
               element={
@@ -84,22 +93,25 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="admin" 
-              element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="admin/teams" 
-              element={
-                <ProtectedRoute adminOnly={true}>
-                  <AdminTeamsPage />
-                </ProtectedRoute>
-              } 
-            />
+          </Route>
+
+          {/* Admin Routes */}
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="teams" element={<AdminTeamsPage />} />
+            <Route path="events" element={<AdminEventsPage />} />
+            <Route path="matches" element={<AdminMatchesPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

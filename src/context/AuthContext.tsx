@@ -40,15 +40,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAdminStatus = async (userId: string) => {
     try {
-      // Verifica no banco se o usuário tem a role 'admin'
+      // 1. Check Env Var (Super Admin)
+      // Note: We need the Discord ID for this check. 
+      // The user object from Supabase Auth (sbUser) has user_metadata.provider_id or sub.
+      // But here we only have userId (UUID).
+      // We can check if the current session user's metadata matches.
+      const { data: { session } } = await supabase.auth.getSession();
+      const discordId = session?.user?.user_metadata?.provider_id || session?.user?.user_metadata?.sub;
+      const envAdminId = import.meta.env.VITE_ADMIN_DISCORD_ID || import.meta.env.NEXT_PUBLIC_ADMIN_DISCORD_ID;
+
+      if (envAdminId && discordId === envAdminId) {
+        setIsAdmin(true);
+        return;
+      }
+
+      // 2. Check Database Roles
       const { data, error } = await supabase
-        .from('profiles')
+        .from('admin_roles')
         .select('role')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      if (error) throw error;
-      setIsAdmin(data?.role === 'admin');
+      if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
+         console.error('Error checking admin role:', error);
+      }
+      
+      setIsAdmin(!!data);
     } catch (error) {
       console.error('Erro ao verificar status de admin:', error);
       setIsAdmin(false);

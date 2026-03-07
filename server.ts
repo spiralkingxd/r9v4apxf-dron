@@ -13,6 +13,7 @@ import { isAuthenticated, isAdmin } from './server/middleware/auth';
 
 // Import Routes
 import teamRoutes from './server/routes/teams';
+import adminRoutes from './server/routes/admin';
 
 dotenv.config();
 
@@ -85,12 +86,7 @@ app.get('/api/health', (req, res) => {
 // Rotas Modulares
 // Segurança: Todas as rotas de equipes passam pela validação e proteção de IDOR
 app.use('/api/teams', teamRoutes);
-
-// Exemplo de Rota Admin Protegida
-// Segurança: Apenas o Admin real (validado no backend) pode acessar
-app.get('/api/admin/stats', isAdmin, (req, res) => {
-  res.json({ message: 'Dados sensíveis do painel admin', stats: { users: 1204, teams: 342 } });
-});
+app.use('/api/admin', adminRoutes);
 
 // Vite Middleware for Development
 async function startServer() {
