@@ -57,6 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
+      // Verifica erros na URL ao carregar (ex: retorno do OAuth com erro)
+      const params = new URLSearchParams(window.location.search);
+      const error = params.get('error');
+      const errorDescription = params.get('error_description');
+      
+      if (error) {
+        console.error('Erro de autenticação detectado na URL:', error, errorDescription);
+        if (error === 'server_error' && errorDescription?.includes('Database error')) {
+           alert('Erro crítico ao criar seu usuário no banco de dados. \n\nCausa provável: O Trigger "handle_new_user" no Supabase falhou.\n\nSolução: O administrador precisa rodar a migração de correção "20240306000001_fix_handle_new_user.sql".');
+        } else {
+           alert(`Falha no login: ${errorDescription || error}`);
+        }
+        // Limpa a URL para não ficar mostrando o erro se der refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       // Modo Real: Supabase
       const { data: { session } } = await supabase.auth.getSession();
       const mappedUser = mapSupabaseUser(session?.user ?? null);
@@ -89,12 +105,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    const redirectTo = `${window.location.origin}/dashboard`;
+    console.log('🔐 Iniciando login com Discord. URL de redirecionamento:', redirectTo);
+
     try {
       // O Supabase redireciona automaticamente para a página atual após o login
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo,
         },
       });
 
