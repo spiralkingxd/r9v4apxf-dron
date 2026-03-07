@@ -2,13 +2,15 @@ import { useAuth } from '../context/AuthContext';
 import { Shield, Swords, Calendar, Edit3, Bell, Loader2, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
-import Avatar from '../components/Avatar';
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { teamService } from '../services/teams';
 import { Modal } from '../components/Modal';
 import { TeamForm } from '../components/teams/TeamForm';
 import { TeamMembers } from '../components/teams/TeamMembers';
+import { ProfileCard } from '../components/profile/ProfileCard';
+import { XboxStatus } from '../components/profile/XboxStatus';
+import { profileService, Profile } from '../services/profile';
 
 interface Team {
   id: string;
@@ -18,10 +20,56 @@ interface Team {
 
 export default function UserDashboard() {
   const { user } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [myTeams, setMyTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      if (!user) return;
+      setIsLoading(true);
+      
+      const [profileData, teamsData] = await Promise.all([
+        profileService.getUserProfile(user.id),
+        supabase.from('teams').select('*').eq('captain_id', user.id)
+      ]);
+
+      setProfile(profileData);
+      setMyTeams(teamsData.data || []);
+      
+      if (editingTeam) {
+        const updatedTeam = teamsData.data?.find(t => t.id === editingTeam.id);
+        if (updatedTeam) setEditingTeam(updatedTeam);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchMyTeams = async () => {
+    try {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('captain_id', user.id);
+
+      if (error) throw error;
+      setMyTeams(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar minhas equipes:', error);
+    }
+  };
 
   const handleEdit = (team: Team) => {
     setEditingTeam(team);
@@ -37,36 +85,6 @@ export default function UserDashboard() {
         console.error('Erro ao deletar equipe:', error);
         alert('Erro ao deletar equipe.');
       }
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchMyTeams();
-    }
-  }, [user]);
-
-  const fetchMyTeams = async () => {
-    try {
-      if (!user) return;
-      setIsLoading(true);
-      // Fetch teams where user is captain
-      const { data, error } = await supabase
-        .from('teams')
-        .select('*')
-        .eq('captain_id', user.id);
-
-      if (error) throw error;
-      setMyTeams(data || []);
-      
-      if (editingTeam) {
-        const updatedTeam = data?.find(t => t.id === editingTeam.id);
-        if (updatedTeam) setEditingTeam(updatedTeam);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar minhas equipes:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -94,33 +112,16 @@ export default function UserDashboard() {
           </div>
         )}
       </Modal>
-      {/* Header Profile */}
-      <div className="glass-panel rounded-2xl p-8 border border-gold/20 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
-        
-        <div className="z-10">
-          <Avatar 
-            user={user} 
-            className="w-24 h-24 border-2 border-gold shadow-[0_0_20px_rgba(212,175,55,0.3)]" 
-            size={256}
-          />
-        </div>
-        
-        <div className="text-center md:text-left z-10 flex-1">
-          <h1 className="text-3xl font-serif font-bold text-parchment mb-2">{user?.username}</h1>
-          <p className="text-parchment-muted font-mono text-sm mb-4">{user?.email}</p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-3">
-            <button className="flex items-center px-4 py-2 bg-ocean-lighter border border-gold/30 text-gold rounded-lg text-sm font-medium hover:bg-gold/10 transition-colors">
-              <Edit3 className="w-4 h-4 mr-2" />
-              Editar Perfil
-            </button>
-            <button className="flex items-center px-4 py-2 bg-ocean-lighter border border-ocean-light text-parchment rounded-lg text-sm font-medium hover:bg-ocean-light transition-colors">
-              <Bell className="w-4 h-4 mr-2" />
-              Notificações
-            </button>
+      {profile && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <ProfileCard profile={profile} />
+          </div>
+          <div className="lg:col-span-1">
+            <XboxStatus xboxLinked={profile.xbox_linked} xboxGamertag={profile.xbox_gamertag} />
           </div>
         </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Minhas Equipes */}

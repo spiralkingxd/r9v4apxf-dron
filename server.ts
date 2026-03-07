@@ -14,6 +14,7 @@ import { isAuthenticated, isAdmin } from './server/middleware/auth';
 // Import Routes
 import teamRoutes from './server/routes/teams';
 import adminRoutes from './server/routes/admin';
+import authRoutes from './server/routes/auth';
 
 dotenv.config();
 
@@ -87,6 +88,7 @@ app.get('/api/health', (req, res) => {
 // Segurança: Todas as rotas de equipes passam pela validação e proteção de IDOR
 app.use('/api/teams', teamRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth', authRoutes);
 
 // Vite Middleware for Development
 async function startServer() {

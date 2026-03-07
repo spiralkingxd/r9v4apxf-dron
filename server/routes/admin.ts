@@ -45,7 +45,7 @@ router.get('/users', async (req, res) => {
       .range(from, to);
 
     if (search) {
-      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+      query = query.or(`full_name.ilike.%${search}%,display_name.ilike.%${search}%,username.ilike.%${search}%,email.ilike.%${search}%,discord_id.ilike.%${search}%`);
     }
 
     const { data, count, error } = await query;

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import api from '../lib/api';
 
 interface User {
   id: string;
@@ -92,6 +93,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Modo Real: Supabase
       const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.provider_token) {
+        // Sync Discord data
+        try {
+          await api.post('/auth/discord/sync', {
+            provider_token: session.provider_token
+          }, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+        } catch (error) {
+          console.error('Erro ao sincronizar dados do Discord:', error);
+        }
+      }
+
       const mappedUser = mapSupabaseUser(session?.user ?? null);
       setUser(mappedUser);
       if (session?.user) {
@@ -99,7 +116,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setIsLoading(false);
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        if (session?.provider_token) {
+          try {
+            await api.post('/auth/discord/sync', {
+              provider_token: session.provider_token
+            }, {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`
+              }
+            });
+          } catch (error) {
+            console.error('Erro ao sincronizar dados do Discord:', error);
+          }
+        }
+
         const mappedUser = mapSupabaseUser(session?.user ?? null);
         setUser(mappedUser);
         if (session?.user) {
@@ -131,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         provider: 'discord',
         options: {
           redirectTo,
+          scopes: 'identify email connections',
         },
       });
 
