@@ -75,7 +75,7 @@ export default function UsersPage() {
 
   const columns = [
     {
-      header: 'User',
+      header: 'Usuário',
       accessorKey: 'full_name' as keyof User,
       cell: (user: User) => (
         <div className="flex items-center space-x-3">
@@ -96,7 +96,7 @@ export default function UsersPage() {
       ),
     },
     {
-      header: 'Discord ID',
+      header: 'ID Discord',
       accessorKey: 'discord_id' as keyof User,
       cell: (user: User) => <span className="font-mono text-xs text-slate-400">{user.discord_id || 'N/A'}</span>,
     },
@@ -105,25 +105,25 @@ export default function UsersPage() {
       accessorKey: 'is_banned' as keyof User,
       cell: (user: User) => (
         user.is_banned ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Banned</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Banido</span>
         ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ativo</span>
         )
       ),
     },
     {
-      header: 'Joined',
+      header: 'Entrou em',
       accessorKey: 'created_at' as keyof User,
-      cell: (user: User) => <span className="text-xs text-slate-400">{format(new Date(user.created_at), 'MMM d, yyyy')}</span>,
+      cell: (user: User) => <span className="text-xs text-slate-400">{format(new Date(user.created_at), 'd MMM, yyyy')}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Users Management</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Gerenciamento de Usuários</h1>
         <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-          Export CSV
+          Exportar CSV
         </button>
       </div>
 
@@ -135,20 +135,19 @@ export default function UsersPage() {
         onPageChange={setPage}
         onSearch={setSearch}
         loading={loading}
-        searchPlaceholder="Search users..."
+        searchPlaceholder="Buscar usuários..."
         actions={(user) => (
           <div className="flex justify-end space-x-2">
-             {/* Simplified Actions for now without Dropdown */}
              {user.is_banned ? (
-                <button onClick={() => handleUnban(user.id)} className="text-emerald-400 hover:text-emerald-300 p-1" title="Unban">
+                <button onClick={() => handleUnban(user.id)} className="text-emerald-400 hover:text-emerald-300 p-1" title="Desbanir">
                   <UserCheck className="h-4 w-4" />
                 </button>
               ) : (
-                <button onClick={() => handleBan(user.id)} className="text-red-400 hover:text-red-300 p-1" title="Ban">
+                <button onClick={() => handleBan(user.id)} className="text-red-400 hover:text-red-300 p-1" title="Banir">
                   <UserX className="h-4 w-4" />
                 </button>
               )}
-              <button onClick={() => handleDelete(user.id)} className="text-slate-500 hover:text-red-500 p-1" title="Delete">
+              <button onClick={() => handleDelete(user.id)} className="text-slate-500 hover:text-red-500 p-1" title="Excluir">
                 <Trash2 className="h-4 w-4" />
               </button>
           </div>

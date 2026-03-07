@@ -16,14 +16,14 @@ export function AdminSidebar() {
   const pathname = location.pathname;
 
   const links = [
-    { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-    { href: '/admin/users', icon: Users, label: 'Users' },
-    { href: '/admin/teams', icon: Shield, label: 'Teams' },
-    { href: '/admin/events', icon: Trophy, label: 'Events' },
-    { href: '/admin/matches', icon: Swords, label: 'Matches' },
-    { href: '/admin/reports', icon: AlertTriangle, label: 'Reports' },
+    { href: '/admin', icon: LayoutDashboard, label: 'Painel' },
+    { href: '/admin/users', icon: Users, label: 'Usuários' },
+    { href: '/admin/teams', icon: Shield, label: 'Equipes' },
+    { href: '/admin/events', icon: Trophy, label: 'Eventos' },
+    { href: '/admin/matches', icon: Swords, label: 'Partidas' },
+    { href: '/admin/reports', icon: AlertTriangle, label: 'Denúncias' },
     { href: '/admin/logs', icon: FileText, label: 'Logs' },
-    { href: '/admin/settings', icon: Settings, label: 'Settings' },
+    { href: '/admin/settings', icon: Settings, label: 'Configurações' },
   ];
 
   return (

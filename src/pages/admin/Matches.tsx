@@ -42,22 +42,22 @@ export default function AdminMatchesPage() {
 
   const columns = [
     {
-      header: 'Event',
+      header: 'Evento',
       accessorKey: 'event' as keyof Match,
       cell: (match: Match) => <span className="text-sm text-slate-300">{match.event?.title}</span>,
     },
     {
-      header: 'Matchup',
+      header: 'Confronto',
       cell: (match: Match) => (
         <div className="flex items-center space-x-2 text-sm text-slate-200">
-          <span className={match.score_a > match.score_b ? 'text-emerald-400 font-bold' : ''}>{match.team_a?.name || 'TBD'}</span>
+          <span className={match.score_a > match.score_b ? 'text-emerald-400 font-bold' : ''}>{match.team_a?.name || 'A definir'}</span>
           <span className="text-slate-500">vs</span>
-          <span className={match.score_b > match.score_a ? 'text-emerald-400 font-bold' : ''}>{match.team_b?.name || 'TBD'}</span>
+          <span className={match.score_b > match.score_a ? 'text-emerald-400 font-bold' : ''}>{match.team_b?.name || 'A definir'}</span>
         </div>
       ),
     },
     {
-      header: 'Score',
+      header: 'Placar',
       cell: (match: Match) => (
         <div className="text-sm font-mono text-slate-300">
           {match.score_a} - {match.score_b}
@@ -73,21 +73,23 @@ export default function AdminMatchesPage() {
           ${match.status === 'scheduled' ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' : ''}
           ${match.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : ''}
         `}>
-          {match.status}
+          {match.status === 'scheduled' ? 'Agendado' : 
+           match.status === 'live' ? 'Ao vivo' : 
+           match.status === 'completed' ? 'Concluído' : 'Cancelado'}
         </span>
       ),
     },
     {
-      header: 'Start Time',
+      header: 'Início',
       accessorKey: 'start_time' as keyof Match,
-      cell: (match: Match) => <span className="text-xs text-slate-400">{match.start_time ? format(new Date(match.start_time), 'MMM d, HH:mm') : 'TBD'}</span>,
+      cell: (match: Match) => <span className="text-xs text-slate-400">{match.start_time ? format(new Date(match.start_time), 'd MMM, HH:mm') : 'A definir'}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Matches Management</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Gerenciamento de Partidas</h1>
       </div>
 
       <AdminTable
@@ -99,7 +101,7 @@ export default function AdminMatchesPage() {
         loading={loading}
         actions={(match) => (
           <div className="flex justify-end space-x-2">
-              <button className="text-slate-400 hover:text-emerald-400 p-1" title="Edit Result">
+              <button className="text-slate-400 hover:text-emerald-400 p-1" title="Editar Resultado">
                 <Edit className="h-4 w-4" />
               </button>
           </div>

@@ -52,7 +52,7 @@ export default function AdminEventsPage() {
 
   const columns = [
     {
-      header: 'Event Name',
+      header: 'Nome do Evento',
       accessorKey: 'title' as keyof Event,
       cell: (event: Event) => (
         <div className="flex items-center space-x-3">
@@ -74,17 +74,20 @@ export default function AdminEventsPage() {
           ${event.status === 'completed' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : ''}
           ${event.status === 'cancelled' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : ''}
         `}>
-          {event.status}
+          {event.status === 'draft' ? 'Rascunho' : 
+           event.status === 'open' ? 'Aberto' : 
+           event.status === 'ongoing' ? 'Em andamento' : 
+           event.status === 'completed' ? 'Concluído' : 'Cancelado'}
         </span>
       ),
     },
     {
-      header: 'Start Date',
+      header: 'Data de Início',
       accessorKey: 'start_date' as keyof Event,
-      cell: (event: Event) => <span className="text-xs text-slate-400">{format(new Date(event.start_date), 'MMM d, yyyy HH:mm')}</span>,
+      cell: (event: Event) => <span className="text-xs text-slate-400">{format(new Date(event.start_date), 'd MMM, yyyy HH:mm')}</span>,
     },
     {
-      header: 'Max Teams',
+      header: 'Máx. Equipes',
       accessorKey: 'max_teams' as keyof Event,
       cell: (event: Event) => <span className="text-xs text-slate-400">{event.max_teams}</span>,
     },
@@ -93,10 +96,10 @@ export default function AdminEventsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Events Management</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Gerenciamento de Eventos</h1>
         <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center">
           <Plus className="h-4 w-4 mr-2" />
-          Create Event
+          Criar Evento
         </button>
       </div>
 
@@ -108,13 +111,13 @@ export default function AdminEventsPage() {
         onPageChange={setPage}
         onSearch={setSearch}
         loading={loading}
-        searchPlaceholder="Search events..."
+        searchPlaceholder="Buscar eventos..."
         actions={(event) => (
           <div className="flex justify-end space-x-2">
-              <button className="text-slate-400 hover:text-emerald-400 p-1" title="Edit">
+              <button className="text-slate-400 hover:text-emerald-400 p-1" title="Editar">
                 <Edit className="h-4 w-4" />
               </button>
-              <button onClick={() => handleDelete(event.id)} className="text-slate-500 hover:text-red-500 p-1" title="Delete">
+              <button onClick={() => handleDelete(event.id)} className="text-slate-500 hover:text-red-500 p-1" title="Excluir">
                 <Trash2 className="h-4 w-4" />
               </button>
           </div>

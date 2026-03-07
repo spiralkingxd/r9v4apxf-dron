@@ -77,7 +77,7 @@ export default function AdminTeamsPage() {
 
   const columns = [
     {
-      header: 'Team Name',
+      header: 'Nome da Equipe',
       accessorKey: 'name' as keyof Team,
       cell: (team: Team) => (
         <div className="flex items-center space-x-3">
@@ -92,11 +92,11 @@ export default function AdminTeamsPage() {
       ),
     },
     {
-      header: 'Captain',
+      header: 'Capitão',
       accessorKey: 'captain' as keyof Team,
       cell: (team: Team) => (
         <div>
-          <p className="text-sm text-slate-300">{team.captain?.full_name || 'Unknown'}</p>
+          <p className="text-sm text-slate-300">{team.captain?.full_name || 'Desconhecido'}</p>
           <p className="text-xs text-slate-500">{team.captain?.email}</p>
         </div>
       ),
@@ -106,25 +106,25 @@ export default function AdminTeamsPage() {
       accessorKey: 'status' as keyof Team,
       cell: (team: Team) => (
         team.status === 'banned' ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Banned</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">Banido</span>
         ) : (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Ativo</span>
         )
       ),
     },
     {
-      header: 'Created',
+      header: 'Criado em',
       accessorKey: 'created_at' as keyof Team,
-      cell: (team: Team) => <span className="text-xs text-slate-400">{format(new Date(team.created_at), 'MMM d, yyyy')}</span>,
+      cell: (team: Team) => <span className="text-xs text-slate-400">{format(new Date(team.created_at), 'd MMM, yyyy')}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Teams Management</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Gerenciamento de Equipes</h1>
         <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-          Export CSV
+          Exportar CSV
         </button>
       </div>
 
@@ -136,19 +136,19 @@ export default function AdminTeamsPage() {
         onPageChange={setPage}
         onSearch={setSearch}
         loading={loading}
-        searchPlaceholder="Search teams..."
+        searchPlaceholder="Buscar equipes..."
         actions={(team) => (
           <div className="flex justify-end space-x-2">
              {team.status === 'banned' ? (
-                <button onClick={() => handleUnban(team.id)} className="text-emerald-400 hover:text-emerald-300 p-1" title="Unban">
+                <button onClick={() => handleUnban(team.id)} className="text-emerald-400 hover:text-emerald-300 p-1" title="Desbanir">
                   <UserCheck className="h-4 w-4" />
                 </button>
               ) : (
-                <button onClick={() => handleBan(team.id)} className="text-red-400 hover:text-red-300 p-1" title="Ban">
+                <button onClick={() => handleBan(team.id)} className="text-red-400 hover:text-red-300 p-1" title="Banir">
                   <UserX className="h-4 w-4" />
                 </button>
               )}
-              <button onClick={() => handleDelete(team.id)} className="text-slate-500 hover:text-red-500 p-1" title="Delete">
+              <button onClick={() => handleDelete(team.id)} className="text-slate-500 hover:text-red-500 p-1" title="Excluir">
                 <Trash2 className="h-4 w-4" />
               </button>
           </div>

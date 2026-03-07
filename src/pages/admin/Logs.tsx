@@ -41,22 +41,22 @@ export default function AdminLogsPage() {
 
   const columns = [
     {
-      header: 'Admin',
+      header: 'Administrador',
       accessorKey: 'admin' as keyof Log,
       cell: (log: Log) => (
         <div>
-          <p className="text-sm font-medium text-slate-200">{log.admin?.full_name || 'System'}</p>
+          <p className="text-sm font-medium text-slate-200">{log.admin?.full_name || 'Sistema'}</p>
           <p className="text-xs text-slate-500">{log.admin?.email}</p>
         </div>
       ),
     },
     {
-      header: 'Action',
+      header: 'Ação',
       accessorKey: 'action' as keyof Log,
       cell: (log: Log) => <span className="text-sm font-mono text-emerald-400">{log.action}</span>,
     },
     {
-      header: 'Target',
+      header: 'Alvo',
       cell: (log: Log) => (
         <div className="text-xs text-slate-400">
           <span className="uppercase font-semibold">{log.target_type}</span>
@@ -65,7 +65,7 @@ export default function AdminLogsPage() {
       ),
     },
     {
-      header: 'Details',
+      header: 'Detalhes',
       accessorKey: 'details' as keyof Log,
       cell: (log: Log) => (
         <pre className="text-xs text-slate-500 max-w-xs overflow-hidden truncate">
@@ -74,16 +74,16 @@ export default function AdminLogsPage() {
       ),
     },
     {
-      header: 'Date',
+      header: 'Data',
       accessorKey: 'created_at' as keyof Log,
-      cell: (log: Log) => <span className="text-xs text-slate-400">{format(new Date(log.created_at), 'MMM d, HH:mm:ss')}</span>,
+      cell: (log: Log) => <span className="text-xs text-slate-400">{format(new Date(log.created_at), 'd MMM, HH:mm:ss')}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Audit Logs</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Logs de Auditoria</h1>
       </div>
 
       <AdminTable

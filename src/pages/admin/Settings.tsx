@@ -39,11 +39,11 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (loading) return <div>Loading settings...</div>;
+  if (loading) return <div>Carregando configurações...</div>;
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-bold text-slate-100 tracking-tight">System Settings</h1>
+      <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Configurações do Sistema</h1>
 
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
         {settings.map((setting) => (
@@ -65,7 +65,7 @@ export default function AdminSettingsPage() {
                     const parsed = JSON.parse(e.target.value);
                     handleSave(setting.key, parsed);
                   } catch (err) {
-                    alert('Invalid JSON format');
+                    alert('Formato JSON inválido');
                   }
                 }}
               />

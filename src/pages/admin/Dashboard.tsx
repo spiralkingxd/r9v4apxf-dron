@@ -31,68 +31,68 @@ export default function AdminDashboard() {
   }, []);
 
   if (loading) {
-    return <div className="text-slate-400">Loading stats...</div>;
+    return <div className="text-slate-400">Carregando estatísticas...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Dashboard Overview</h1>
+      <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Visão Geral do Painel</h1>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard 
-          title="Total Users" 
+          title="Total de Usuários" 
           value={stats?.users || 0} 
           icon={Users} 
-          description="Registered players"
+          description="Jogadores registrados"
         />
         <StatsCard 
-          title="Active Teams" 
+          title="Equipes Ativas" 
           value={stats?.teams || 0} 
           icon={Shield} 
-          description="Ready for battle"
+          description="Prontas para a batalha"
         />
         <StatsCard 
-          title="Events" 
+          title="Eventos" 
           value={stats?.events || 0} 
           icon={Trophy} 
-          description="Tournaments hosted"
+          description="Torneios realizados"
         />
         <StatsCard 
-          title="Matches Played" 
+          title="Partidas Jogadas" 
           value={stats?.matches || 0} 
           icon={Swords} 
-          description="Total games recorded"
+          description="Total de jogos registrados"
         />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 col-span-2">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-semibold text-slate-100 mb-4">Atividade Recente</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-slate-800 last:border-0">
               <div className="flex items-center space-x-3">
                 <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                <p className="text-sm text-slate-300">New team "Black Pearl" registered</p>
+                <p className="text-sm text-slate-300">Nova equipe "Black Pearl" registrada</p>
               </div>
-              <span className="text-xs text-slate-500">2 min ago</span>
+              <span className="text-xs text-slate-500">2 min atrás</span>
             </div>
-            {/* More items... */}
+            {/* Mais itens... */}
           </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center">
             <AlertTriangle className="h-5 w-5 text-yellow-500 mr-2" />
-            Pending Actions
+            Ações Pendentes
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
               <div>
-                <p className="text-sm font-medium text-slate-200">Pending Reports</p>
-                <p className="text-xs text-slate-500">{stats?.pendingReports || 0} unresolved</p>
+                <p className="text-sm font-medium text-slate-200">Denúncias Pendentes</p>
+                <p className="text-xs text-slate-500">{stats?.pendingReports || 0} não resolvidas</p>
               </div>
               <button className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-md transition-colors">
-                Review
+                Analisar
               </button>
             </div>
           </div>

@@ -58,7 +58,7 @@ export default function AdminReportsPage() {
 
   const columns = [
     {
-      header: 'Reporter',
+      header: 'Denunciante',
       accessorKey: 'reporter' as keyof Report,
       cell: (report: Report) => (
         <div>
@@ -68,27 +68,27 @@ export default function AdminReportsPage() {
       ),
     },
     {
-      header: 'Reported Entity',
+      header: 'Entidade Denunciada',
       cell: (report: Report) => (
         <div>
           {report.reported_user ? (
             <>
               <p className="text-sm font-medium text-slate-200">{report.reported_user.full_name}</p>
-              <p className="text-xs text-slate-500">User</p>
+              <p className="text-xs text-slate-500">Usuário</p>
             </>
           ) : report.reported_team ? (
             <>
               <p className="text-sm font-medium text-slate-200">{report.reported_team.name}</p>
-              <p className="text-xs text-slate-500">Team</p>
+              <p className="text-xs text-slate-500">Equipe</p>
             </>
           ) : (
-            <span className="text-slate-500">Unknown</span>
+            <span className="text-slate-500">Desconhecido</span>
           )}
         </div>
       ),
     },
     {
-      header: 'Reason',
+      header: 'Motivo',
       accessorKey: 'reason' as keyof Report,
       cell: (report: Report) => <p className="text-sm text-slate-300 truncate max-w-xs" title={report.reason}>{report.reason}</p>,
     },
@@ -101,30 +101,32 @@ export default function AdminReportsPage() {
           ${report.status === 'resolved' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : ''}
           ${report.status === 'ignored' ? 'bg-slate-500/10 text-slate-400 border border-slate-500/20' : ''}
         `}>
-          {report.status}
+          {report.status === 'pending' ? 'Pendente' : 
+           report.status === 'resolved' ? 'Resolvido' : 
+           report.status === 'ignored' ? 'Ignorado' : report.status}
         </span>
       ),
     },
     {
-      header: 'Date',
+      header: 'Data',
       accessorKey: 'created_at' as keyof Report,
-      cell: (report: Report) => <span className="text-xs text-slate-400">{format(new Date(report.created_at), 'MMM d, HH:mm')}</span>,
+      cell: (report: Report) => <span className="text-xs text-slate-400">{format(new Date(report.created_at), 'd MMM, HH:mm')}</span>,
     },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Reports Management</h1>
+        <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Gerenciamento de Denúncias</h1>
         <select 
           className="bg-slate-900 border border-slate-800 text-slate-200 text-sm rounded-md focus:ring-emerald-500/50 p-2"
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="resolved">Resolved</option>
-          <option value="ignored">Ignored</option>
+          <option value="all">Todos os Status</option>
+          <option value="pending">Pendente</option>
+          <option value="resolved">Resolvido</option>
+          <option value="ignored">Ignorado</option>
         </select>
       </div>
 
@@ -139,10 +141,10 @@ export default function AdminReportsPage() {
           <div className="flex justify-end space-x-2">
             {report.status === 'pending' && (
               <>
-                <button onClick={() => handleResolve(report.id, 'resolved')} className="text-emerald-400 hover:text-emerald-300 p-1" title="Resolve">
+                <button onClick={() => handleResolve(report.id, 'resolved')} className="text-emerald-400 hover:text-emerald-300 p-1" title="Resolver">
                   <CheckCircle className="h-4 w-4" />
                 </button>
-                <button onClick={() => handleResolve(report.id, 'ignored')} className="text-slate-500 hover:text-slate-300 p-1" title="Ignore">
+                <button onClick={() => handleResolve(report.id, 'ignored')} className="text-slate-500 hover:text-slate-300 p-1" title="Ignorar">
                   <XCircle className="h-4 w-4" />
                 </button>
               </>
