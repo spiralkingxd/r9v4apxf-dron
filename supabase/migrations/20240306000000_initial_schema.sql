@@ -28,7 +28,7 @@ CREATE POLICY "Users can update own profile."
 
 CREATE POLICY "Admin can update all profiles."
   ON profiles FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 2. TEAMS TABLE
 CREATE TABLE teams (
@@ -57,7 +57,7 @@ CREATE POLICY "Captain can update their team."
 
 CREATE POLICY "Admin can do everything on teams."
   ON teams FOR ALL
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 3. EVENTS TABLE
 CREATE TABLE events (
@@ -80,7 +80,7 @@ CREATE POLICY "Events are viewable by everyone."
 
 CREATE POLICY "Only admin can modify events."
   ON events FOR ALL
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 4. MATCHES TABLE
 CREATE TABLE matches (
@@ -102,7 +102,7 @@ CREATE POLICY "Matches are viewable by everyone."
 
 CREATE POLICY "Only admin can modify matches."
   ON matches FOR ALL
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 5. REGISTRATIONS TABLE
 CREATE TABLE registrations (
@@ -126,7 +126,7 @@ CREATE POLICY "Captains can register their teams."
 
 CREATE POLICY "Only admin can update registration status."
   ON registrations FOR UPDATE
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- 6. AUDIT LOGS TABLE
 CREATE TABLE audit_logs (
@@ -142,7 +142,7 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Only admin can view audit logs."
   ON audit_logs FOR SELECT
-  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND discord_id = '717425697005502534'));
+  USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'));
 
 -- TRIGGERS FOR AUDIT LOGS
 CREATE OR REPLACE FUNCTION log_audit_event() RETURNS TRIGGER AS $$

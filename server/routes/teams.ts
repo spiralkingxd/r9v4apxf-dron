@@ -6,8 +6,8 @@ const router = Router();
 
 // Mock Database (Em produção, use PostgreSQL/MongoDB com Prepared Statements)
 const teamsDB: any[] = [
-  { id: '1', name: 'The Salty Dogs', ownerId: '717425697005502534', ship: 'Galeão' },
-  { id: '2', name: 'Kraken Hunters', ownerId: '123456789', ship: 'Brigantim' },
+  { id: '1', name: 'The Salty Dogs', ownerId: 'mock_owner_id_1', ship: 'Galeão' },
+  { id: '2', name: 'Kraken Hunters', ownerId: 'mock_owner_id_2', ship: 'Brigantim' },
 ];
 
 /**
