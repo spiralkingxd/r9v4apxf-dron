@@ -21,11 +21,13 @@ const CreateTeamSchema = z.object({
   name: z.string().min(3).max(50).regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido (apenas letras, números, espaços, - e _)').trim().transform(val => val.replace(/<[^>]*>?/gm, '')),
   ship_name: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')),
   gamertag: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')), // Gamertag do capitão
+  logo_url: z.string().url().regex(/\.(jpg|jpeg|png|webp)$/i).optional().or(z.literal('')),
 });
 
 const UpdateTeamSchema = z.object({
   name: z.string().min(3).max(50).regex(/^[a-zA-Z0-9\s\-_]+$/, 'Nome inválido').trim().transform(val => val.replace(/<[^>]*>?/gm, '')).optional(),
   ship_name: z.string().min(3).max(50).trim().transform(val => val.replace(/<[^>]*>?/gm, '')).optional(),
+  logo_url: z.string().url().regex(/\.(jpg|jpeg|png|webp)$/i).optional().or(z.literal('')),
 });
 
 const AddMemberSchema = z.object({
@@ -150,6 +152,7 @@ router.post('/', isAuthenticated, teamCreationLimiter, async (req, res) => {
       .insert({
         name: validatedData.name,
         ship_name: validatedData.ship_name,
+        logo_url: validatedData.logo_url,
         captain_id: req.user!.id,
       })
       .select()

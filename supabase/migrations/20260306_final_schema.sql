@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS teams (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   name TEXT NOT NULL,
   ship_name TEXT,
+  logo_url TEXT,
   captain_id UUID REFERENCES profiles(id),
   status TEXT DEFAULT 'active',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())

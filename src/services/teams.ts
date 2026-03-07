@@ -29,6 +29,7 @@ export interface CreateTeamData {
   name: string;
   ship_name: string;
   gamertag: string;
+  logo_url?: string;
 }
 
 export interface UpdateTeamData {
