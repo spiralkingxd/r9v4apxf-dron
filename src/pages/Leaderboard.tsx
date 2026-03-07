@@ -6,11 +6,10 @@ import { supabase } from '../lib/supabase';
 interface Team {
   id: string;
   name: string;
-  stats: {
-    wins: number;
-    losses: number;
-    points: number;
-  };
+  ship_name: string;
+  captain_id: string;
+  status: string;
+  created_at: string;
 }
 
 export default function Leaderboard() {
@@ -26,8 +25,7 @@ export default function Leaderboard() {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
-        .order('stats->points', { ascending: false });
+        .select('*');
 
       if (error) throw error;
       setTeams(data || []);
@@ -36,11 +34,6 @@ export default function Leaderboard() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const calculateKD = (wins: number, losses: number) => {
-    if (losses === 0) return wins > 0 ? wins : 0;
-    return (wins / losses).toFixed(1);
   };
 
   const getRankIcon = (rank: number) => {
@@ -72,70 +65,10 @@ export default function Leaderboard() {
             Ranking Global
           </h1>
           <p className="text-parchment-muted text-lg">
-            As lendas mais temidas dos mares. Pontuação acumulada da Temporada 4.
+            As lendas mais temidas dos mares.
           </p>
         </div>
-        
-        <div className="glass-panel px-6 py-3 rounded-lg border border-gold/20 flex items-center space-x-4">
-          <span className="font-serif font-bold text-gold uppercase tracking-wider">Temporada:</span>
-          <select className="bg-transparent text-parchment font-medium focus:outline-none appearance-none cursor-pointer">
-            <option value="4">Temporada 4 (Atual)</option>
-          </select>
-        </div>
       </div>
-
-      {/* Top 3 Podium */}
-      {teams.length >= 3 && (
-        <div className="hidden md:flex justify-center items-end gap-4 mb-12 h-48">
-          {/* 2nd Place */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col items-center w-48"
-          >
-            <div className="text-center mb-2">
-              <p className="font-serif font-bold text-gray-300 truncate w-full px-2">{teams[1].name}</p>
-              <p className="font-mono text-sm text-parchment-muted">{teams[1].stats.points} pts</p>
-            </div>
-            <div className="w-full h-24 bg-gradient-to-t from-ocean-lighter to-ocean-light border-t-2 border-gray-300 rounded-t-lg flex justify-center pt-4 shadow-[0_-10px_30px_rgba(209,213,219,0.1)]">
-              <Medal className="w-8 h-8 text-gray-300" />
-            </div>
-          </motion.div>
-
-          {/* 1st Place */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center w-56 z-10"
-          >
-            <div className="text-center mb-2">
-              <Trophy className="w-10 h-10 text-gold mx-auto mb-2 drop-shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
-              <p className="font-serif font-bold text-gold text-lg truncate w-full px-2">{teams[0].name}</p>
-              <p className="font-mono text-sm text-gold/80 font-bold">{teams[0].stats.points} pts</p>
-            </div>
-            <div className="w-full h-32 bg-gradient-to-t from-gold/20 to-gold/5 border-t-2 border-gold rounded-t-lg flex justify-center pt-4 shadow-[0_-10px_40px_rgba(212,175,55,0.2)]">
-              <span className="font-serif text-4xl font-black text-gold/50">1</span>
-            </div>
-          </motion.div>
-
-          {/* 3rd Place */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex flex-col items-center w-48"
-          >
-            <div className="text-center mb-2">
-              <p className="font-serif font-bold text-amber-700 truncate w-full px-2">{teams[2].name}</p>
-              <p className="font-mono text-sm text-parchment-muted">{teams[2].stats.points} pts</p>
-            </div>
-            <div className="w-full h-20 bg-gradient-to-t from-ocean-lighter to-ocean-light border-t-2 border-amber-700 rounded-t-lg flex justify-center pt-4 shadow-[0_-10px_30px_rgba(180,83,9,0.1)]">
-              <Medal className="w-8 h-8 text-amber-700" />
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* Leaderboard Table */}
       <div className="glass-panel rounded-2xl border border-gold/20 overflow-hidden">
@@ -145,9 +78,7 @@ export default function Leaderboard() {
               <tr className="border-b border-ocean-lighter bg-ocean-light/50">
                 <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm w-20 text-center">Rank</th>
                 <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm">Equipe</th>
-                <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm text-right">Pontos</th>
-                <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm text-center hidden sm:table-cell">Vitórias</th>
-                <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm text-center hidden md:table-cell">K/D Ratio</th>
+                <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm">Navio</th>
               </tr>
             </thead>
             <tbody>
@@ -170,24 +101,14 @@ export default function Leaderboard() {
                         {team.name}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-right">
-                      <span className="font-mono font-bold text-lg text-emerald-light">
-                        {team.stats.points}
-                      </span>
-                    </td>
-                    <td className="py-4 px-6 text-center hidden sm:table-cell">
-                      <span className="font-mono text-parchment-muted">{team.stats.wins}</span>
-                    </td>
-                    <td className="py-4 px-6 text-center hidden md:table-cell">
-                      <span className="font-mono text-parchment-muted">
-                        {calculateKD(team.stats.wins, team.stats.losses)}
-                      </span>
+                    <td className="py-4 px-6">
+                      <span className="font-mono text-parchment-muted">{team.ship_name}</span>
                     </td>
                   </motion.tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-parchment-muted">
+                  <td colSpan={3} className="py-8 text-center text-parchment-muted">
                     Nenhuma equipe classificada ainda.
                   </td>
                 </tr>

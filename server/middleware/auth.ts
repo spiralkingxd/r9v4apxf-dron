@@ -58,12 +58,15 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
     // But server.ts uses `cookie-session` and seems to store user info manually.
     
     // Let's assume req.user.id is the Discord ID for now based on `NEXT_PUBLIC_ADMIN_DISCORD_ID` check.
-    // If so, we need to find the user in `users` table by `discord_id`.
+    // If so, we need to find the user in `profiles` table by `id` (assuming it matches the auth.users id).
+    // Actually, if req.user.id is the Discord ID, we need to find the user in `profiles` table.
+    // But `profiles` table uses `auth.users.id`.
     
+    // Let's check if req.user.id is the UUID.
     const { data: user } = await supabaseAdmin
-      .from('users')
+      .from('profiles')
       .select('id')
-      .eq('discord_id', req.user.id)
+      .eq('id', req.user.id)
       .single();
 
     if (user) {
@@ -76,17 +79,6 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
       if (roleData && ['super_admin', 'admin', 'moderator'].includes(roleData.role)) {
         return next();
       }
-    }
-    
-    // Also check if req.user.id is the UUID (in case session stores UUID)
-    const { data: roleDataUUID } = await supabaseAdmin
-      .from('admin_roles')
-      .select('role')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (roleDataUUID && ['super_admin', 'admin', 'moderator'].includes(roleDataUUID.role)) {
-      return next();
     }
 
   } catch (error) {

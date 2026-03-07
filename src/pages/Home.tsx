@@ -12,21 +12,20 @@ interface Event {
   status: string;
 }
 
-interface TeamStats {
+interface Team {
+  id: string;
   name: string;
-  stats: {
-    wins: number;
-    losses: number;
-    points: number;
-  };
   ship_name: string;
+  captain_id: string;
+  status: string;
+  created_at: string;
 }
 
 export default function Home() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [nextEvent, setNextEvent] = useState<Event | null>(null);
-  const [champion, setChampion] = useState<TeamStats | null>(null);
+  const [champion, setChampion] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Redireciona para o dashboard se o usuário já estiver logado
@@ -54,11 +53,10 @@ export default function Home() {
           setNextEvent(events[0]);
         }
 
-        // Fetch Champion (Team with most points)
+        // Fetch Champion (Just get a team for now, as stats doesn't exist)
         const { data: teams, error: teamError } = await supabase
           .from('teams')
           .select('*')
-          .order('stats->points', { ascending: false }) // Note: This assumes JSONB query works, otherwise might need code sort
           .limit(1);
 
         if (teamError) throw teamError;
@@ -103,11 +101,6 @@ export default function Home() {
 
     return () => clearInterval(timer);
   }, [nextEvent]);
-
-  const calculateKD = (wins: number, losses: number) => {
-    if (losses === 0) return wins > 0 ? wins : 0;
-    return (wins / losses).toFixed(1);
-  };
 
   if (isLoading) {
     return (
@@ -203,18 +196,6 @@ export default function Home() {
                 <span className="px-3 py-1 bg-emerald-light/20 text-emerald-light rounded-full text-xs font-bold border border-emerald-light/30">
                   {champion.ship_name}
                 </span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div>
-                  <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">Vitórias</p>
-                  <p className="font-mono text-xl text-parchment">{champion.stats.wins}</p>
-                </div>
-                <div>
-                  <p className="text-parchment-muted text-xs uppercase tracking-wider mb-1">K/D Ratio</p>
-                  <p className="font-mono text-xl text-parchment">
-                    {calculateKD(champion.stats.wins, champion.stats.losses)}
-                  </p>
-                </div>
               </div>
             </div>
           ) : (

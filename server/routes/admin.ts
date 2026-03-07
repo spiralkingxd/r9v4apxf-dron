@@ -10,7 +10,7 @@ router.use(isAdmin);
 // --- DASHBOARD STATS ---
 router.get('/stats', async (req, res) => {
   try {
-    const { count: usersCount } = await supabaseAdmin.from('users').select('*', { count: 'exact', head: true });
+    const { count: usersCount } = await supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true });
     const { count: teamsCount } = await supabaseAdmin.from('teams').select('*', { count: 'exact', head: true });
     const { count: eventsCount } = await supabaseAdmin.from('events').select('*', { count: 'exact', head: true });
     const { count: matchesCount } = await supabaseAdmin.from('matches').select('*', { count: 'exact', head: true });
@@ -39,13 +39,13 @@ router.get('/users', async (req, res) => {
     const to = from + limit - 1;
 
     let query = supabaseAdmin
-      .from('users')
+      .from('profiles')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
     if (search) {
-      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,discord_id.ilike.%${search}%`);
+      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
     }
 
     const { data, count, error } = await query;
@@ -62,12 +62,12 @@ router.get('/users', async (req, res) => {
 router.post('/users/:id/ban', async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabaseAdmin.from('users').update({ is_banned: true }).eq('id', id);
+    const { error } = await supabaseAdmin.from('profiles').update({ is_banned: true }).eq('id', id);
     if (error) throw error;
     
     // Log action
     await supabaseAdmin.from('admin_logs').insert({
-      admin_id: req.user?.id, // Assuming req.user is populated by auth middleware
+      admin_id: req.user?.id,
       action: 'ban_user',
       target_type: 'user',
       target_id: id,
@@ -84,7 +84,7 @@ router.post('/users/:id/ban', async (req, res) => {
 router.post('/users/:id/unban', async (req, res) => {
   try {
     const { id } = req.params;
-    const { error } = await supabaseAdmin.from('users').update({ is_banned: false }).eq('id', id);
+    const { error } = await supabaseAdmin.from('profiles').update({ is_banned: false }).eq('id', id);
     if (error) throw error;
 
     await supabaseAdmin.from('admin_logs').insert({
