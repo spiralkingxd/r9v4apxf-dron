@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const redirectTo = `${window.location.origin}/dashboard`;
+    const redirectTo = window.location.origin;
     console.log('🔐 Iniciando login com Discord. URL de redirecionamento:', redirectTo);
 
     try {

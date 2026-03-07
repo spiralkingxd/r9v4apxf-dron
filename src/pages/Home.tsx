@@ -1,8 +1,20 @@
 import { motion } from 'motion/react';
 import { Anchor, Trophy, Swords, Skull, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useEffect } from 'react';
 
 export default function Home() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redireciona para o dashboard se o usuário já estiver logado
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
   // Mock countdown data
   const nextEventDate = new Date('2026-04-15T20:00:00Z');
   const now = new Date();
