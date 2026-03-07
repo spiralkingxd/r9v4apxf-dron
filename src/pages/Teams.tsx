@@ -9,11 +9,8 @@ interface Team {
   name: string;
   ship_name: string;
   captain_id: string;
-  members: string[]; // Stored as JSONB in DB
-  stats: {
-    wins: number;
-    losses: number;
-  };
+  status: string;
+  created_at: string;
 }
 
 export default function Teams() {
@@ -75,8 +72,6 @@ export default function Teams() {
             name: teamName,
             ship_name: shipName,
             captain_id: user.id,
-            members: activeMembers,
-            stats: { wins: 0, losses: 0 }
           }
         ])
         .select();
@@ -99,11 +94,6 @@ export default function Teams() {
     }
   };
 
-  // Calculate K/D safely
-  const calculateKD = (wins: number, losses: number) => {
-    if (losses === 0) return wins > 0 ? wins : 0;
-    return (wins / losses).toFixed(1);
-  };
 
   return (
     <div className="space-y-8">
@@ -248,20 +238,10 @@ export default function Teams() {
                 {team.ship_name}
               </div>
 
-              <div className="grid grid-cols-3 gap-4 border-t border-ocean-lighter pt-4">
+              <div className="grid grid-cols-1 gap-4 border-t border-ocean-lighter pt-4">
                 <div className="text-center">
-                  <p className="text-xs text-parchment-muted uppercase tracking-wider mb-1">Vitórias</p>
-                  <p className="font-mono text-lg text-emerald-light font-bold">{team.stats?.wins || 0}</p>
-                </div>
-                <div className="text-center border-x border-ocean-lighter">
-                  <p className="text-xs text-parchment-muted uppercase tracking-wider mb-1">Derrotas</p>
-                  <p className="font-mono text-lg text-red-400 font-bold">{team.stats?.losses || 0}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-parchment-muted uppercase tracking-wider mb-1">K/D</p>
-                  <p className="font-mono text-lg text-gold font-bold">
-                    {calculateKD(team.stats?.wins || 0, team.stats?.losses || 0)}
-                  </p>
+                  <p className="text-xs text-parchment-muted uppercase tracking-wider mb-1">Status</p>
+                  <p className="font-mono text-lg text-gold font-bold">{team.status}</p>
                 </div>
               </div>
             </div>

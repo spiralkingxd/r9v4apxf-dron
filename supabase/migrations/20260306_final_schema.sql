@@ -91,3 +91,30 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+
+-- Profiles: Users can read their own profile, update their own profile
+CREATE POLICY "Usuários podem ler seu próprio perfil" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Usuários podem atualizar seu próprio perfil" ON profiles FOR UPDATE USING (auth.uid() = id);
+
+-- Teams: Everyone can read, only captain can update
+CREATE POLICY "Qualquer um pode ler equipes" ON teams FOR SELECT USING (true);
+CREATE POLICY "Capitão pode atualizar sua equipe" ON teams FOR UPDATE USING (auth.uid() = captain_id);
+CREATE POLICY "Usuários podem criar equipes" ON teams FOR INSERT WITH CHECK (auth.uid() = captain_id);
+
+-- Events: Everyone can read
+CREATE POLICY "Qualquer um pode ler eventos" ON events FOR SELECT USING (true);
+
+-- Matches: Everyone can read
+CREATE POLICY "Qualquer um pode ler partidas" ON matches FOR SELECT USING (true);
+
+-- Reports: Users can insert their own reports
+CREATE POLICY "Usuários podem criar denúncias" ON reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+CREATE POLICY "Usuários podem ler suas denúncias" ON reports FOR SELECT USING (auth.uid() = reporter_id);
+
+-- Admin Logs: Only admin can read
+CREATE POLICY "Admins podem ler logs" ON admin_logs FOR SELECT USING (EXISTS (SELECT 1 FROM admin_roles WHERE user_id = auth.uid()));
+
+-- System Settings: Everyone can read
+CREATE POLICY "Qualquer um pode ler configurações" ON system_settings FOR SELECT USING (true);

@@ -49,8 +49,8 @@ npm run dev
    - Habilite o provedor **Discord**.
    - Adicione a URL de callback: `https://<seu-projeto>.supabase.co/auth/v1/callback`
 3. **Banco de Dados:**
-   - O esquema do banco de dados deve incluir tabelas para `profiles`, `teams`, `tournaments` e `matches`.
-   - As políticas de segurança (RLS) devem ser configuradas para proteger os dados.
+   - Execute o script de migração em `/supabase/migrations/20260306_final_schema.sql` no SQL Editor do Supabase. Este script já inclui as políticas de segurança (RLS) necessárias para proteger os dados.
+   - **Importante:** Verifique se as políticas RLS foram aplicadas corretamente no painel do Supabase (Authentication > Policies).
 
 ---
 
@@ -60,6 +60,10 @@ npm run dev
 2. Nas configurações do projeto (Settings > Environment Variables), adicione:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+   - `SESSION_SECRET` (Uma chave secreta para a sessão)
+   - `DISCORD_CLIENT_ID`
+   - `DISCORD_CLIENT_SECRET`
+   - `APP_URL` (A URL da sua aplicação no Vercel)
 3. O deploy será feito automaticamente.
 
 ---
