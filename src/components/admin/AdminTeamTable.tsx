@@ -58,7 +58,6 @@ export const AdminTeamTable: React.FC = () => {
         <thead className="bg-gray-900 text-gray-200 uppercase font-medium">
           <tr>
             <th className="px-6 py-3">Nome</th>
-            <th className="px-6 py-3">Navio</th>
             <th className="px-6 py-3">Capitão</th>
             <th className="px-6 py-3">Status</th>
             <th className="px-6 py-3 text-right">Ações</th>
@@ -68,7 +67,6 @@ export const AdminTeamTable: React.FC = () => {
           {teams.map((team) => (
             <tr key={team.id} className="hover:bg-gray-700/50 transition-colors">
               <td className="px-6 py-4 font-medium text-white">{team.name}</td>
-              <td className="px-6 py-4">{team.ship_name}</td>
               <td className="px-6 py-4">{team.captain_id}</td>
               <td className="px-6 py-4">
                 <span className={`px-2 py-1 rounded text-xs ${

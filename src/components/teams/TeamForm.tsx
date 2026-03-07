@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { teamService, Team } from '../../services/teams';
+import { teamService, Team, TeamMember } from '../../services/teams';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 
 const teamSchema = z.object({
   name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres').max(50, 'Nome deve ter no máximo 50 caracteres'),
-  ship_name: z.string().min(3, 'Nome do navio deve ter no mínimo 3 caracteres').max(50, 'Nome do navio deve ter no máximo 50 caracteres'),
   gamertag: z.string().min(3, 'Gamertag deve ter no mínimo 3 caracteres').max(50, 'Gamertag deve ter no máximo 50 caracteres'),
   logo_url: z.string().url('URL inválida').regex(/\.(jpg|jpeg|png|webp)$/i, 'Formato inválido (png, jpg, webp)').optional().or(z.literal('')),
+  members: z.array(z.object({
+    gamertag: z.string().min(3, 'Gamertag deve ter no mínimo 3 caracteres').max(50, 'Gamertag deve ter no máximo 50 caracteres'),
+  })).min(1, 'Pelo menos um membro é necessário').max(10, 'Máximo de 10 membros'),
 });
 
 type TeamFormData = z.infer<typeof teamSchema>;
@@ -30,15 +32,23 @@ export const TeamForm: React.FC<TeamFormProps> = ({ team, onClose }) => {
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
   } = useForm<TeamFormData>({
     resolver: zodResolver(teamSchema),
     defaultValues: team ? {
       name: team.name,
-      ship_name: team.ship_name,
       logo_url: team.logo_url || '',
       gamertag: team.members?.find(m => m.role === 'captain')?.gamertag || '',
-    } : {},
+      members: team.members?.map(m => ({ gamertag: m.gamertag })) || [],
+    } : {
+      members: [{ gamertag: '' }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "members"
   });
 
   const logoUrl = watch('logo_url');
@@ -84,8 +94,8 @@ export const TeamForm: React.FC<TeamFormProps> = ({ team, onClose }) => {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="col-span-1 md:col-span-2">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="col-span-1">
             <label htmlFor="name" className="block text-sm font-medium text-parchment-muted mb-2">
               Nome da Equipe
             </label>
@@ -101,36 +111,61 @@ export const TeamForm: React.FC<TeamFormProps> = ({ team, onClose }) => {
             )}
           </div>
 
+          {!team && (
+            <div>
+              <label htmlFor="gamertag" className="block text-sm font-medium text-parchment-muted mb-2">
+                Sua Gamertag (Capitão)
+              </label>
+              <input
+                id="gamertag"
+                type="text"
+                {...register('gamertag')}
+                className="w-full bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-2 text-parchment focus:outline-none focus:ring-2 focus:ring-gold/50"
+                placeholder="Ex: CaptainJack"
+                disabled={!!team}
+              />
+              {errors.gamertag && (
+                <p className="text-red-400 text-sm mt-1">{errors.gamertag.message}</p>
+              )}
+            </div>
+          )}
+          
           <div>
-            <label htmlFor="ship_name" className="block text-sm font-medium text-parchment-muted mb-2">
-              Nome do Navio
+            <label className="block text-sm font-medium text-parchment-muted mb-2">
+              Membros ({fields.length}/10)
             </label>
-            <input
-              id="ship_name"
-              type="text"
-              {...register('ship_name')}
-              className="w-full bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-2 text-parchment focus:outline-none focus:ring-2 focus:ring-gold/50"
-              placeholder="Ex: The Black Pearl"
-            />
-            {errors.ship_name && (
-              <p className="text-red-400 text-sm mt-1">{errors.ship_name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="gamertag" className="block text-sm font-medium text-parchment-muted mb-2">
-              Sua Gamertag (Capitão)
-            </label>
-            <input
-              id="gamertag"
-              type="text"
-              {...register('gamertag')}
-              className="w-full bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-2 text-parchment focus:outline-none focus:ring-2 focus:ring-gold/50"
-              placeholder="Ex: CaptainJack"
-              disabled={!!team}
-            />
-            {errors.gamertag && (
-              <p className="text-red-400 text-sm mt-1">{errors.gamertag.message}</p>
+            <div className="space-y-2">
+              {fields.map((field, index) => (
+                <div key={field.id} className="flex gap-2">
+                  <input
+                    {...register(`members.${index}.gamertag`)}
+                    className="flex-1 bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-2 text-parchment focus:outline-none focus:ring-2 focus:ring-gold/50"
+                    placeholder="Gamertag do membro"
+                  />
+                  {fields.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      className="p-2 text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {fields.length < 10 && (
+                <button
+                  type="button"
+                  onClick={() => append({ gamertag: '' })}
+                  className="w-full py-2 border border-dashed border-ocean-lighter rounded-lg text-parchment-muted hover:text-gold hover:border-gold/50 transition-all flex items-center justify-center gap-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  Adicionar Membro
+                </button>
+              )}
+            </div>
+            {errors.members && (
+              <p className="text-red-400 text-sm mt-1">{errors.members.message}</p>
             )}
           </div>
         </div>

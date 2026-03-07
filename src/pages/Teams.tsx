@@ -1,29 +1,25 @@
-import { useState, useEffect, FormEvent } from 'react';
-import { Users, Ship, Shield, Plus, X, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Ship, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { Modal } from '../components/Modal';
+import { TeamForm } from '../components/teams/TeamForm';
 
 interface Team {
   id: string;
   name: string;
-  ship_name: string;
-  captain_id: string;
   status: string;
   created_at: string;
+  logo_url?: string;
+  members?: any[];
 }
 
 export default function Teams() {
   const { user } = useAuth();
-  const [isRegistering, setIsRegistering] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Form State
-  const [teamName, setTeamName] = useState('');
-  const [shipName, setShipName] = useState('');
-  const [members, setMembers] = useState(['', '', '', '']);
-
   // Data State
   const [teams, setTeams] = useState<Team[]>([]);
 
@@ -37,7 +33,7 @@ export default function Teams() {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('teams')
-        .select('*')
+        .select('*, team_members(*)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -50,53 +46,12 @@ export default function Teams() {
     }
   };
 
-  const handleMemberChange = (index: number, value: string) => {
-    const newMembers = [...members];
-    newMembers[index] = value;
-    setMembers(newMembers);
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user) return alert('Você precisa estar logado para criar uma equipe.');
-
-    setIsSubmitting(true);
-    try {
-      // Filter empty members
-      const activeMembers = members.filter(m => m.trim() !== '');
-
-      const { data, error } = await supabase
-        .from('teams')
-        .insert([
-          {
-            name: teamName,
-            ship_name: shipName,
-            captain_id: user.id,
-          }
-        ])
-        .select();
-
-      if (error) throw error;
-
-      // Reset form and refresh list
-      setTeamName('');
-      setShipName('');
-      setMembers(['', '', '', '']);
-      setIsRegistering(false);
-      fetchTeams();
-      alert('Equipe criada com sucesso! Boa sorte nos mares!');
-
-    } catch (error: any) {
-      console.error('Erro ao criar equipe:', error);
-      alert(`Erro ao criar equipe: ${error.message || 'Verifique os dados e tente novamente.'}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-
   return (
     <div className="space-y-8">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Registrar Equipe">
+        <TeamForm onClose={() => setIsModalOpen(false)} />
+      </Modal>
+
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <h1 className="text-4xl font-serif font-bold text-gradient-gold uppercase tracking-wider mb-2">
@@ -106,96 +61,13 @@ export default function Teams() {
             Gerencie sua tripulação ou explore as lendas dos mares.
           </p>
         </div>
-      </div>
-
-      {isRegistering && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className="glass-panel rounded-2xl p-8 border border-gold/30 relative overflow-hidden"
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-6 py-3 bg-gold text-ocean font-bold rounded-lg hover:bg-gold-light transition-colors"
         >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gold-dark via-gold to-gold-light"></div>
-          <h2 className="text-2xl font-serif font-bold text-parchment mb-6 uppercase tracking-wider flex items-center">
-            <Shield className="w-6 h-6 mr-3 text-gold" />
-            Alistar Tripulação
-          </h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-parchment-muted uppercase tracking-wider mb-2">
-                  Nome da Equipe
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={teamName}
-                  onChange={(e) => setTeamName(e.target.value)}
-                  className="w-full bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-3 text-parchment focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-mono"
-                  placeholder="Ex: The Salty Dogs"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-parchment-muted uppercase tracking-wider mb-2">
-                  Tipo de Navio
-                </label>
-                <select
-                  required
-                  value={shipName}
-                  onChange={(e) => setShipName(e.target.value)}
-                  className="w-full bg-ocean-light border border-ocean-lighter rounded-lg px-4 py-3 text-parchment focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-mono appearance-none"
-                >
-                  <option value="" disabled>Selecione seu navio</option>
-                  <option value="Sloop">Sloop (1-2 Jogadores)</option>
-                  <option value="Brigantim">Brigantim (2-3 Jogadores)</option>
-                  <option value="Galeão">Galeão (3-4 Jogadores)</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-parchment-muted uppercase tracking-wider mb-4">
-                Gamertags dos Membros (Xbox/Steam)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {members.map((member, index) => (
-                  <div key={index} className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Users className="h-5 w-5 text-parchment-muted" />
-                    </div>
-                    <input
-                      type="text"
-                      required={index < 2} // At least 2 members required
-                      value={member}
-                      onChange={(e) => handleMemberChange(index, e.target.value)}
-                      className="w-full bg-ocean-light border border-ocean-lighter rounded-lg pl-10 pr-4 py-3 text-parchment focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/50 transition-all font-mono"
-                      placeholder={`Membro ${index + 1} ${index >= 2 ? '(Opcional)' : '*'}`}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-4 flex justify-end">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-gradient-to-r from-gold to-gold-light text-ocean font-serif font-bold uppercase tracking-wider rounded-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Registrando...
-                  </>
-                ) : (
-                  'Confirmar Registro'
-                )}
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      )}
+          Registrar Equipe
+        </button>
+      </div>
 
       {/* Teams List */}
       {isLoading ? (
@@ -207,22 +79,24 @@ export default function Teams() {
           {teams.map((team) => (
             <div key={team.id} className="glass-panel rounded-2xl p-6 border border-gold/10 hover:border-gold/30 transition-all group cursor-pointer">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="font-serif text-xl font-bold text-parchment group-hover:text-gold transition-colors">
-                  {team.name}
-                </h3>
-                <div className="p-2 bg-ocean-lighter rounded-lg border border-ocean-light">
-                  <Ship className="w-5 h-5 text-gold/70" />
+                <div className="flex items-center gap-4">
+                  {team.logo_url ? (
+                    <img src={team.logo_url} alt={team.name} className="w-12 h-12 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-12 h-12 bg-ocean-light rounded-lg flex items-center justify-center text-gold">
+                      <Ship className="w-6 h-6" />
+                    </div>
+                  )}
+                  <h3 className="font-serif text-xl font-bold text-parchment group-hover:text-gold transition-colors">
+                    {team.name}
+                  </h3>
                 </div>
               </div>
               
-              <div className="inline-block px-3 py-1 bg-ocean-lighter border border-gold/20 rounded-full text-xs font-mono text-parchment-muted mb-6">
-                {team.ship_name}
-              </div>
-
               <div className="grid grid-cols-1 gap-4 border-t border-ocean-lighter pt-4">
-                <div className="text-center">
-                  <p className="text-xs text-parchment-muted uppercase tracking-wider mb-1">Status</p>
-                  <p className="font-mono text-lg text-gold font-bold">{team.status}</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-parchment-muted">Membros</p>
+                  <p className="font-mono text-lg text-gold font-bold">{team.members?.length || 0}/10</p>
                 </div>
               </div>
             </div>

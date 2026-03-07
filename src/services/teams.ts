@@ -5,7 +5,6 @@ const API_URL = '/api/teams';
 export interface Team {
   id: string;
   name: string;
-  ship_name: string;
   captain_id: string;
   created_at: string;
   updated_at: string;
@@ -27,14 +26,13 @@ export interface TeamMember {
 
 export interface CreateTeamData {
   name: string;
-  ship_name: string;
   gamertag: string;
   logo_url?: string;
 }
 
 export interface UpdateTeamData {
   name?: string;
-  ship_name?: string;
+  logo_url?: string;
 }
 
 export const teamService = {

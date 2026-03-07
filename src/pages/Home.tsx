@@ -15,8 +15,6 @@ interface Event {
 interface Team {
   id: string;
   name: string;
-  ship_name: string;
-  captain_id: string;
   status: string;
   created_at: string;
 }
@@ -193,9 +191,6 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-ocean-lighter pb-4">
                 <span className="text-parchment font-medium text-xl">{champion.name}</span>
-                <span className="px-3 py-1 bg-emerald-light/20 text-emerald-light rounded-full text-xs font-bold border border-emerald-light/30">
-                  {champion.ship_name}
-                </span>
               </div>
             </div>
           ) : (

@@ -8,11 +8,11 @@ import { supabase } from '../lib/supabase';
 import { teamService } from '../services/teams';
 import { Modal } from '../components/Modal';
 import { TeamForm } from '../components/teams/TeamForm';
+import { TeamMembers } from '../components/teams/TeamMembers';
 
 interface Team {
   id: string;
   name: string;
-  ship_name: string;
   captain_id: string;
 }
 
@@ -58,6 +58,11 @@ export default function UserDashboard() {
 
       if (error) throw error;
       setMyTeams(data || []);
+      
+      if (editingTeam) {
+        const updatedTeam = data?.find(t => t.id === editingTeam.id);
+        if (updatedTeam) setEditingTeam(updatedTeam);
+      }
     } catch (error) {
       console.error('Erro ao buscar minhas equipes:', error);
     } finally {
@@ -83,6 +88,11 @@ export default function UserDashboard() {
     <div className="space-y-8">
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingTeam(null); }} title={editingTeam ? "Editar Equipe" : "Registrar Equipe"}>
         <TeamForm team={editingTeam || undefined} onClose={() => { setIsModalOpen(false); setEditingTeam(null); }} />
+        {editingTeam && (
+          <div className="mt-6 border-t border-ocean-lighter pt-6">
+            <TeamMembers team={editingTeam} currentUser={user} onUpdate={fetchMyTeams} />
+          </div>
+        )}
       </Modal>
       {/* Header Profile */}
       <div className="glass-panel rounded-2xl p-8 border border-gold/20 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden">
@@ -154,7 +164,7 @@ export default function UserDashboard() {
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-parchment-muted font-mono">Navio: {team.ship_name}</p>
+                  <p className="text-sm text-parchment-muted font-mono">{team.name}</p>
                 </div>
               ))}
             </div>

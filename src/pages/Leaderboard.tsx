@@ -6,8 +6,6 @@ import { supabase } from '../lib/supabase';
 interface Team {
   id: string;
   name: string;
-  ship_name: string;
-  captain_id: string;
   status: string;
   created_at: string;
 }
@@ -78,7 +76,6 @@ export default function Leaderboard() {
               <tr className="border-b border-ocean-lighter bg-ocean-light/50">
                 <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm w-20 text-center">Rank</th>
                 <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm">Equipe</th>
-                <th className="py-4 px-6 font-serif font-bold text-gold uppercase tracking-wider text-sm">Navio</th>
               </tr>
             </thead>
             <tbody>
@@ -101,14 +98,11 @@ export default function Leaderboard() {
                         {team.name}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="font-mono text-parchment-muted">{team.ship_name}</span>
-                    </td>
                   </motion.tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="py-8 text-center text-parchment-muted">
+                  <td colSpan={2} className="py-8 text-center text-parchment-muted">
                     Nenhuma equipe classificada ainda.
                   </td>
                 </tr>

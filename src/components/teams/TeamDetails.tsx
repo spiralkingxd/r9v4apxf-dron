@@ -81,10 +81,6 @@ export const TeamDetails: React.FC = () => {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">{team.name}</h1>
-            <p className="text-gray-400 text-lg flex items-center">
-              <span className="font-medium text-gray-500 mr-2">Navio:</span>
-              {team.ship_name}
-            </p>
           </div>
           
           <div className="flex space-x-3">
