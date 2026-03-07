@@ -56,12 +56,7 @@ export const AdminUsersTable = () => {
 
   return (
     <div className="glass-panel rounded-2xl border border-gold/20 overflow-hidden">
-      <div className="p-6 border-b border-ocean-lighter flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-xl font-serif font-bold text-gold uppercase tracking-wider flex items-center">
-          <Shield className="w-5 h-5 mr-2" />
-          Gerenciamento de Usuários
-        </h2>
-        
+      <div className="p-6 border-b border-ocean-lighter flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative">
             <Search className="w-4 h-4 text-parchment-muted absolute left-3 top-1/2 -translate-y-1/2" />

@@ -135,7 +135,7 @@ router.get('/teams', async (req, res) => {
 
     let query = supabaseAdmin
       .from('teams')
-      .select('*, captain:users(full_name, email)', { count: 'exact' })
+      .select('*, captain:profiles(full_name, email)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -348,7 +348,7 @@ router.get('/reports', async (req, res) => {
 
     let query = supabaseAdmin
       .from('reports')
-      .select('*, reporter:users!reporter_id(full_name, email), reported_user:users!reported_user_id(full_name, email), reported_team:teams(name)', { count: 'exact' })
+      .select('*, reporter:profiles!reporter_id(full_name, email), reported_user:profiles!reported_user_id(full_name, email), reported_team:teams(name)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -412,7 +412,7 @@ router.get('/logs', async (req, res) => {
 
     const { data, count, error } = await supabaseAdmin
       .from('admin_logs')
-      .select('*, admin:users(full_name, email)', { count: 'exact' })
+      .select('*, admin:profiles(full_name, email)', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 

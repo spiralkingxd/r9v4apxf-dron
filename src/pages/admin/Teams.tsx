@@ -7,7 +7,6 @@ import { format } from 'date-fns';
 interface Team {
   id: string;
   name: string;
-  ship_name: string;
   captain: {
     full_name: string;
     email: string;
@@ -86,7 +85,6 @@ export default function AdminTeamsPage() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-200">{team.name}</p>
-            <p className="text-xs text-slate-500">{team.ship_name}</p>
           </div>
         </div>
       ),

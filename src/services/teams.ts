@@ -1,6 +1,6 @@
-import axios from 'axios';
+import api from '../lib/api';
 
-const API_URL = '/api/teams';
+const API_URL = '/teams';
 
 export interface Team {
   id: string;
@@ -37,34 +37,34 @@ export interface UpdateTeamData {
 
 export const teamService = {
   getMyTeams: async (): Promise<Team[]> => {
-    const response = await axios.get(API_URL);
+    const response = await api.get(API_URL);
     return response.data;
   },
 
   getTeamDetails: async (id: string): Promise<Team> => {
-    const response = await axios.get(`${API_URL}/${id}`);
+    const response = await api.get(`${API_URL}/${id}`);
     return response.data;
   },
 
   createTeam: async (data: CreateTeamData): Promise<Team> => {
-    const response = await axios.post(API_URL, data);
+    const response = await api.post(API_URL, data);
     return response.data.team;
   },
 
   updateTeam: async (id: string, data: UpdateTeamData): Promise<Team> => {
-    const response = await axios.put(`${API_URL}/${id}`, data);
+    const response = await api.put(`${API_URL}/${id}`, data);
     return response.data.team;
   },
 
   deleteTeam: async (id: string): Promise<void> => {
-    await axios.delete(`${API_URL}/${id}`);
+    await api.delete(`${API_URL}/${id}`);
   },
 
   inviteMember: async (teamId: string, gamertag: string, discordId: string): Promise<void> => {
-    await axios.post(`${API_URL}/${teamId}/members`, { gamertag, discord_id: discordId });
+    await api.post(`${API_URL}/${teamId}/members`, { gamertag, discord_id: discordId });
   },
 
   removeMember: async (teamId: string, userId: string): Promise<void> => {
-    await axios.delete(`${API_URL}/${teamId}/members/${userId}`);
+    await api.delete(`${API_URL}/${teamId}/members/${userId}`);
   },
 };
