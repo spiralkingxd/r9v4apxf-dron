@@ -104,8 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               'Authorization': `Bearer ${session.access_token}`
             }
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error('Erro ao sincronizar dados do Discord:', error);
+          // Don't alert here as it might be a background sync
         }
       }
 

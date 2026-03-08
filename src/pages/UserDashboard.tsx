@@ -56,8 +56,10 @@ export default function UserDashboard() {
         const updatedTeam = teamsWithMembers.find(t => t.id === editingTeam.id);
         if (updatedTeam) setEditingTeam(updatedTeam);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar dados:', error);
+      const message = error.response?.data?.error || 'Erro ao carregar dados do painel.';
+      alert(message);
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +81,9 @@ export default function UserDashboard() {
       }));
       
       setMyTeams(teamsWithMembers);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar minhas equipes:', error);
+      alert('Erro ao carregar equipes.');
     }
   };
 
