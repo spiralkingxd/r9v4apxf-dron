@@ -27,13 +27,25 @@ router.post('/discord/sync', async (req, res) => {
     }
 
     // Fetch connections from Discord
-    const response = await axios.get('https://discord.com/api/users/@me/connections', {
-      headers: {
-        Authorization: `Bearer ${provider_token}`
+    let connections = [];
+    try {
+      const response = await axios.get('https://discord.com/api/users/@me/connections', {
+        headers: {
+          Authorization: `Bearer ${provider_token}`
+        }
+      });
+      connections = response.data;
+    } catch (discordError: any) {
+      if (axios.isAxiosError(discordError) && discordError.response?.status === 401) {
+        console.warn('Discord token expired or invalid for user', user.id);
+        // Return success but indicate failure to sync connections
+        // We still want to update the profile with metadata from Supabase Auth if possible
+        // But for now, let's just return early to avoid 500
+        return res.json({ success: false, warning: 'Discord token expired' });
       }
-    });
+      throw discordError;
+    }
 
-    const connections = response.data;
     const xboxConnection = connections.find((conn: any) => conn.type === 'xbox');
 
     const xboxGamertag = xboxConnection ? xboxConnection.name : null;
@@ -64,13 +76,13 @@ router.post('/discord/sync', async (req, res) => {
 
     if (updateError) {
       console.error('Error updating profile:', updateError);
-      return res.status(500).json({ error: 'Failed to update profile' });
+      return res.status(500).json({ error: 'Failed to update profile', details: updateError.message });
     }
 
     res.json({ success: true, xbox_linked: xboxLinked, xbox_gamertag: xboxGamertag });
   } catch (error: any) {
     console.error('Error syncing discord:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to sync discord data' });
+    res.status(500).json({ error: 'Failed to sync discord data', details: error.message });
   }
 });
 
@@ -90,7 +102,8 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
       if (error.code === 'PGRST116') {
         return res.status(404).json({ error: 'Profile not found' });
       }
-      throw error;
+      console.error('Supabase error fetching profile:', error);
+      return res.status(500).json({ error: 'Failed to fetch profile', details: error.message, code: error.code });
     }
 
     // Hide email if not own profile and not admin
@@ -99,9 +112,9 @@ router.get('/profile/:id', isAuthenticated, async (req, res) => {
     }
 
     res.json(profile);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching profile:', error);
-    res.status(500).json({ error: 'Failed to fetch profile' });
+    res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
   }
 });
 
