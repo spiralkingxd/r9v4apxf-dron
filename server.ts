@@ -116,11 +116,32 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', checks });
 });
 
-// Rotas Modulares
-// Segurança: Todas as rotas de equipes passam pela validação e proteção de IDOR
-app.use('/api/teams', teamRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/auth', authRoutes);
+// Safe Route Registration with Error Boundaries
+// Wraps route registration to prevent import errors from crashing the server
+const registerRoutes = () => {
+  try {
+    app.use('/api/teams', teamRoutes);
+  } catch (err) {
+    console.error('[ERROR] Failed to load team routes:', err);
+    app.use('/api/teams', (req, res) => res.status(503).json({ error: 'Team service unavailable' }));
+  }
+
+  try {
+    app.use('/api/admin', adminRoutes);
+  } catch (err) {
+    console.error('[ERROR] Failed to load admin routes:', err);
+    app.use('/api/admin', (req, res) => res.status(503).json({ error: 'Admin service unavailable' }));
+  }
+
+  try {
+    app.use('/api/auth', authRoutes);
+  } catch (err) {
+    console.error('[ERROR] Failed to load auth routes:', err);
+    app.use('/api/auth', (req, res) => res.status(503).json({ error: 'Auth service unavailable' }));
+  }
+};
+
+registerRoutes();
 
 // Global Error Handler for API Routes
 // Catches Supabase initialization errors and returns diagnostic response

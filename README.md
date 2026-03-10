@@ -2,6 +2,11 @@
 
 Plataforma web completa para gerenciamento de torneios PvP no jogo "Sea of Thieves". Esta aplicação utiliza uma arquitetura moderna com **React (Vite)** no frontend e **Express** no backend, integrados ao **Supabase** para autenticação e banco de dados.
 
+**Status:** ✅ Production Ready  
+**Deploy:** Vercel (Serverless)  
+**Database:** Supabase (PostgreSQL + RLS)  
+**Authentication:** Discord OAuth2
+
 ## ⚓ Funcionalidades Principais
 
 ### 👤 Gerenciamento de Perfil
@@ -33,77 +38,244 @@ Plataforma web completa para gerenciamento de torneios PvP no jogo "Sea of Thiev
 - **Backend:** Node.js, Express, TypeScript.
 - **Banco de Dados & Auth:** Supabase (PostgreSQL, Auth, Realtime).
 - **Integrações:** Discord API (OAuth2, Connections).
+- **Deploy:** Vercel (Edge Functions / Serverless).
 
 ---
 
-## 🚀 Configuração do Ambiente
+## 🚀 Quick Start (Desenvolvimento Local)
 
 ### 1. Pré-requisitos
 - Node.js 18+
 - Conta no [Supabase](https://supabase.com)
 - Aplicação criada no [Discord Developer Portal](https://discord.com/developers/applications)
 
-### 2. Variáveis de Ambiente (.env)
-
-Crie um arquivo `.env` na raiz do projeto com as seguintes chaves:
-
-```env
-# Frontend (Vite)
-VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_chave_anonima_publica
-VITE_ADMIN_DISCORD_ID=seu_discord_id_para_admin
-
-# Backend (Express)
-SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_secreta
-NEXT_PUBLIC_ADMIN_DISCORD_ID=seu_discord_id_para_admin
-PORT=3000
-```
-
-### 3. Configuração do Supabase
-
-1.  **Crie um novo projeto** no Supabase.
-2.  **Autenticação:**
-    *   Habilite o provedor **Discord**.
-    *   Adicione a URL de callback: `https://<seu-projeto>.supabase.co/auth/v1/callback`
-    *   Configure o `Client ID` e `Client Secret` do Discord.
-3.  **Banco de Dados:**
-    *   Acesse o **SQL Editor** no painel do Supabase.
-    *   Copie e execute o conteúdo do arquivo `/supabase/migrations/20260307_full_schema.sql`.
-    *   Isso criará todas as tabelas (profiles, teams, invites, etc.) e configurará as políticas de segurança (RLS).
-
-### 4. Instalação e Execução
+### 2. Clonar e Instalar
 
 ```bash
-# Instalar dependências
+git clone https://github.com/spiralkingxd/madnessarena.git
+cd madnessarena
 npm install
+```
 
-# Iniciar servidor de desenvolvimento (Frontend + Backend)
+### 3. Configurar Variáveis de Ambiente
+
+Copie `.env.example` para `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Edite `.env` e preencha com seus dados:
+
+```env
+# ============================================================
+# FRONTEND (Vite) — Acessíveis via import.meta.env.VITE_*
+# ============================================================
+VITE_SUPABASE_URL=https://seu-projeto.supabase.co
+VITE_SUPABASE_ANON_KEY=sua-chave-anonima-publica
+VITE_ADMIN_DISCORD_ID=seu-discord-id-opcional
+
+# ============================================================
+# BACKEND (Express / Node.js) — OBRIGATÓRIAS
+# ============================================================
+NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role-secreta
+SESSION_SECRET=gere-uma-string-aleatoria-com-openssl-rand-hex-32
+APP_URL=http://localhost:3000
+DISCORD_CLIENT_ID=seu-discord-client-id
+DISCORD_CLIENT_SECRET=seu-discord-client-secret
+```
+
+### 4. Configurar Supabase
+
+1. **Crie um novo projeto** no Supabase.
+
+2. **Habilite Autenticação via Discord:**
+   - Project Settings → Authentication → Providers → Discord
+   - Adicione seu Discord Client ID e Secret
+   - Redirect URL: `http://localhost:3000/auth/callback` (local) ou `https://seu-dominio.vercel.app/auth/callback` (produção)
+
+3. **Execute a Migração SQL:**
+   - Vá em SQL Editor no painel Supabase
+   - Copie o conteúdo de `supabase/migrations/20260309_full_schema_compatible.sql`
+   - Cole e execute
+
+4. **Copie as Credenciais:**
+   - Project Settings → API → URLs: copie `VITE_SUPABASE_URL`
+   - Project Settings → API → Anon public: copie `VITE_SUPABASE_ANON_KEY`
+   - Project Settings → API → Service role secret: copie `SUPABASE_SERVICE_ROLE_KEY` (NÃO exponha no frontend!)
+
+### 5. Executar Localmente
+
+```bash
 npm run dev
 ```
 
-O servidor iniciará em `http://localhost:3000`.
+Abra `http://localhost:3000`
+
+---
+
+## 🌐 Deploy no Vercel
+
+### Pré-requisitos
+- Repositório no GitHub sincronizado
+- Conta no [Vercel](https://vercel.com)
+
+### 1. Conectar Repositório
+
+1. Vá em [vercel.com](https://vercel.com/new)
+2. Clique em "Import Project"
+3. Selecione o repositório GitHub
+4. Configure:
+   - **Framework Preset:** Other
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+   - **Install Command:** `npm install`
+
+### 2. Configurar Environment Variables (CRÍTICO ⚠️)
+
+No painel Vercel, vá em **Settings → Environment Variables** e adicione:
+
+| Variável | Valor | Exemplo |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Copy de Supabase → Settings → API | `https://abc123.supabase.co` |
+| `VITE_SUPABASE_ANON_KEY` | Copy de Supabase → Settings → API (Anon key) | `eyJ0...` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Mesma que `VITE_SUPABASE_URL` | `https://abc123.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Supabase → Settings → API → Service Role Secret** | `eyJ0...` (SECRETO!) |
+| `SESSION_SECRET` | String aleatória | `gere: openssl rand -hex 32` |
+| `APP_URL` | Sua URL do Vercel | `https://madnessarena.vercel.app` |
+| `DISCORD_CLIENT_ID` | Discord Developer Portal | `12345...` |
+| `DISCORD_CLIENT_SECRET` | Discord Developer Portal (SECRETO!) | `abcde...` |
+| `VITE_ADMIN_DISCORD_ID` | Seu Discord ID (opcional) | `987654...` |
+
+⚠️ **Importante:** 
+- `SUPABASE_SERVICE_ROLE_KEY` e `DISCORD_CLIENT_SECRET` são secretos — **NUNCA** commite no git
+- Marque como "Encrypted" no Vercel se disponível
+- Variáveis com prefixo `VITE_` também ficam visíveis no frontend (seguro, pois são públicas)
+
+### 3. Deploy
+
+```bash
+git push # Vercel detects and auto-deploys
+```
+
+Ou clique em "Deploy" no painel Vercel.
+
+---
+
+## 📊 Diagnosticando Problemas
+
+### Verificar Saúde da API
+
+Acesse: `https://seu-dominio.vercel.app/api/health`
+
+**Resposta de sucesso (HTTP 200):**
+```json
+{
+  "status": "ok",
+  "checks": {
+    "supabase_url": true,
+    "service_role_key": true,
+    "session_secret": true,
+    "app_url": true,
+    "discord_client_id": true,
+    "discord_client_secret": true
+  }
+}
+```
+
+**Resposta de erro (HTTP 503):**
+```json
+{
+  "status": "degraded",
+  "message": "Missing required environment variables",
+  "missing_vars": ["SUPABASE_SERVICE_ROLE_KEY", "SESSION_SECRET"],
+  "hint": "Configure these in Vercel Project Settings > Environment Variables",
+  "docs_url": "https://github.com/spiralkingxd/madnessarena/blob/main/.env.example"
+}
+```
+
+### Troubleshooting HTTP 500
+
+| Erro | Causa | Solução |
+|---|---|---|
+| `/api/health` retorna 503 + `missing_vars` | Faltam env vars no Vercel | Adicione em Settings > Environment Variables |
+| `GET /api/teams retorna 500` | Supabase não conectado | Verifique `SUPABASE_SERVICE_ROLE_KEY` |
+| `POST /auth/discord/sync retorna 500` | Discord token expirado | Tente fazer logout/login novamente |
+| `FUNCTION_INVOCATION_FAILED` no Vercel | Server crash ao startup | Veja logs: `vercel logs --follow` |
+
+### Logs em Tempo Real
+
+```bash
+# Instalar Vercel CLI
+npm install -g vercel
+
+# Ver logs ao vivo
+vercel logs --follow
+
+# Ou via dashboard
+# Vercel Project > Deployments > Logs
+```
 
 ---
 
 ## 📂 Estrutura do Projeto
 
-- `/src`: Código fonte do Frontend (React).
-  - `/components`: Componentes reutilizáveis (UI, Teams, Auth).
-  - `/pages`: Páginas da aplicação (Dashboard, Home, Admin).
-  - `/services`: Integração com API Backend.
-  - `/context`: Contexto de Autenticação.
-- `/server`: Código fonte do Backend (Express).
-  - `/routes`: Rotas da API (Auth, Teams, Invites).
-  - `/middleware`: Middlewares de autenticação e validação.
-- `/supabase`: Arquivos de migração do banco de dados.
+```
+madnessarena/
+├── src/                         # Frontend (React)
+│   ├── components/
+│   │   ├── admin/               # Componentes do painel admin
+│   │   ├── teams/               # Componentes de times
+│   │   ├── profile/             # Perfil do usuário
+│   │   └── ...
+│   ├── pages/                   # Páginas da aplicação
+│   ├── services/                # Integração com API
+│   ├── context/                 # React Context (Auth)
+│   ├── lib/                     # Utilitários
+│   └── App.tsx
+├── server/                      # Backend (Express)
+│   ├── routes/
+│   │   ├── auth.ts              # Autenticação + Discord sync
+│   │   ├── teams.ts             # CRUD de times + convites
+│   │   └── admin.ts             # Endpoints admin
+│   ├── middleware/
+│   │   ├── auth.ts              # JWT validation + role checks
+│   │   └── security.ts          # Rate limiting, headers
+│   └── lib/
+│       └── supabase.ts          # Cliente Supabase (lazy init)
+├── supabase/
+│   └── migrations/
+│       └── 20260309_full_schema_compatible.sql  # Schema SQL
+├── .env.example                 # Template de env vars
+├── server.ts                    # Entry point do servidor
+├── vite.config.ts               # Configuração Vite
+├── vercel.json                  # Configuração Vercel
+└── package.json
+```
 
 ---
 
-## 🛡️ Segurança
+## 🔐 Segurança
 
 - **Row Level Security (RLS):** Todas as tabelas do banco de dados são protegidas por políticas RLS, garantindo que usuários só acessem dados permitidos.
 - **Validação no Backend:** Todas as entradas de dados são validadas com `Zod` no backend antes de processar.
-- **HttpOnly Cookies:** A sessão é gerenciada de forma segura.
+- **HttpOnly Cookies:** Sessões gerenciadas de forma segura, sem exposição ao JavaScript.
+- **Service Role Key Isolation:** A chave de serviço do Supabase é usada **apenas no backend** (nunca exponha no frontend).
+- **Environment Variables:** Secretos são injetados via Vercel, não commitados no git.
+- **CORS Restrito:** API aceita apenas requisições do domínio autorizado.
+
+---
+
+## 🐛 Contribuindo
+
+Encontrou um bug ou quer adicionar uma feature?
+
+1. Fork o repositório
+2. Crie uma branch: `git checkout -b feature/nome-da-feature`
+3. Commit suas mudanças: `git commit -m 'Add: descrição'`
+4. Push: `git push origin feature/nome-da-feature`
+5. Abra um Pull Request
 
 ---
 

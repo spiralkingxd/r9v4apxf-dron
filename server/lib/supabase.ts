@@ -9,11 +9,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Lazy initialization: only create client when first used, not at module import time
 // This allows the server to start even if env vars are missing, so we can provide
-// Better error messages to the user instead of just crashing the container
+// better error messages to the user instead of just crashing the container
 let _supabaseAdminClient: any = null;
 let _initError: Error | null = null;
 
-export function getSupabaseAdmin() {
+function getSupabaseAdmin() {
   // Return cached client if already initialized
   if (_supabaseAdminClient) return _supabaseAdminClient;
   
@@ -43,13 +43,37 @@ export function getSupabaseAdmin() {
   return _supabaseAdminClient;
 }
 
-// Backward compatibility: export as default export
-export const supabaseAdmin = new Proxy(
-  {},
-  {
-    get: (_, prop) => {
-      const client = getSupabaseAdmin();
-      return (client as any)[prop];
-    },
+// Enhanced wrapper that handles method chaining properly
+class SupabaseAdminWrapper {
+  private _client: any = null;
+
+  private getClient() {
+    if (!this._client) {
+      this._client = getSupabaseAdmin();
+    }
+    return this._client;
   }
-) as any;
+
+  // Proxy all property access to the client
+  [key: string]: any;
+}
+
+// Use a handler to intercept all property accesses
+export const supabaseAdmin = new Proxy(new SupabaseAdminWrapper(), {
+  get: (target, prop: string) => {
+    try {
+      const client = getSupabaseAdmin();
+      const value = (client as any)[prop];
+      
+      // If it's a method, bind it to the client to preserve context
+      if (typeof value === 'function') {
+        return value.bind(client);
+      }
+      
+      return value;
+    } catch (error) {
+      // Re-throw Supabase init errors up the call stack
+      throw error;
+    }
+  },
+}) as any;
