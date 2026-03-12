@@ -1,3 +1,8 @@
+create schema if not exists public;
+
+grant usage on schema public to anon, authenticated, service_role;
+grant create on schema public to service_role;
+
 create extension if not exists "pgcrypto";
 
 create type public.app_role as enum ('user', 'admin');
