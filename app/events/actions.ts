@@ -69,7 +69,7 @@ export async function registerTeamForEvent(
 
   const { event_id, team_id } = parsed.data;
 
-  // Verify user is captain of this specific team (authorization check)
+  // Garante no servidor que o usuário é capitão da equipe informada.
   const { data: team } = await supabase
     .from("teams")
     .select("captain_id")

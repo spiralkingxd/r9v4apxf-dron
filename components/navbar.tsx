@@ -53,7 +53,7 @@ export async function Navbar() {
                 href="/admin/dashboard"
                 className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-300/20"
               >
-                Admin
+                Painel Admin
               </Link>
             ) : null}
             <Link

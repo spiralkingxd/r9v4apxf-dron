@@ -37,7 +37,7 @@ async function getData() {
     return { teams: [] as TeamListRow[], userId: user?.id ?? null };
   }
 
-  // Count members per team
+  // Conta quantos membros existem em cada equipe.
   const teamIds = teamsRaw.map((t) => t.id as string);
   const { data: memberCounts } = await supabase
     .from("team_members")
@@ -84,7 +84,7 @@ export default async function TeamsPage() {
         </div>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-          {/* Teams grid */}
+          {/* Grade de equipes */}
           <section>
             {teams.length > 0 ? (
               <div className="grid gap-4 sm:grid-cols-2">
@@ -131,7 +131,7 @@ export default async function TeamsPage() {
             )}
           </section>
 
-          {/* Create team sidebar */}
+          {/* Barra lateral de criação de equipe */}
           <aside>
             <div className="sticky top-24 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-white">

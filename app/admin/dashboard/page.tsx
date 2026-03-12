@@ -52,6 +52,17 @@ type ProfileRow = {
 
 const statusOptions: Array<EventRow["status"]> = ["draft", "active", "finished"];
 
+const statusLabels: Record<EventRow["status"], string> = {
+  draft: "Em breve",
+  active: "Em andamento",
+  finished: "Finalizado",
+};
+
+const roleLabels: Record<ProfileRow["role"], string> = {
+  admin: "Administrador",
+  user: "Usuário",
+};
+
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeStyle: "short" });
 
 function formatForDatetimeLocal(dateIso: string | null) {
@@ -122,7 +133,7 @@ export default async function AdminDashboardPage() {
           <h1 className="text-3xl font-bold text-white">Controle da Arena</h1>
           <div className="flex flex-wrap gap-3 text-sm">
             <Link href="/events" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-slate-200 hover:bg-white/10">
-              Ver eventos publicos
+              Ver eventos públicos
             </Link>
             <Link href="/ranking" className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-slate-200 hover:bg-white/10">
               Ver ranking
@@ -133,16 +144,16 @@ export default async function AdminDashboardPage() {
         <section className="rounded-2xl border border-amber-300/20 bg-slate-950/60 p-6">
           <h2 className="text-xl font-semibold text-white">Criar Evento</h2>
           <form action={createEventAction} className="mt-4 grid gap-3 md:grid-cols-2">
-            <input name="title" required placeholder="Titulo" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
+            <input name="title" required placeholder="Título" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
             <select name="status" defaultValue="draft" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
               {statusOptions.map((status) => (
-                <option key={status} value={status} className="bg-slate-900">{status}</option>
+                <option key={status} value={status} className="bg-slate-900">{statusLabels[status]}</option>
               ))}
             </select>
             <input name="start_date" type="datetime-local" required className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
             <input name="end_date" type="datetime-local" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
             <input name="prize_pool" type="number" min={0} step="0.01" defaultValue={0} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
-            <input name="description" placeholder="Descricao" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
+            <input name="description" placeholder="Descrição" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2" />
             <textarea name="rules" placeholder="Regras" className="md:col-span-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2" rows={4} />
             <button type="submit" className="md:col-span-2 rounded-xl bg-amber-400 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-300">
               Criar evento
@@ -160,7 +171,7 @@ export default async function AdminDashboardPage() {
                   <input name="title" defaultValue={event.title} required className="rounded-lg border border-white/10 bg-black/20 px-3 py-2" />
                   <select name="status" defaultValue={event.status} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">
                     {statusOptions.map((status) => (
-                      <option key={status} value={status} className="bg-slate-900">{status}</option>
+                      <option key={status} value={status} className="bg-slate-900">{statusLabels[status]}</option>
                     ))}
                   </select>
                   <input name="start_date" type="datetime-local" defaultValue={formatForDatetimeLocal(event.start_date)} required className="rounded-lg border border-white/10 bg-black/20 px-3 py-2" />
@@ -210,7 +221,7 @@ export default async function AdminDashboardPage() {
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-            <h2 className="text-xl font-semibold text-white">Gerenciar Matches</h2>
+            <h2 className="text-xl font-semibold text-white">Gerenciar Partidas</h2>
             <div className="mt-4 space-y-3">
               {matchRows.map((match) => (
                 <form key={match.id} action={updateMatchResultAdminAction} className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -246,7 +257,7 @@ export default async function AdminDashboardPage() {
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-          <h2 className="text-xl font-semibold text-white">Usuarios</h2>
+          <h2 className="text-xl font-semibold text-white">Usuários</h2>
           <div className="mt-4 space-y-3">
             {profileRows.map((profile) => (
               <div key={profile.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
@@ -256,7 +267,7 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={profile.role === "admin" ? "rounded-full border border-amber-300/40 bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-200" : "rounded-full border border-white/20 bg-white/5 px-2 py-1 text-xs font-semibold text-slate-300"}>
-                    {profile.role}
+                    {roleLabels[profile.role]}
                   </span>
                   {profile.role !== "admin" ? (
                     <form action={promoteUserToAdminAction}>

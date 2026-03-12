@@ -68,7 +68,7 @@ export default async function TeamDetailPage({ params }: Props) {
     .eq("team_id", id)
     .order("joined_at", { ascending: true });
 
-  // Fetch event registrations for this team
+  // Busca o histórico de inscrições desta equipe em eventos.
   const { data: registrationsRaw } = await supabase
     .from("registrations")
     .select("id, status, created_at, event_id, events(id, title, status)")
@@ -93,7 +93,7 @@ export default async function TeamDetailPage({ params }: Props) {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] text-slate-100">
       <div className="mx-auto w-full max-w-5xl space-y-10 px-6 py-10 lg:px-10">
 
-        {/* Back */}
+        {/* Voltar */}
         <Link href="/teams" className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-slate-200">
           ← Todas as equipes
         </Link>
@@ -138,7 +138,7 @@ export default async function TeamDetailPage({ params }: Props) {
         </section>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Members */}
+          {/* Membros */}
           <section className="rounded-2xl border border-white/10 bg-slate-950/50 p-6">
             <h2 className="flex items-center gap-2 text-lg font-bold text-white">
               <Users className="h-5 w-5 text-cyan-400" />
@@ -177,7 +177,7 @@ export default async function TeamDetailPage({ params }: Props) {
             )}
           </section>
 
-          {/* Event history */}
+          {/* Histórico de eventos */}
           <section className="rounded-2xl border border-white/10 bg-slate-950/50 p-6">
             <h2 className="flex items-center gap-2 text-lg font-bold text-white">
               <Scroll className="h-5 w-5 text-amber-400" />

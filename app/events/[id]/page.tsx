@@ -57,7 +57,7 @@ export default async function EventDetailPage({ params }: Props) {
 
   if (!event) notFound();
 
-  // Determine if we should show the registration form
+  // Define qual estado da inscrição deve ser exibido ao usuário.
   let captainTeams: TeamOption[] = [];
   let alreadyRegisteredTeamIds: string[] = [];
 
@@ -89,7 +89,7 @@ export default async function EventDetailPage({ params }: Props) {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] text-slate-100">
       <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-10 lg:px-10">
 
-        {/* Back */}
+        {/* Voltar */}
         <Link
           href="/events"
           className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-slate-200"
@@ -147,7 +147,7 @@ export default async function EventDetailPage({ params }: Props) {
         </section>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_350px]">
-          {/* Rules */}
+          {/* Regras */}
           <div className="space-y-6">
             {event.rules ? (
               <section className="rounded-2xl border border-white/10 bg-slate-950/50 p-6">
@@ -198,7 +198,7 @@ export default async function EventDetailPage({ params }: Props) {
             </section>
           </div>
 
-          {/* Registration sidebar */}
+          {/* Barra lateral de inscrição */}
           <aside>
             <div className="sticky top-24 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-white">

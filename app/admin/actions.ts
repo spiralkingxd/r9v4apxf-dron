@@ -9,11 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 const eventStatusSchema = z.enum(["draft", "active", "finished"]);
 
 const createEventSchema = z.object({
-  title: z.string().min(3, "Titulo muito curto.").max(120),
+  title: z.string().min(3, "Título muito curto.").max(120),
   description: z.string().max(4000).optional(),
   rules: z.string().max(20000).optional(),
   status: eventStatusSchema,
-  start_date: z.string().min(1, "Data de inicio obrigatoria."),
+  start_date: z.string().min(1, "Data de início obrigatória."),
   end_date: z.string().optional(),
   prize_pool: z.coerce.number().min(0),
 });
@@ -50,13 +50,13 @@ async function assertAdmin() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    throw new Error("Unauthorized");
+    throw new Error("Não autorizado");
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
 
   if (profile?.role !== "admin") {
-    throw new Error("Forbidden");
+    throw new Error("Acesso negado");
   }
 
   return { supabase };
@@ -86,7 +86,7 @@ export async function createEventAction(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos.");
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
   const { description, end_date, prize_pool, rules, start_date, status, title } = parsed.data;
@@ -120,7 +120,7 @@ export async function updateEventAction(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos.");
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
   const { event_id, description, end_date, prize_pool, rules, start_date, status, title } = parsed.data;
@@ -152,7 +152,7 @@ export async function deleteEventAction(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    throw new Error("Evento invalido.");
+    throw new Error("Evento inválido.");
   }
 
   await supabase.from("events").delete().eq("id", parsed.data.event_id);
@@ -169,7 +169,7 @@ export async function banTeamAction(formData: FormData): Promise<void> {
   });
 
   if (!parsed.success) {
-    throw new Error("Time invalido.");
+    throw new Error("Time inválido.");
   }
 
   await supabase.from("teams").delete().eq("id", parsed.data.team_id);
@@ -186,7 +186,7 @@ export async function promoteUserToAdminAction(formData: FormData): Promise<void
   });
 
   if (!parsed.success) {
-    throw new Error("Usuario invalido.");
+    throw new Error("Usuário inválido.");
   }
 
   await supabase.from("profiles").update({ role: "admin" }).eq("id", parsed.data.user_id);
@@ -207,7 +207,7 @@ export async function updateMatchResultAdminAction(formData: FormData): Promise<
   });
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Dados invalidos.");
+    throw new Error(parsed.error.issues[0]?.message ?? "Dados inválidos.");
   }
 
   const { event_id, match_id, score_a, score_b, team_a_id, team_b_id } = parsed.data;

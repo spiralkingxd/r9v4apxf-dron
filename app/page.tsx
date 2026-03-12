@@ -73,7 +73,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] text-slate-100">
-      {/* ─── Hero ─── */}
+      {/* ─── Destaque Principal ─── */}
       <section className="relative overflow-hidden border-b border-white/5">
         <div
           aria-hidden
@@ -112,7 +112,7 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* Stats */}
+          {/* Estatísticas */}
           <div className="mt-4 flex flex-wrap justify-center gap-8 text-sm text-slate-400">
             <span>
               <span className="text-2xl font-bold text-white">{teamCount}</span> equipes registradas
@@ -125,7 +125,7 @@ export default async function Home() {
       </section>
 
       <div className="mx-auto w-full max-w-7xl space-y-16 px-6 py-14 lg:px-10">
-        {/* ─── Featured Event ─── */}
+        {/* ─── Evento em Destaque ─── */}
         {featuredEvent ? (
           <section>
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">
@@ -176,7 +176,7 @@ export default async function Home() {
           </section>
         ) : null}
 
-        {/* ─── Finished Tournaments ─── */}
+        {/* ─── Torneios Finalizados ─── */}
         <section>
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -231,7 +231,7 @@ export default async function Home() {
           )}
         </section>
 
-        {/* ─── CTA ─── */}
+        {/* ─── Chamada para Ação ─── */}
         <section className="rounded-[2rem] border border-cyan-400/15 bg-gradient-to-br from-cyan-950/30 to-slate-950/60 p-8 text-center lg:p-12">
           <Users className="mx-auto h-10 w-10 text-cyan-400/60" />
           <h2 className="mt-4 text-2xl font-bold text-white">Forme sua tripulação</h2>

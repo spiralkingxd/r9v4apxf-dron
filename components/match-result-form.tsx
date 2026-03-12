@@ -63,7 +63,7 @@ export function MatchResultForm({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label htmlFor={`${matchId}-score-a`} className="mb-1 block text-xs text-slate-300">
-            Score A
+            Placar A
           </label>
           <input
             id={`${matchId}-score-a`}
@@ -78,7 +78,7 @@ export function MatchResultForm({
 
         <div>
           <label htmlFor={`${matchId}-score-b`} className="mb-1 block text-xs text-slate-300">
-            Score B
+            Placar B
           </label>
           <input
             id={`${matchId}-score-b`}

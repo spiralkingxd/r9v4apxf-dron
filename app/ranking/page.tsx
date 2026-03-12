@@ -67,7 +67,7 @@ export default async function RankingPage() {
       <RankingLiveSync />
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">Ranking Global</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">Ranking Geral</p>
           <h1 className="mt-1 text-3xl font-bold text-white">Classificação dos Piratas</h1>
           <p className="mt-2 text-sm text-slate-400">Ordenado por pontos e vitórias.</p>
         </div>
@@ -86,7 +86,7 @@ export default async function RankingPage() {
                     <th className="px-4 py-3">Pirata</th>
                     <th className="px-4 py-3">Xbox</th>
                     <th className="px-4 py-3 text-right">Pontos</th>
-                    <th className="px-4 py-3 text-right">W / L</th>
+                    <th className="px-4 py-3 text-right">V / D</th>
                   </tr>
                 </thead>
 

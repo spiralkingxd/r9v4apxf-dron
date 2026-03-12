@@ -35,7 +35,7 @@ export default async function MyProfilePage() {
     redirect("/auth/login?error=profile_not_found");
   }
 
-  // Inline void wrapper so <form action> receives a void-returning function
+  // Wrapper inline para que o <form action> receba uma função com retorno void.
   async function handleUpdate(formData: FormData): Promise<void> {
     "use server";
     await updateMyProfile(formData);
@@ -86,14 +86,7 @@ export default async function MyProfilePage() {
 }
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  // Inline void wrapper so <form action> receives a void-returning function
-  async function handleUpdate(formData: FormData): Promise<void> {
-    "use server";
-    await updateMyProfile(formData);
-  }
-
   return (
-
     <div>
       <p className="mb-2 text-sm font-medium text-slate-200">{label}</p>
       <p className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-100">{value}</p>
