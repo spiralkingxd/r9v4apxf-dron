@@ -20,7 +20,7 @@ O projeto cobre:
 - Supabase Auth, Postgres, RLS e Realtime
 - Publicação recomendada na Vercel
 
-## Pre-requisitos
+## Pré-requisitos
 
 Antes de rodar ou publicar o projeto, você precisa ter:
 
@@ -50,7 +50,7 @@ Preencha as variáveis abaixo:
 - `OWNER_DISCORD_ID`
 	Discord ID numérico do proprietário principal do sistema.
 	Quando esse usuário faz login, o backend promove automaticamente o perfil para `role = 'admin'`.
-	Essa validacao acontece apenas no servidor.
+	Essa validação acontece apenas no servidor.
 
 ### Supabase
 
@@ -115,12 +115,12 @@ Preencha as variáveis abaixo:
 ### 2. Aplicar o schema
 
 1. Abra o SQL Editor do Supabase.
-2. Copie todo o conteudo de [supabase/schema.sql](supabase/schema.sql).
+2. Copie todo o conteúdo de [supabase/schema.sql](supabase/schema.sql).
 3. Execute o script por completo.
 
 Esse arquivo cria:
 
-- tipos customizados de role, status de evento e status de inscricao
+- tipos customizados de role, status de evento e status de inscrição
 - tabelas `profiles`, `teams`, `team_members`, `events`, `registrations`, `matches` e `rankings`
 - índices de performance
 - trigger de sincronização inicial de perfil
@@ -195,7 +195,7 @@ Durante o login com Discord:
 2. compara com `OWNER_DISCORD_ID`
 3. se houver correspondência, faz `upsert` do perfil com `role = 'admin'`
 
-Arquivo responsavel:
+Arquivo responsável:
 
 - [lib/auth/profile.ts](lib/auth/profile.ts)
 
@@ -205,7 +205,7 @@ No painel administrativo, um admin existente pode promover outro usuário para a
 
 ## Como rodar localmente
 
-1. Instale as dependencias:
+1. Instale as dependências:
 
 ```bash
 npm install
@@ -247,13 +247,30 @@ http://localhost:3000
 
 - `/admin/dashboard`
 
+## Scripts disponíveis
+
+- `npm run dev`
+	Inicia o ambiente de desenvolvimento local.
+
+- `npm run build`
+	Gera a build de produção da aplicação Next.js.
+
+- `npm run start`
+	Inicia a aplicação em modo produção (após `npm run build`).
+
+- `npm run lint`
+	Executa o lint com ESLint.
+
+- `npx tsc --noEmit`
+	Valida a tipagem TypeScript sem emitir arquivos.
+
 ## Publicação na Vercel
 
 ### 1. Conectar o repositório
 
 1. Suba o código para GitHub, GitLab ou Bitbucket.
 2. No painel da Vercel, clique em `Add New Project`.
-3. Importe o repositorio.
+3. Importe o repositório.
 4. A Vercel deve detectar automaticamente que o projeto é Next.js.
 
 ### 2. Configurar as variáveis de ambiente
@@ -291,7 +308,7 @@ Depois disso:
 2. aguarde o build na Vercel
 3. teste login, retorno OAuth, perfil, eventos, ranking e painel admin
 
-## Imagens e URLs validas
+## Imagens e URLs válidas
 
 O projeto está configurado para aceitar imagens remotas de:
 
@@ -300,7 +317,7 @@ O projeto está configurado para aceitar imagens remotas de:
 - `images-ext-2.discordapp.net`
 - `**.supabase.co`
 
-Arquivo responsavel:
+Arquivo responsável:
 
 - [next.config.ts](next.config.ts)
 
@@ -309,7 +326,7 @@ Isso cobre:
 - avatares vindos do Discord
 - arquivos servidos via Supabase Storage
 
-## Seguranca
+## Segurança
 
 ### Console e dados sensíveis
 
@@ -372,6 +389,17 @@ Como a aplicação usa Next.js App Router e rotas padrão, a Vercel resolve buil
 - [ ] imagens externas carregando corretamente
 - [ ] `npm run dev` funcionando localmente
 - [ ] `npx tsc --noEmit` sem erros
+
+## Problemas comuns
+
+- Login redireciona, mas não autentica:
+	Confira se `DISCORD_REDIRECT_URI` está exatamente igual no Discord Developer Portal e no provider do Supabase.
+
+- Erro de sessão em páginas privadas:
+	Verifique `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` e se os cookies estão sendo aceitos no domínio.
+
+- Acesso negado ao painel admin:
+	Garanta que o usuário tenha `role = 'admin'` em `profiles`, ou que o Discord ID dele seja igual a `OWNER_DISCORD_ID`.
 
 ## Comandos úteis
 
