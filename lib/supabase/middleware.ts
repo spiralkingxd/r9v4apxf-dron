@@ -1,15 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { resolveDiscordIdFromAuthUser } from "@/lib/auth/discord-id";
 import { getOwnerDiscordId, getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/env";
 
 const PRIVATE_PATH_PREFIXES = ["/profile/me"];
 const ADMIN_PATH_PREFIX = "/admin";
+const OWNER_ONLY_PATH_PREFIXES = ["/admin/settings", "/admin/backup", "/admin/logs"];
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPrivatePath = PRIVATE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAdminPath = pathname.startsWith(ADMIN_PATH_PREFIX);
+  const isOwnerOnlyPath = OWNER_ONLY_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
   if (!isSupabaseConfigured()) {
     if (isPrivatePath || isAdminPath) {
@@ -54,13 +57,16 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (user && (isPrivatePath || isAdminPath)) {
+      const nowIso = new Date().toISOString();
+      const resolvedDiscordId = resolveDiscordIdFromAuthUser(user) ?? user.id;
       const ownerDiscordId = getOwnerDiscordId();
-      const isOwner = Boolean(ownerDiscordId && user.id === ownerDiscordId);
+      const shouldBeOwner = Boolean(ownerDiscordId && resolvedDiscordId === ownerDiscordId);
+
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id")
+        .select("id, role")
         .eq("id", user.id)
-        .maybeSingle();
+        .maybeSingle<{ id: string; role: "user" | "admin" | "owner" }>();
 
       if (!existingProfile) {
         const metadata = user.user_metadata ?? {};
@@ -72,17 +78,23 @@ export async function updateSession(request: NextRequest) {
         await supabase.from("profiles").upsert(
           {
             id: user.id,
-            discord_id: user.id,
+            discord_id: resolvedDiscordId,
             display_name: displayName,
             username,
             email: user.email ?? null,
             avatar_url: avatarUrl,
             xbox_gamertag: null,
-            role: isOwner ? "owner" : "user",
-            updated_at: new Date().toISOString(),
+            role: shouldBeOwner ? "owner" : "user",
+            updated_at: nowIso,
           },
           { onConflict: "id" },
         );
+      } else if (shouldBeOwner && existingProfile.role !== "owner") {
+        await supabase
+          .from("profiles")
+          .update({ role: "owner", updated_at: nowIso })
+          .eq("id", user.id)
+          .neq("role", "owner");
       }
     }
 
@@ -91,7 +103,7 @@ export async function updateSession(request: NextRequest) {
         .from("profiles")
         .select("role, is_banned")
         .eq("id", user.id)
-        .maybeSingle();
+        .maybeSingle<{ role: "user" | "admin" | "owner"; is_banned: boolean }>();
 
       if (profile?.is_banned) {
         console.warn("[banned-user-admin-attempt]", {
@@ -109,6 +121,15 @@ export async function updateSession(request: NextRequest) {
         });
         return NextResponse.redirect(new URL("/", request.url));
       }
+
+      if (isOwnerOnlyPath && profile.role !== "owner") {
+        console.warn("[owner-access-denied]", {
+          userId: user.id,
+          pathname,
+          role: profile.role,
+        });
+        return NextResponse.redirect(new URL("/admin/dashboard?reason=owner_required", request.url));
+      }
     }
 
     if (user && isPrivatePath) {
@@ -125,8 +146,6 @@ export async function updateSession(request: NextRequest) {
 
     return response;
   } catch {
-    // Em caso de erro inesperado (ex.: timeout ou variável ausente),
-    // rotas protegidas redirecionam para login; demais seguem normalmente.
     if (isPrivatePath || isAdminPath) {
       const loginUrl = new URL("/auth/login", request.url);
       loginUrl.searchParams.set("next", pathname);

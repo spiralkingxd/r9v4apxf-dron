@@ -1,4 +1,5 @@
 import { fetchXboxGamertag } from "@/lib/auth/discord";
+import { resolveDiscordIdFromAuthUser } from "@/lib/auth/discord-id";
 import { getOwnerDiscordId } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,7 +35,7 @@ export async function upsertProfileFromOAuth(options?: UpsertProfileOptions) {
 
   const user = session.user;
   const metadata = user.user_metadata ?? {};
-  const discordId = user.id;
+  const discordId = resolveDiscordIdFromAuthUser(user) ?? user.id;
   const displayName =
     metadata.full_name ?? metadata.name ?? metadata.global_name ?? user.email?.split("@")[0] ?? "Pirata";
   const username = resolveUsername(metadata, displayName);

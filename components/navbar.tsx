@@ -87,7 +87,7 @@ export async function Navbar() {
               avatarUrl={avatarUrl}
               xboxGamertag={profile?.xbox_gamertag ?? null}
               teamsCount={teamsCount}
-              isAdmin={profile?.role === "admin" || profile?.role === "owner"}
+              role={profile?.role}
             />
           </div>
         )}

@@ -71,6 +71,7 @@ export async function logAdminAction(
     suspicious?: boolean;
     previousState?: Record<string, unknown>;
     nextState?: Record<string, unknown>;
+    ipAddress?: string | null;
   },
 ) {
   await supabase.from("admin_action_logs").insert({
@@ -83,5 +84,6 @@ export async function logAdminAction(
     suspicious: payload.suspicious ?? false,
     previous_state: payload.previousState ?? null,
     next_state: payload.nextState ?? null,
+    ip_address: payload.ipAddress ?? null,
   });
 }

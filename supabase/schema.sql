@@ -5,6 +5,27 @@ grant create on schema public to service_role;
 
 create extension if not exists "pgcrypto";
 
+create or replace function public.extract_discord_id(metadata jsonb)
+returns text
+language sql
+immutable
+set search_path = public
+as $$
+  with candidates as (
+    select
+      trim(coalesce(metadata ->> 'provider_id', '')) as provider_id,
+      trim(coalesce(metadata ->> 'provider_user_id', '')) as provider_user_id,
+      trim(split_part(coalesce(metadata ->> 'sub', ''), '|', 2)) as sub_after_pipe,
+      trim(coalesce(metadata ->> 'sub', '')) as sub_raw
+  )
+  select coalesce(
+    (select provider_id from candidates where provider_id ~ '^[0-9]{15,22}$'),
+    (select provider_user_id from candidates where provider_user_id ~ '^[0-9]{15,22}$'),
+    (select sub_after_pipe from candidates where sub_after_pipe ~ '^[0-9]{15,22}$'),
+    (select sub_raw from candidates where sub_raw ~ '^[0-9]{15,22}$')
+  );
+$$;
+
 do $$
 begin
   if not exists (
@@ -84,10 +105,13 @@ end
 $$;
 
 update public.profiles p
-set discord_id = coalesce(u.raw_user_meta_data ->> 'provider_id', u.raw_user_meta_data ->> 'sub', p.id::text)
+set discord_id = coalesce(public.extract_discord_id(u.raw_user_meta_data), p.discord_id)
 from auth.users u
 where u.id = p.id
-  and p.discord_id is null;
+  and (
+    p.discord_id is null
+    or p.discord_id !~ '^[0-9]{15,22}$'
+  );
 
 update public.profiles
 set discord_id = id::text
@@ -227,6 +251,44 @@ before insert or update of discord_id, role on public.profiles
 for each row
 execute function public.promote_owner_profile();
 
+create or replace function public.enforce_profile_role_security()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  owner_discord_id text;
+  effective_discord_id text;
+begin
+  owner_discord_id := nullif(current_setting('app.owner_discord_id', true), '');
+  effective_discord_id := coalesce(new.discord_id, old.discord_id);
+
+  if old.role::text = 'owner' and new.role::text <> 'owner' and not public.is_owner() then
+    raise exception 'owner role cannot be changed by non-owner users';
+  end if;
+
+  if new.role::text = 'owner' and old.role::text <> 'owner' then
+    if not public.is_owner()
+       and not (
+         auth.uid() = new.id
+         and owner_discord_id is not null
+         and effective_discord_id = owner_discord_id
+       ) then
+      raise exception 'manual owner promotion is not allowed';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_role_security on public.profiles;
+create trigger profiles_role_security
+before update of role on public.profiles
+for each row
+execute function public.enforce_profile_role_security();
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -247,7 +309,7 @@ begin
   )
   values (
     new.id,
-    coalesce(new.raw_user_meta_data ->> 'provider_id', new.raw_user_meta_data ->> 'sub', new.id::text),
+    coalesce(public.extract_discord_id(new.raw_user_meta_data), new.id::text),
     coalesce(
       new.raw_user_meta_data ->> 'full_name',
       new.raw_user_meta_data ->> 'name',
@@ -287,7 +349,7 @@ execute function public.handle_new_user();
 insert into public.profiles (id, discord_id, display_name, username, email, role, updated_at)
 select
   id,
-  coalesce(raw_user_meta_data ->> 'provider_id', raw_user_meta_data ->> 'sub', id::text),
+  coalesce(public.extract_discord_id(raw_user_meta_data), id::text),
   coalesce(raw_user_meta_data ->> 'full_name', split_part(email, '@', 1)),
   coalesce(raw_user_meta_data ->> 'user_name', split_part(email, '@', 1)),
   email,
@@ -1306,6 +1368,7 @@ alter table public.admin_action_logs add column if not exists severity text;
 alter table public.admin_action_logs add column if not exists suspicious boolean;
 alter table public.admin_action_logs add column if not exists previous_state jsonb;
 alter table public.admin_action_logs add column if not exists next_state jsonb;
+alter table public.admin_action_logs add column if not exists ip_address text;
 
 update public.admin_action_logs set severity = 'info' where severity is null;
 update public.admin_action_logs set suspicious = false where suspicious is null;
@@ -1497,6 +1560,7 @@ $$;
 create index if not exists admin_action_logs_admin_idx on public.admin_action_logs (admin_user_id, created_at desc);
 create index if not exists admin_action_logs_target_idx on public.admin_action_logs (target_type, target_id);
 create index if not exists admin_action_logs_suspicious_idx on public.admin_action_logs (suspicious, created_at desc);
+create index if not exists admin_action_logs_ip_idx on public.admin_action_logs (ip_address, created_at desc);
 create index if not exists ranking_adjustments_entity_idx on public.ranking_adjustments (entity_type, entity_id, created_at desc);
 create index if not exists ranking_adjustments_archived_idx on public.ranking_adjustments (archived, created_at desc);
 create index if not exists ranking_seasons_season_idx on public.ranking_seasons (season, archived_at desc);

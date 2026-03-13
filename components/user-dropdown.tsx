@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Gamepad2, LayoutDashboard, LogOut, User } from "lucide-react";
+import { ChevronDown, Gamepad2, LogOut, Shield, User } from "lucide-react";
 
 import { logout } from "@/app/auth/login/actions";
+import { useUserRole, type UserRole } from "@/lib/hooks/use-user-role";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -14,7 +15,7 @@ type Props = {
   avatarUrl?: string | null;
   xboxGamertag?: string | null;
   teamsCount: number;
-  isAdmin: boolean;
+  role?: UserRole;
 };
 
 export function UserDropdown({
@@ -23,8 +24,9 @@ export function UserDropdown({
   avatarUrl,
   xboxGamertag,
   teamsCount,
-  isAdmin,
+  role,
 }: Props) {
+  const { isAdmin } = useUserRole(role);
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -65,7 +67,7 @@ export function UserDropdown({
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label="Abrir menu do usuário"
+        aria-label="Abrir menu do usuario"
         className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
       >
         <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/10">
@@ -84,7 +86,7 @@ export function UserDropdown({
       <div
         ref={panelRef}
         role="menu"
-        aria-label="Menu do usuário"
+        aria-label="Menu do usuario"
         className={cn(
           "absolute right-0 top-[calc(100%+8px)] z-50 w-[min(92vw,290px)] origin-top-right rounded-2xl border border-white/10 bg-[#0b1726]/95 p-2 text-sm shadow-2xl shadow-black/50 backdrop-blur transition",
           open
@@ -118,7 +120,7 @@ export function UserDropdown({
 
         <div className="my-2 h-px bg-white/10" />
 
-        <nav className="space-y-1" aria-label="Ações do usuário">
+        <nav className="space-y-1" aria-label="Acoes do usuario">
           {isAdmin ? (
             <Link
               href="/admin/dashboard"
@@ -126,7 +128,7 @@ export function UserDropdown({
               onClick={() => setOpen(false)}
               className="flex items-center gap-2 rounded-xl px-3 py-2 text-amber-100 transition hover:bg-amber-300/15"
             >
-              <LayoutDashboard className="h-4 w-4" />
+              <Shield className="h-4 w-4" />
               Painel Admin
             </Link>
           ) : null}
@@ -155,6 +157,7 @@ export function UserDropdown({
             <button
               type="submit"
               role="menuitem"
+              onClick={() => setOpen(false)}
               className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-rose-100 transition hover:bg-rose-300/15"
             >
               <LogOut className="h-4 w-4" />
