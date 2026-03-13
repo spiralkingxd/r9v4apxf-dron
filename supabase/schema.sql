@@ -215,14 +215,16 @@ create table if not exists public.teams (
 );
 
 comment on table public.teams is 'Tabela principal das equipes do MadnessArena.';
-comment on column public.teams.logo_url is 'URL opcional do logo da equipe.';
-comment on column public.teams.captain_id is 'Usuário que lidera a equipe.';
-comment on column public.teams.max_members is 'Limite máximo de membros por equipe (até 10).';
 
 alter table public.teams add column if not exists logo_url text;
+alter table public.teams add column if not exists captain_id uuid;
+alter table public.teams add column if not exists created_at timestamptz;
 alter table public.teams add column if not exists updated_at timestamptz;
 alter table public.teams add column if not exists max_members integer;
 alter table public.teams drop column if exists members;
+comment on column public.teams.logo_url is 'URL opcional do logo da equipe.';
+comment on column public.teams.captain_id is 'Usuário que lidera a equipe.';
+comment on column public.teams.max_members is 'Limite máximo de membros por equipe (até 10).';
 alter table public.teams alter column updated_at set default timezone('utc', now());
 alter table public.teams alter column max_members set default 10;
 update public.teams set updated_at = coalesce(updated_at, created_at, timezone('utc', now()));
@@ -255,9 +257,6 @@ create table if not exists public.team_members (
   constraint team_members_team_user_key unique (team_id, user_id)
 );
 
-comment on table public.team_members is 'Membros de cada equipe e seus cargos (capitão ou membro).';
-comment on column public.team_members.role is 'Cargo do usuário dentro da equipe.';
-
 -- Solicitações para entrar em equipes.
 create table if not exists public.team_join_requests (
   id uuid primary key default gen_random_uuid(),
@@ -271,14 +270,16 @@ create table if not exists public.team_join_requests (
   constraint team_join_requests_status_check check (status in ('pending', 'approved', 'rejected'))
 );
 
-comment on table public.team_join_requests is 'Solicitações de entrada em equipes, gerenciadas por capitães.';
-comment on column public.team_join_requests.status is 'Status da solicitação: pending, approved, rejected.';
-comment on column public.team_join_requests.responded_by is 'Usuário que respondeu a solicitação (geralmente o capitão).';
-
 alter table public.team_members add column if not exists id uuid;
+alter table public.team_members add column if not exists team_id uuid;
 alter table public.team_members add column if not exists user_id uuid;
 alter table public.team_members add column if not exists role text;
+alter table public.team_members add column if not exists joined_at timestamptz;
 
+comment on table public.team_members is 'Membros de cada equipe e seus cargos (capitão ou membro).';
+comment on column public.team_members.role is 'Cargo do usuário dentro da equipe.';
+
+alter table public.team_join_requests add column if not exists id uuid;
 alter table public.team_join_requests add column if not exists team_id uuid;
 alter table public.team_join_requests add column if not exists user_id uuid;
 alter table public.team_join_requests add column if not exists status text;
@@ -286,6 +287,10 @@ alter table public.team_join_requests add column if not exists created_at timest
 alter table public.team_join_requests add column if not exists updated_at timestamptz;
 alter table public.team_join_requests add column if not exists responded_at timestamptz;
 alter table public.team_join_requests add column if not exists responded_by uuid;
+
+comment on table public.team_join_requests is 'Solicitações de entrada em equipes, gerenciadas por capitães.';
+comment on column public.team_join_requests.status is 'Status da solicitação: pending, approved, rejected.';
+comment on column public.team_join_requests.responded_by is 'Usuário que respondeu a solicitação (geralmente o capitão).';
 
 alter table public.team_join_requests
   alter column status set default 'pending';

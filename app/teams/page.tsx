@@ -110,115 +110,70 @@ export default async function TeamsPage() {
           </div>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
-          {/* Grade de equipes */}
-          <section>
-            {teams.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {teams.map((team) => (
-                  <Link
-                    key={team.id}
-                    href={`/teams/${team.id}`}
-                    className="group rounded-2xl border border-white/8 bg-white/4 p-5 transition hover:border-amber-400/30 hover:bg-amber-400/5"
-                  >
-                    <div className="flex items-start gap-4">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
-                        {team.logo_url ? (
-                          <Image
-                            src={team.logo_url}
-                            alt={team.name}
-                            width={48}
-                            height={48}
-                            className="rounded-xl object-cover"
-                          />
-                        ) : (
-                          <Anchor className="h-5 w-5 text-amber-400/60" />
-                        )}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-100 group-hover:text-white">
-                          {team.name}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                          <Users className="h-3 w-3" />
-                          {team.member_count}/{team.max_members}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                          <Crown className="h-3 w-3" />
-                          Capitão: {team.captain?.display_name ?? "Não identificado"}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                          <Calendar className="h-3 w-3" />
-                          Criada em {dateFmt.format(new Date(team.created_at))}
-                        </p>
+        <section>
+          {teams.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {teams.map((team) => (
+                <Link
+                  key={team.id}
+                  href={`/teams/${team.id}`}
+                  className="group rounded-2xl border border-white/8 bg-white/4 p-5 transition hover:border-amber-400/30 hover:bg-amber-400/5"
+                >
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
+                      {team.logo_url ? (
+                        <Image
+                          src={team.logo_url}
+                          alt={team.name}
+                          width={48}
+                          height={48}
+                          className="rounded-xl object-cover"
+                        />
+                      ) : (
+                        <Anchor className="h-5 w-5 text-amber-400/60" />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-slate-100 group-hover:text-white">
+                        {team.name}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                        <Users className="h-3 w-3" />
+                        {team.member_count}/{team.max_members}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                        <Crown className="h-3 w-3" />
+                        Capitão: {team.captain?.display_name ?? "Não identificado"}
+                      </p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                        <Calendar className="h-3 w-3" />
+                        Criada em {dateFmt.format(new Date(team.created_at))}
+                      </p>
 
-                        <div className="mt-3 flex items-center gap-2">
-                          {team.is_user_member ? (
-                            <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
-                              Sua equipe
-                            </span>
-                          ) : null}
-                          <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300">
-                            {userId && !team.is_user_member ? "Solicitar entrada" : "Ver equipe"}
+                      <div className="mt-3 flex items-center gap-2">
+                        {team.is_user_member ? (
+                          <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
+                            Sua equipe
                           </span>
-                        </div>
+                        ) : null}
+                        <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300">
+                          {userId && !team.is_user_member ? "Solicitar entrada" : "Ver equipe"}
+                        </span>
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-dashed border-white/10 px-6 py-16 text-center">
-                <Anchor className="mx-auto h-10 w-10 text-slate-500" />
-                <p className="mt-4 text-sm text-slate-400">
-                  Nenhuma equipe ainda. Seja o primeiro a fundar uma!
-                </p>
-              </div>
-            )}
-          </section>
-
-          {/* Barra lateral informativa */}
-          <aside>
-            <div className="sticky top-24 space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-              <h2 className="text-base font-bold text-white">Como funciona?</h2>
-              <ul className="space-y-3 text-sm text-slate-400">
-                <li className="flex gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">1</span>
-                  Explore equipes, veja membros e histórico competitivo.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">2</span>
-                  Entre em contato com capitães para solicitar entrada.
-                </li>
-                <li className="flex gap-2">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">3</span>
-                  Gerencie suas equipes a partir do seu perfil.
-                </li>
-              </ul>
-
-              {userId ? (
-                <Link
-                  href="/profile/me#teams"
-                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
-                >
-                  Gerenciar minhas equipes
+                  </div>
                 </Link>
-              ) : (
-                <div className="space-y-3">
-                  <p className="rounded-xl border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-amber-100">
-                    Faça login para criar ou entrar em equipes.
-                  </p>
-                  <Link
-                    href="/auth/login?next=/teams"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
-                  >
-                    Entrar com Discord
-                  </Link>
-                </div>
-              )}
+              ))}
             </div>
-          </aside>
-        </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/10 px-6 py-16 text-center">
+              <Anchor className="mx-auto h-10 w-10 text-slate-500" />
+              <p className="mt-4 text-sm text-slate-400">
+                Nenhuma equipe ainda. Seja o primeiro a fundar uma!
+              </p>
+            </div>
+          )}
+        </section>
       </div>
     </main>
   );
