@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Check, CheckCircle2, Clock3, Inbox, Loader2, X } from "lucide-react";
 
 import { respondToJoinRequest } from "@/app/actions/team-requests";
@@ -72,6 +73,7 @@ export function JoinRequestList({
   onPendingCountChange,
   onMemberApproved,
 }: Props) {
+  const router = useRouter();
   const [pendingRequests, setPendingRequests] = useState(initialPendingRequests);
   const [historyRequests, setHistoryRequests] = useState(initialHistoryRequests);
   const [loadingAction, setLoadingAction] = useState<{
@@ -142,6 +144,7 @@ export function JoinRequestList({
       } else {
         setToast({ type: "success", message: `${teamRequestMessages.REQUEST_REJECTED}: ${request.user.display_name}` });
       }
+      router.refresh();
 
       setHistoryRequests((current) => [
         {

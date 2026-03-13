@@ -354,6 +354,7 @@ export async function dissolveTeam(input: {
     return { error: toFriendlyTeamError(error.message) };
   }
 
+  revalidatePath(`/teams/${teamId}`);
   revalidatePath("/teams");
   revalidatePath("/profile/me");
 

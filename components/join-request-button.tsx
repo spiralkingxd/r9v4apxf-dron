@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Clock3, Loader2, UserPlus2, Users, X } from "lucide-react";
 
 import { cancelJoinRequest, createJoinRequest } from "@/app/actions/team-requests";
@@ -31,6 +32,7 @@ export function JoinRequestButton({
   currentUserTeamCount,
   maxUserTeams = 3,
 }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [optimisticPending, setOptimisticPending] = useState(hasPendingRequest);
   const [actionType, setActionType] = useState<"request" | "cancel" | null>(null);
@@ -76,6 +78,7 @@ export function JoinRequestButton({
 
       setOptimisticPending(true);
       setToast({ type: "success", message: teamRequestMessages.REQUEST_CREATED });
+      router.refresh();
     });
   }
 
@@ -97,6 +100,7 @@ export function JoinRequestButton({
 
       setOptimisticPending(false);
       setToast({ type: "info", message: teamRequestMessages.REQUEST_CANCELLED });
+      router.refresh();
     });
   }
 
