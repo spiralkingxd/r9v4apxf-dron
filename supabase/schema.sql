@@ -1826,7 +1826,7 @@ using (
   public.is_admin()
   or (
     visibility = 'public'
-    and status::text in ('published', 'active', 'finished')
+    and status::text in ('published', 'active', 'paused', 'finished')
   )
 );
 

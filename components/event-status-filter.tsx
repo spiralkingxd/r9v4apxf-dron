@@ -6,6 +6,7 @@ const FILTERS = [
   { label: "Todos", value: "" },
   { label: "Publicados", value: "published" },
   { label: "Ativos", value: "active" },
+  { label: "Pausados", value: "paused" },
   { label: "Finalizados", value: "finished" },
 ] as const;
 

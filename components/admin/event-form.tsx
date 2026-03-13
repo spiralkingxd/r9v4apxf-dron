@@ -72,7 +72,7 @@ function defaults(kind: "event" | "tournament"): EventFormValues {
     rules: "",
     logo_url: "",
     banner_url: "",
-    status: "draft",
+    status: "published",
     scoring_win: 3,
     scoring_loss: 0,
     scoring_draw: 1,

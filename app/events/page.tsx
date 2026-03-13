@@ -19,12 +19,13 @@ type EventRow = {
   team_size: number;
 };
 
-const VALID_STATUSES = ["published", "active", "finished"] as const;
+const VALID_STATUSES = ["published", "active", "paused", "finished"] as const;
 type StatusFilter = (typeof VALID_STATUSES)[number];
 
 const STATUS_LABELS: Record<string, string> = {
   active: "Em andamento",
   published: "Publicado",
+  paused: "Pausado",
   finished: "Finalizado",
 };
 
@@ -37,7 +38,7 @@ async function getEvents(status: StatusFilter | null) {
   let query = supabase
     .from("events")
     .select("id, title, description, status, start_date, end_date, prize_description, team_size")
-    .in("status", ["published", "active", "finished"])
+    .in("status", ["published", "active", "paused", "finished"])
     .order("start_date", { ascending: false });
 
   if (status) {
@@ -59,6 +60,7 @@ async function getAllEventStatuses() {
     total: all.length,
     active: all.filter((e) => e.status === "active").length,
     upcoming: all.filter((e) => e.status === "published").length,
+    paused: all.filter((e) => e.status === "paused").length,
     finished: all.filter((e) => e.status === "finished").length,
   };
 }
@@ -103,8 +105,11 @@ export default async function EventsPage({ searchParams }: Props) {
               { label: "Total", value: stats.total, color: "text-white" },
               { label: "Em andamento", value: stats.active, color: "text-emerald-400" },
               { label: "Publicados", value: stats.upcoming, color: "text-amber-400" },
+              { label: "Pausados", value: stats.paused, color: "text-sky-400" },
               { label: "Finalizados", value: stats.finished, color: "text-slate-400" },
-            ].map(({ label, value, color }) => (
+            ]
+              .filter(({ label, value }) => Number(value) > 0 || label === "Total")
+              .map(({ label, value, color }) => (
               <div
                 key={label}
                 className="rounded-xl border border-white/8 bg-white/4 px-5 py-3 text-center min-w-[80px]"
