@@ -1,53 +1,10 @@
 import { Shield } from "lucide-react";
 
+import { getTeams } from "@/app/admin/team-actions";
 import { TeamsTable } from "@/components/admin/teams-table";
-import { createClient } from "@/lib/supabase/server";
-
-type TeamRow = {
-  id: string;
-  name: string;
-  logo_url: string | null;
-  captain_id: string;
-  created_at: string;
-  max_members: number;
-};
 
 export default async function AdminTeamsPage() {
-  const supabase = await createClient();
-
-  const [{ data: teamsRaw }, { data: membersRaw }, { data: captainsRaw }] = await Promise.all([
-    supabase
-      .from("teams")
-      .select("id, name, logo_url, captain_id, created_at, max_members")
-      .order("created_at", { ascending: false })
-      .limit(1200),
-    supabase.from("team_members").select("team_id"),
-    supabase.from("profiles").select("id, display_name, username"),
-  ]);
-
-  const teams = (teamsRaw ?? []) as TeamRow[];
-
-  const memberCountMap = new Map<string, number>();
-  for (const row of membersRaw ?? []) {
-    const teamId = row.team_id as string;
-    memberCountMap.set(teamId, (memberCountMap.get(teamId) ?? 0) + 1);
-  }
-
-  const captainMap = new Map<string, string>();
-  for (const row of captainsRaw ?? []) {
-    captainMap.set(row.id as string, (row.display_name as string) || (row.username as string) || "Capitão");
-  }
-
-  const rows = teams.map((team) => ({
-    id: team.id,
-    name: team.name,
-    logo_url: team.logo_url,
-    captain_id: team.captain_id,
-    captain_name: captainMap.get(team.captain_id) ?? "Capitão",
-    member_count: memberCountMap.get(team.id) ?? 0,
-    max_members: team.max_members ?? 10,
-    created_at: team.created_at,
-  }));
+  const { data: rows } = await getTeams({ pageSize: 2000 });
 
   return (
     <section className="space-y-5">

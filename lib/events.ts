@@ -1,11 +1,15 @@
 export const EVENT_STATUS_VALUES = ["draft", "published", "active", "paused", "finished"] as const;
 export const EVENT_KIND_VALUES = ["event", "tournament"] as const;
+export const EVENT_TYPE_VALUES = ["tournament", "special", "scrimmage"] as const;
+export const EVENT_VISIBILITY_VALUES = ["public", "private"] as const;
 export const TOURNAMENT_FORMAT_VALUES = ["single_elimination", "double_elimination", "round_robin"] as const;
 export const SEEDING_METHOD_VALUES = ["random", "manual", "ranking"] as const;
 export const TEAM_SIZE_VALUES = [1, 2, 3, 4, 5, 6, 8, 10] as const;
 
 export type EventStatus = (typeof EVENT_STATUS_VALUES)[number];
 export type EventKind = (typeof EVENT_KIND_VALUES)[number];
+export type EventType = (typeof EVENT_TYPE_VALUES)[number];
+export type EventVisibility = (typeof EVENT_VISIBILITY_VALUES)[number];
 export type TournamentFormat = (typeof TOURNAMENT_FORMAT_VALUES)[number];
 export type SeedingMethod = (typeof SEEDING_METHOD_VALUES)[number];
 
@@ -20,6 +24,17 @@ export const EVENT_STATUS_LABELS: Record<EventStatus, string> = {
 export const EVENT_KIND_LABELS: Record<EventKind, string> = {
   event: "Evento",
   tournament: "Torneio",
+};
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  tournament: "Torneio",
+  special: "Evento Especial",
+  scrimmage: "Scrimmage",
+};
+
+export const EVENT_VISIBILITY_LABELS: Record<EventVisibility, string> = {
+  public: "Público",
+  private: "Privado",
 };
 
 export const TOURNAMENT_FORMAT_LABELS: Record<TournamentFormat, string> = {
@@ -47,6 +62,16 @@ export function formatEventStatus(status: string) {
 
 export function formatEventKind(kind: string) {
   return EVENT_KIND_LABELS[kind as EventKind] ?? kind;
+}
+
+export function formatEventType(type: string | null) {
+  if (!type) return "-";
+  return EVENT_TYPE_LABELS[type as EventType] ?? type;
+}
+
+export function formatEventVisibility(visibility: string | null) {
+  if (!visibility) return "-";
+  return EVENT_VISIBILITY_LABELS[visibility as EventVisibility] ?? visibility;
 }
 
 export function formatTournamentFormat(format: string | null) {

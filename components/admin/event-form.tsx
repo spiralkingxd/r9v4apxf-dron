@@ -16,6 +16,10 @@ import {
   EVENT_KIND_VALUES,
   EVENT_STATUS_LABELS,
   EVENT_STATUS_VALUES,
+  EVENT_TYPE_LABELS,
+  EVENT_TYPE_VALUES,
+  EVENT_VISIBILITY_LABELS,
+  EVENT_VISIBILITY_VALUES,
   SEEDING_METHOD_LABELS,
   SEEDING_METHOD_VALUES,
   TEAM_SIZE_VALUES,
@@ -31,6 +35,8 @@ const formSchema = z.object({
   end_date: z.string().optional(),
   registration_deadline: z.string().optional(),
   event_kind: z.enum(EVENT_KIND_VALUES),
+  event_type: z.enum(EVENT_TYPE_VALUES),
+  visibility: z.enum(EVENT_VISIBILITY_VALUES),
   team_size: z.coerce.number().int().min(1).max(10),
   prize_description: z.string().optional(),
   rules: z.string().optional(),
@@ -59,6 +65,8 @@ function defaults(kind: "event" | "tournament"): EventFormValues {
     end_date: "",
     registration_deadline: "",
     event_kind: kind,
+    event_type: kind === "tournament" ? "tournament" : "special",
+    visibility: "public",
     team_size: 4,
     prize_description: "",
     rules: "",
@@ -108,6 +116,8 @@ export function EventForm({
       end_date: toDatetimeLocalValue(initial.end_date),
       registration_deadline: toDatetimeLocalValue(initial.registration_deadline),
       event_kind: fixedKind ?? initial.event_kind ?? "event",
+      event_type: initial.event_type ?? (fixedKind === "tournament" ? "tournament" : "special"),
+      visibility: initial.visibility ?? "public",
       team_size: initial.team_size ?? 4,
       prize_description: initial.prize_description ?? "",
       rules: initial.rules ?? "",
@@ -142,6 +152,8 @@ export function EventForm({
       end_date: values.end_date || null,
       registration_deadline: values.registration_deadline || null,
       event_kind: fixedKind ?? values.event_kind,
+      event_type: (fixedKind ?? values.event_kind) === "tournament" ? "tournament" : values.event_type,
+      visibility: values.visibility,
       team_size: Number(values.team_size),
       prize_description: values.prize_description || null,
       rules,
@@ -213,6 +225,24 @@ export function EventForm({
             <select {...register("status")} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none">
               {EVENT_STATUS_VALUES.map((value) => (
                 <option key={value} value={value}>{EVENT_STATUS_LABELS[value]}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm text-slate-200">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Subtipo</span>
+            <select {...register("event_type")} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none" disabled={(fixedKind ?? eventKind) === "tournament"}>
+              {EVENT_TYPE_VALUES.map((value) => (
+                <option key={value} value={value}>{EVENT_TYPE_LABELS[value]}</option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm text-slate-200">
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Visibilidade</span>
+            <select {...register("visibility")} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none">
+              {EVENT_VISIBILITY_VALUES.map((value) => (
+                <option key={value} value={value}>{EVENT_VISIBILITY_LABELS[value]}</option>
               ))}
             </select>
           </label>

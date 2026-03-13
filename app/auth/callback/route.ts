@@ -111,9 +111,35 @@ export async function GET(request: NextRequest) {
 
     const { data: syncedProfile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, is_banned, ban_reason, banned_reason")
       .eq("id", user.id)
-      .maybeSingle<{ role: "user" | "admin" | "owner" }>();
+      .maybeSingle<{
+        role: "user" | "admin" | "owner";
+        is_banned: boolean;
+        ban_reason: string | null;
+        banned_reason: string | null;
+      }>();
+
+    const { data: activeBan } = await supabase
+      .from("bans")
+      .select("expires_at")
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ expires_at: string | null }>();
+
+    const isBanned = Boolean(syncedProfile?.is_banned || activeBan);
+    if (isBanned) {
+      await supabase.auth.signOut();
+      const bannedUrl = new URL("/account-banned", request.url);
+      bannedUrl.searchParams.set("reason", syncedProfile?.ban_reason ?? syncedProfile?.banned_reason ?? "Conta banida pela administracao.");
+      if (activeBan?.expires_at) {
+        bannedUrl.searchParams.set("expires_at", activeBan.expires_at);
+      }
+      return NextResponse.redirect(bannedUrl);
+    }
 
     const role = syncedProfile?.role;
     if (role === "admin" || role === "owner") {

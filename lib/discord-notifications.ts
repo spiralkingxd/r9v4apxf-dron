@@ -2,6 +2,7 @@ type WebhookKind = "announcements" | "admin_logs";
 
 export const DISCORD_NOTIFICATION_TYPES = [
   "tournament_published",
+  "event_finalized",
   "registration_approved",
   "registration_rejected",
   "match_scheduled",
@@ -41,6 +42,7 @@ type SupabaseLike = {
 
 const DEFAULT_TEMPLATES: Record<DiscordNotificationType, string> = {
   tournament_published: "Novo torneio publicado: {{title}}. Inicio: {{startDate}}.",
+  event_finalized: "Evento finalizado: {{title}}.",
   registration_approved: "Inscricao aprovada para {{teamName}} em {{eventTitle}}.",
   registration_rejected: "Inscricao rejeitada para {{teamName}} em {{eventTitle}}. Motivo: {{reason}}.",
   match_scheduled: "Partida agendada em {{eventTitle}}: {{teamA}} vs {{teamB}} em {{scheduledAt}}.",
@@ -53,6 +55,7 @@ const DEFAULT_TEMPLATES: Record<DiscordNotificationType, string> = {
 
 const WEBHOOK_KIND_BY_TYPE: Record<DiscordNotificationType, WebhookKind> = {
   tournament_published: "announcements",
+  event_finalized: "announcements",
   registration_approved: "announcements",
   registration_rejected: "announcements",
   match_scheduled: "announcements",

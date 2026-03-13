@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Download, RefreshCcw, Sparkles } from "lucide-react";
 
@@ -27,6 +27,10 @@ export function TournamentBracketBoard({
   const [isPending, startTransition] = useTransition();
   const [format, setFormat] = useState<BracketFormat>("single_elimination");
   const [dragState, setDragState] = useState<{ id: string; round: number } | null>(null);
+  const [zoom, setZoom] = useState(100);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const isPanning = useRef(false);
+  const panStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
 
   const grouped = useMemo(() => {
     const map = new Map<number, BracketMatchRow[]>();
@@ -58,6 +62,30 @@ export function TournamentBracketBoard({
       pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
       router.refresh();
     });
+  }
+
+  function beginPan(clientX: number, clientY: number) {
+    if (!scrollRef.current) return;
+    isPanning.current = true;
+    panStart.current = {
+      x: clientX,
+      y: clientY,
+      left: scrollRef.current.scrollLeft,
+      top: scrollRef.current.scrollTop,
+    };
+  }
+
+  function movePan(clientX: number, clientY: number) {
+    if (!isPanning.current || !scrollRef.current || !panStart.current) return;
+    const dx = clientX - panStart.current.x;
+    const dy = clientY - panStart.current.y;
+    scrollRef.current.scrollLeft = panStart.current.left - dx;
+    scrollRef.current.scrollTop = panStart.current.top - dy;
+  }
+
+  function endPan() {
+    isPanning.current = false;
+    panStart.current = null;
   }
 
   return (
@@ -113,11 +141,34 @@ export function TournamentBracketBoard({
             <Download className="h-4 w-4" />
             Exportar imagem (SVG)
           </Link>
+          <Link href={`/admin/tournaments/${eventId}/bracket/export?format=pdf`} target="_blank" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 hover:bg-white/10">
+            <Download className="h-4 w-4" />
+            Exportar PDF
+          </Link>
+          <label className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-300">
+            Zoom
+            <input
+              type="range"
+              min={60}
+              max={140}
+              step={5}
+              value={zoom}
+              onChange={(event) => setZoom(Number(event.target.value))}
+            />
+            <span className="w-10 text-right text-xs">{zoom}%</span>
+          </label>
         </div>
       </section>
 
-      <section className="overflow-x-auto pb-4">
-        <div className="flex min-w-max gap-6">
+      <section
+        ref={scrollRef}
+        className="overflow-auto pb-4"
+        onMouseDown={(event) => beginPan(event.clientX, event.clientY)}
+        onMouseMove={(event) => movePan(event.clientX, event.clientY)}
+        onMouseUp={endPan}
+        onMouseLeave={endPan}
+      >
+        <div className="flex min-w-max gap-6" style={{ transform: `scale(${zoom / 100})`, transformOrigin: "top left" }}>
           {rounds.map((round) => (
             <div key={round} className="w-[320px] shrink-0 space-y-3">
               <h2 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-cyan-200">

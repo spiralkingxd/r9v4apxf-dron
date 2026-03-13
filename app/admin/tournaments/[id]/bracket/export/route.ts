@@ -11,11 +11,13 @@ const START_X = 24;
 const START_Y = 24;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
     await assertAdminAccess();
+    const url = new URL(request.url);
+    const format = url.searchParams.get("format") === "pdf" ? "pdf" : "svg";
     const { id } = await context.params;
     const { event, matches } = await getTournamentBracketData(id);
 
@@ -78,6 +80,33 @@ export async function GET(
         ${roundBlocks}
       </svg>
     `.trim();
+
+    if (format === "pdf") {
+      const html = `<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bracket ${event.title}</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #020617; color: #e2e8f0; font-family: system-ui, sans-serif; }
+      .hint { margin-bottom: 8px; font-size: 12px; opacity: 0.7; }
+      .wrap { background: #020617; }
+      @media print { .hint { display: none; } body { padding: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="hint">Use Ctrl+P para salvar como PDF.</div>
+    <div class="wrap">${svg}</div>
+  </body>
+</html>`;
+
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
 
     return new NextResponse(svg, {
       status: 200,

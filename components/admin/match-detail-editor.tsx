@@ -7,6 +7,7 @@ import { History, RefreshCcw, Save, Trophy, XCircle } from "lucide-react";
 import {
   advanceWinner,
   cancelMatch,
+  reopenMatch,
   revertMatchResult,
   setMatchWinner,
   updateMatchDetails,
@@ -67,14 +68,32 @@ export function MatchDetailEditor({ detail, history }: { detail: MatchDetail; hi
     return "pending" as const;
   }
 
+  function statusLabel(current: MatchDetail["status"]) {
+    if (current === "pending") return "Pendente";
+    if (current === "in_progress") return "Em andamento";
+    if (current === "finished") return "Finalizada";
+    return "Cancelada";
+  }
+
   return (
     <section className="space-y-5">
       <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
         <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Partida</p>
         <h1 className="mt-1 text-2xl font-bold text-white">{detail.team_a_name} vs {detail.team_b_name}</h1>
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200">
+            {detail.team_a_logo_url ? <img src={detail.team_a_logo_url} alt={detail.team_a_name} className="h-6 w-6 rounded-full object-cover" /> : <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-xs">A</span>}
+            <span>{detail.team_a_name}</span>
+          </div>
+          <span className="text-slate-500">vs</span>
+          <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-200">
+            {detail.team_b_logo_url ? <img src={detail.team_b_logo_url} alt={detail.team_b_name} className="h-6 w-6 rounded-full object-cover" /> : <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-xs">B</span>}
+            <span>{detail.team_b_name}</span>
+          </div>
+        </div>
         <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-300">
           <AdminBadge tone="info">{detail.event_title}</AdminBadge>
-          <AdminBadge tone={statusTone(status)}>{`Status: ${status}`}</AdminBadge>
+          <AdminBadge tone={statusTone(status)}>{`Status: ${statusLabel(status)}`}</AdminBadge>
           <AdminBadge tone="pending">{`R${detail.round}`}</AdminBadge>
           {detail.bracket_position ? <AdminBadge tone="pending">{detail.bracket_position}</AdminBadge> : null}
         </div>
@@ -169,6 +188,19 @@ export function MatchDetailEditor({ detail, history }: { detail: MatchDetail; hi
           >
             <RefreshCcw className="h-4 w-4" />
             Reverter resultado
+          </AdminButton>
+          <AdminButton
+            type="button"
+            variant="ghost"
+            onClick={() =>
+              startTransition(async () => {
+                const result = await reopenMatch(detail.id);
+                pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                router.refresh();
+              })
+            }
+          >
+            Reabrir partida
           </AdminButton>
         </div>
       </section>

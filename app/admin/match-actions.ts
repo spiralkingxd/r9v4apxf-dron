@@ -69,6 +69,10 @@ const cancelMatchSchema = z.object({
   reason: z.string().trim().min(2).max(400),
 });
 
+const reopenMatchSchema = z.object({
+  matchId: z.string().uuid(),
+});
+
 const generateBracketSchema = z.object({
   eventId: z.string().uuid(),
   format: z.enum(["single_elimination", "double_elimination", "round_robin"]),
@@ -370,6 +374,7 @@ export async function createMatch(
   teamBId: string,
   round: number,
   scheduledAt?: string | null,
+  _adminId?: string,
 ): Promise<ActionResult<{ id: string }>> {
   const parsed = createMatchSchema.safeParse({ eventId, teamAId, teamBId, round, scheduledAt });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -441,7 +446,7 @@ export async function createMatch(
   }
 }
 
-export async function updateMatchScore(matchId: string, scoreA: number, scoreB: number): Promise<ActionResult> {
+export async function updateMatchScore(matchId: string, scoreA: number, scoreB: number, _adminId?: string): Promise<ActionResult> {
   const parsed = updateScoreSchema.safeParse({ matchId, scoreA, scoreB });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -497,7 +502,7 @@ export async function updateMatchScore(matchId: string, scoreA: number, scoreB: 
   }
 }
 
-export async function setMatchWinner(matchId: string, winnerId: string | "draw"): Promise<ActionResult> {
+export async function setMatchWinner(matchId: string, winnerId: string | "draw", _adminId?: string): Promise<ActionResult> {
   const parsed = setWinnerSchema.safeParse({ matchId, winnerId });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -594,7 +599,7 @@ export async function setMatchWinner(matchId: string, winnerId: string | "draw")
   }
 }
 
-export async function cancelMatch(matchId: string, reason: string): Promise<ActionResult> {
+export async function cancelMatch(matchId: string, reason: string, _adminId?: string): Promise<ActionResult> {
   const parsed = cancelMatchSchema.safeParse({ matchId, reason });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -645,7 +650,11 @@ export async function cancelMatch(matchId: string, reason: string): Promise<Acti
   }
 }
 
-export async function generateBracket(eventId: string, format: "single_elimination" | "double_elimination" | "round_robin"): Promise<ActionResult> {
+export async function generateBracket(
+  eventId: string,
+  format: "single_elimination" | "double_elimination" | "round_robin",
+  _adminId?: string,
+): Promise<ActionResult> {
   const parsed = generateBracketSchema.safeParse({ eventId, format });
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
 
@@ -811,7 +820,7 @@ export async function generateBracket(eventId: string, format: "single_eliminati
   }
 }
 
-export async function advanceWinner(matchId: string): Promise<ActionResult> {
+export async function advanceWinner(matchId: string, _adminId?: string): Promise<ActionResult> {
   const parsed = advanceWinnerSchema.safeParse({ matchId });
   if (!parsed.success) return { error: "Partida inválida." };
 
@@ -966,7 +975,62 @@ export async function updateMatchDetails(input: {
   }
 }
 
-export async function revertMatchResult(matchId: string): Promise<ActionResult> {
+export async function reopenMatch(matchId: string, _adminId?: string): Promise<ActionResult> {
+  const parsed = reopenMatchSchema.safeParse({ matchId });
+  if (!parsed.success) return { error: "Partida inválida." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "reopen_match");
+    const { match, event } = await getMatchOrThrow(supabase, parsed.data.matchId);
+
+    const previous = {
+      status: match.status,
+      winner_id: match.winner_id,
+      ended_at: match.ended_at,
+      cancel_reason: match.cancel_reason,
+    };
+
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        status: "pending",
+        winner_id: null,
+        ended_at: null,
+        cancel_reason: null,
+        updated_at: nowIso(),
+        updated_by: adminId,
+      })
+      .eq("id", match.id);
+
+    if (error) return { error: "Não foi possível reabrir a partida." };
+
+    await writeMatchLog(supabase, {
+      matchId: match.id,
+      eventId: match.event_id,
+      adminId,
+      action: "reopen_match",
+      previousState: previous,
+      nextState: { status: "pending", winner_id: null, ended_at: null, cancel_reason: null },
+    });
+
+    await logAdminAction(supabase, {
+      adminId,
+      action: "reopen_match",
+      targetType: "match",
+      targetId: match.id,
+      details: { eventId: match.event_id },
+    });
+
+    await recalculateRankings(supabase);
+    revalidateMatchPaths(event.id, match.id);
+    return { success: "Partida reaberta com sucesso." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao reabrir partida." };
+  }
+}
+
+export async function revertMatchResult(matchId: string, _adminId?: string): Promise<ActionResult> {
   const parsed = revertSchema.safeParse({ matchId });
   if (!parsed.success) return { error: "Partida inválida." };
 
@@ -1125,6 +1189,29 @@ export async function recalculateAllRankings(): Promise<ActionResult> {
     return { success: "Ranking recalculado com base nas partidas finalizadas." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao recalcular ranking." };
+  }
+}
+
+export async function calculateRankings(eventId: string): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(eventId);
+  if (!parsed.success) return { error: "Evento inválido." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "calculate_rankings_event");
+    await recalculateRankings(supabase);
+
+    await logAdminAction(supabase, {
+      adminId,
+      action: "calculate_rankings_event",
+      targetType: "event",
+      targetId: parsed.data,
+    });
+
+    revalidateMatchPaths(parsed.data);
+    return { success: "Ranking recalculado para o contexto do evento." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao calcular ranking." };
   }
 }
 

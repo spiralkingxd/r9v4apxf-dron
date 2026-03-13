@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CopyPlus, Eye, Pause, Play, Trash2, Trophy } from "lucide-react";
 
 import {
+  activateEvent,
   deleteEvent,
   duplicateEvent,
   finalizeEvent,
@@ -22,6 +23,8 @@ import {
   EVENT_STATUS_VALUES,
   formatEventKind,
   formatEventStatus,
+  formatEventType,
+  formatEventVisibility,
   formatTeamSize,
   formatTournamentFormat,
 } from "@/lib/events";
@@ -31,6 +34,8 @@ export type AdminEventRow = {
   title: string;
   status: "draft" | "published" | "active" | "paused" | "finished";
   event_kind: "event" | "tournament";
+  event_type: "tournament" | "special" | "scrimmage";
+  visibility: "public" | "private";
   start_date: string;
   end_date: string | null;
   team_size: number;
@@ -49,7 +54,8 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AdminEventRow["status"]>("all");
   const [dateFilter, setDateFilter] = useState<"all" | "7" | "30" | "90">("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | string>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | AdminEventRow["event_type"]>("all");
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | AdminEventRow["visibility"]>("all");
   const [pageSize, setPageSize] = useState(25);
   const [isPending, startTransition] = useTransition();
   const [deleteTarget, setDeleteTarget] = useState<AdminEventRow | null>(null);
@@ -58,7 +64,8 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
     const query = search.trim().toLowerCase();
     return rows.filter((row) => {
       if (statusFilter !== "all" && row.status !== statusFilter) return false;
-      if (typeFilter !== "all" && String(row.team_size) !== typeFilter) return false;
+      if (typeFilter !== "all" && row.event_type !== typeFilter) return false;
+      if (visibilityFilter !== "all" && row.visibility !== visibilityFilter) return false;
       if (dateFilter !== "all") {
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - Number(dateFilter));
@@ -67,7 +74,7 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
       if (!query) return true;
       return row.title.toLowerCase().includes(query);
     });
-  }, [rows, search, statusFilter, typeFilter, dateFilter]);
+  }, [rows, search, statusFilter, typeFilter, visibilityFilter, dateFilter]);
 
   const columns: AdminTableColumn<AdminEventRow>[] = [
     {
@@ -80,6 +87,8 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
           <p className="font-medium text-slate-100">{row.title}</p>
           <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-400">
             <span>{formatEventKind(row.event_kind)}</span>
+            <span>{formatEventType(row.event_type)}</span>
+            <span>{formatEventVisibility(row.visibility)}</span>
             <span>{formatTeamSize(row.team_size)}</span>
             {row.tournament_format ? <span>{formatTournamentFormat(row.tournament_format)}</span> : null}
           </div>
@@ -142,8 +151,13 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
       header: "Ações",
       render: (row) => {
         const editPath = scope === "tournaments" ? `/admin/tournaments/${row.id}/edit` : `/admin/events/${row.id}/edit`;
+        const detailPath = `/admin/events/${row.id}`;
         return (
           <div className="flex flex-wrap gap-1">
+            <Link href={detailPath} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
+              <Eye className="mr-1 inline h-3 w-3" />
+              Detalhes
+            </Link>
             <Link href={editPath} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
               Editar
             </Link>
@@ -173,7 +187,7 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
               <CopyPlus className="mr-1 inline h-3 w-3" />
               Duplicar
             </button>
-            {row.status === "draft" || row.status === "paused" ? (
+            {row.status === "draft" ? (
               <button
                 type="button"
                 className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-2 py-1 text-xs text-emerald-100 hover:bg-emerald-300/20"
@@ -187,6 +201,22 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
               >
                 <Play className="mr-1 inline h-3 w-3" />
                 Publicar
+              </button>
+            ) : null}
+            {row.status === "published" || row.status === "paused" ? (
+              <button
+                type="button"
+                className="rounded-lg border border-lime-300/30 bg-lime-300/10 px-2 py-1 text-xs text-lime-100 hover:bg-lime-300/20"
+                onClick={() =>
+                  startTransition(async () => {
+                    const result = await activateEvent(row.id);
+                    pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                    router.refresh();
+                  })
+                }
+              >
+                <Play className="mr-1 inline h-3 w-3" />
+                Ativar
               </button>
             ) : null}
             {(row.status === "published" || row.status === "active") ? (
@@ -265,12 +295,21 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
         </label>
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
-          Tipo
-          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          Subtipo
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
-            {[1, 2, 3, 4, 5, 6, 8, 10].map((size) => (
-              <option key={size} value={String(size)}>{size}v{size}</option>
-            ))}
+            <option value="special">Evento Especial</option>
+            <option value="scrimmage">Scrimmage</option>
+            <option value="tournament">Torneio</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
+          Visibilidade
+          <select value={visibilityFilter} onChange={(event) => setVisibilityFilter(event.target.value as typeof visibilityFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+            <option value="all">Todas</option>
+            <option value="public">Pública</option>
+            <option value="private">Privada</option>
           </select>
         </label>
 

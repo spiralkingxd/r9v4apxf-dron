@@ -7,6 +7,11 @@ import { getOwnerDiscordId, getSupabaseEnv, isSupabaseConfigured } from "@/lib/s
 const PRIVATE_PATH_PREFIXES = ["/profile/me"];
 const ADMIN_PATH_PREFIX = "/admin";
 const OWNER_ONLY_PATH_PREFIXES = ["/admin/settings", "/admin/backup", "/admin/logs"];
+const BAN_EXEMPT_PREFIXES = ["/auth", "/account-banned", "/_next", "/favicon.ico"];
+
+function isBanExemptPath(pathname: string) {
+  return BAN_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -56,7 +61,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (user && (isPrivatePath || isAdminPath)) {
+    if (user) {
       const nowIso = new Date().toISOString();
       const resolvedDiscordId = resolveDiscordIdFromAuthUser(user) ?? user.id;
       const ownerDiscordId = getOwnerDiscordId();
@@ -64,9 +69,16 @@ export async function updateSession(request: NextRequest) {
 
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, role")
+        .select("id, role, is_banned, ban_reason, banned_reason, force_logout_after")
         .eq("id", user.id)
-        .maybeSingle<{ id: string; role: "user" | "admin" | "owner" }>();
+        .maybeSingle<{
+          id: string;
+          role: "user" | "admin" | "owner";
+          is_banned: boolean;
+          ban_reason: string | null;
+          banned_reason: string | null;
+          force_logout_after: string | null;
+        }>();
 
       if (!existingProfile) {
         const metadata = user.user_metadata ?? {};
@@ -95,6 +107,40 @@ export async function updateSession(request: NextRequest) {
           .update({ role: "owner", updated_at: nowIso })
           .eq("id", user.id)
           .neq("role", "owner");
+      }
+
+      const profile = existingProfile;
+      const { data: activeBan } = await supabase
+        .from("bans")
+        .select("expires_at")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle<{ expires_at: string | null }>();
+
+      const isCurrentlyBanned = Boolean(profile?.is_banned || activeBan);
+
+      if (profile?.force_logout_after) {
+        await supabase.auth.signOut();
+        const loginUrl = new URL("/auth/login", request.url);
+        loginUrl.searchParams.set("reason", "force_logout");
+        return NextResponse.redirect(loginUrl);
+      }
+
+      if (isCurrentlyBanned && !isBanExemptPath(pathname)) {
+        const bannedUrl = new URL("/account-banned", request.url);
+        const reason = profile?.ban_reason ?? profile?.banned_reason ?? "Conta banida pela administracao.";
+        bannedUrl.searchParams.set("reason", reason);
+        if (activeBan?.expires_at) {
+          bannedUrl.searchParams.set("expires_at", activeBan.expires_at);
+        }
+        return NextResponse.redirect(bannedUrl);
+      }
+
+      if (!isCurrentlyBanned && pathname.startsWith("/account-banned")) {
+        return NextResponse.redirect(new URL("/profile/me", request.url));
       }
     }
 

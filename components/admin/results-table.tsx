@@ -12,12 +12,18 @@ import type { ResultRow } from "@/app/admin/matches/_data";
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
-export function ResultsTable({ rows }: { rows: ResultRow[] }) {
+export function ResultsTable({
+  rows,
+  initialFilters,
+}: {
+  rows: ResultRow[];
+  initialFilters?: { eventId?: string };
+}) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
-  const [eventFilter, setEventFilter] = useState("all");
+  const [eventFilter, setEventFilter] = useState(initialFilters?.eventId ?? "all");
   const [dateFilter, setDateFilter] = useState<"all" | "7" | "30" | "90">("all");
   const [pageSize, setPageSize] = useState(25);
 
@@ -108,6 +114,14 @@ export function ResultsTable({ rows }: { rows: ResultRow[] }) {
     },
   ];
 
+  const stats = useMemo(() => {
+    const total = filtered.length;
+    const eventsCount = new Set(filtered.map((row) => row.event_id)).size;
+    const goals = filtered.reduce((acc, row) => acc + row.score_a + row.score_b, 0);
+    const avgGoals = total > 0 ? (goals / total).toFixed(2) : "0.00";
+    return { total, eventsCount, goals, avgGoals };
+  }, [filtered]);
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
@@ -142,6 +156,13 @@ export function ResultsTable({ rows }: { rows: ResultRow[] }) {
             <option value={100}>100</option>
           </select>
         </label>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200">Partidas finalizadas: <span className="font-semibold text-white">{stats.total}</span></div>
+        <div className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200">Eventos: <span className="font-semibold text-white">{stats.eventsCount}</span></div>
+        <div className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200">Gols totais: <span className="font-semibold text-white">{stats.goals}</span></div>
+        <div className="rounded-xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-200">Média por partida: <span className="font-semibold text-white">{stats.avgGoals}</span></div>
       </div>
 
       <div className="flex flex-wrap gap-2">

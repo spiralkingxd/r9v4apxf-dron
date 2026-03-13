@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Edit3, ShieldAlert, Users } from "lucide-react";
+import { Edit3, RotateCcw, ShieldAlert, Users } from "lucide-react";
 
-import { dissolveTeam, editTeam } from "@/app/admin/team-actions";
+import { dissolveTeam, restoreTeam, updateTeam } from "@/app/admin/team-actions";
+import { AdminButton } from "@/components/admin/admin-button";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminTable, type AdminTableColumn } from "@/components/admin/admin-table";
 import { useAdminToast } from "@/components/admin/admin-toast";
@@ -19,6 +20,9 @@ type TeamRow = {
   member_count: number;
   max_members: number;
   created_at: string;
+  dissolved_at: string | null;
+  tournaments_count: number;
+  status: "active" | "incomplete" | "empty" | "dissolved";
 };
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
@@ -27,16 +31,22 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
   const [search, setSearch] = useState("");
-  const [sizeFilter, setSizeFilter] = useState<"all" | "full" | "available">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | TeamRow["status"]>("all");
+  const [sizeFilter, setSizeFilter] = useState<"all" | "solo" | "small" | "full">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "7" | "30">("all");
   const [pageSize, setPageSize] = useState(25);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [isPending, startTransition] = useTransition();
+
+  const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return rows.filter((row) => {
+      if (statusFilter !== "all" && row.status !== statusFilter) return false;
+      if (sizeFilter === "solo" && row.member_count > 1) return false;
+      if (sizeFilter === "small" && (row.member_count < 2 || row.member_count > 4)) return false;
       if (sizeFilter === "full" && row.member_count < row.max_members) return false;
-      if (sizeFilter === "available" && row.member_count >= row.max_members) return false;
       if (dateFilter !== "all") {
         const days = Number(dateFilter);
         const cutoff = new Date();
@@ -46,9 +56,23 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
       if (!query) return true;
       return row.name.toLowerCase().includes(query) || row.captain_name.toLowerCase().includes(query);
     });
-  }, [rows, search, sizeFilter, dateFilter]);
+  }, [rows, search, statusFilter, sizeFilter, dateFilter]);
 
   const columns: AdminTableColumn<TeamRow>[] = [
+    {
+      key: "select",
+      header: "",
+      className: "w-10",
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={Boolean(selected[row.id])}
+          onChange={(e) => setSelected((prev) => ({ ...prev, [row.id]: e.target.checked }))}
+          className="h-4 w-4 rounded border-white/20 bg-black/20"
+          aria-label={`Selecionar ${row.name}`}
+        />
+      ),
+    },
     {
       key: "logo",
       header: "Logo",
@@ -64,7 +88,7 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
     },
     {
       key: "name",
-      header: "Equipe",
+      header: "Nome",
       sortable: true,
       accessor: (row) => row.name,
       render: (row) => (
@@ -72,6 +96,17 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
           <p className="font-medium text-slate-100">{row.name}</p>
           <p className="text-xs text-slate-400">Capitão: {row.captain_name}</p>
         </div>
+      ),
+    },
+    {
+      key: "captain",
+      header: "Capitão",
+      sortable: true,
+      accessor: (row) => row.captain_name,
+      render: (row) => (
+        <Link href={`/profile/${row.captain_id}`} className="text-xs text-cyan-200 hover:text-cyan-100">
+          {row.captain_name}
+        </Link>
       ),
     },
     {
@@ -90,13 +125,20 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
       key: "status",
       header: "Status",
       sortable: true,
-      accessor: (row) => (row.member_count >= row.max_members ? "full" : "open"),
-      render: (row) =>
-        row.member_count >= row.max_members ? (
-          <AdminBadge tone="danger">Lotada</AdminBadge>
-        ) : (
-          <AdminBadge tone="active">Ativa</AdminBadge>
-        ),
+      accessor: (row) => row.status,
+      render: (row) => {
+        if (row.status === "dissolved") return <AdminBadge tone="inactive">⚫ Dissolvida</AdminBadge>;
+        if (row.status === "empty") return <AdminBadge tone="danger">🔴 Vazia</AdminBadge>;
+        if (row.status === "incomplete") return <AdminBadge tone="pending">🟡 Incompleta</AdminBadge>;
+        return <AdminBadge tone="active">🟢 Ativa</AdminBadge>;
+      },
+    },
+    {
+      key: "tournaments",
+      header: "Torneios",
+      sortable: true,
+      accessor: (row) => row.tournaments_count,
+      render: (row) => <span>{row.tournaments_count}</span>,
     },
     {
       key: "created",
@@ -120,7 +162,8 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
               const name = window.prompt("Novo nome da equipe:", row.name)?.trim();
               if (!name) return;
               startTransition(async () => {
-                const result = await editTeam(row.id, { name, logo_url: row.logo_url });
+                const logo = window.prompt("Logo URL (opcional):", row.logo_url ?? "")?.trim() ?? "";
+                const result = await updateTeam(row.id, { name, logo_url: logo || null });
                 pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
                 router.refresh();
               });
@@ -129,23 +172,43 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
             <Edit3 className="mr-1 inline h-3 w-3" />
             Editar
           </button>
-          <button
-            type="button"
-            className="rounded-lg border border-rose-300/30 bg-rose-300/10 px-2 py-1 text-xs text-rose-100 hover:bg-rose-300/20"
-            onClick={() => {
-              const ok = window.confirm(`Dissolver equipe ${row.name}? Esta ação é irreversível.`);
-              if (!ok) return;
-              startTransition(async () => {
-                const result = await dissolveTeam(row.id);
-                pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
-                router.refresh();
-              });
-            }}
-            disabled={isPending}
-          >
-            <ShieldAlert className="mr-1 inline h-3 w-3" />
-            Dissolver
-          </button>
+          {row.status !== "dissolved" ? (
+            <button
+              type="button"
+              className="rounded-lg border border-rose-300/30 bg-rose-300/10 px-2 py-1 text-xs text-rose-100 hover:bg-rose-300/20"
+              onClick={() => {
+                const confirmName = window.prompt(`Digite o nome da equipe para confirmar: ${row.name}`)?.trim();
+                if (!confirmName) return;
+                const reason = window.prompt("Motivo da dissolução:", "Equipe dissolvida por decisão administrativa")?.trim() ?? "";
+                if (!reason) return;
+                startTransition(async () => {
+                  const result = await dissolveTeam(row.id, undefined, reason, { confirmName, notifyDiscord: true });
+                  pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                  router.refresh();
+                });
+              }}
+              disabled={isPending}
+            >
+              <ShieldAlert className="mr-1 inline h-3 w-3" />
+              Dissolver
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-2 py-1 text-xs text-emerald-100 hover:bg-emerald-300/20"
+              onClick={() => {
+                startTransition(async () => {
+                  const result = await restoreTeam(row.id);
+                  pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                  router.refresh();
+                });
+              }}
+              disabled={isPending}
+            >
+              <RotateCcw className="mr-1 inline h-3 w-3" />
+              Restaurar
+            </button>
+          )}
         </div>
       ),
     },
@@ -166,10 +229,22 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Status
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+            <option value="all">Todos</option>
+            <option value="active">🟢 Ativas</option>
+            <option value="incomplete">🟡 Incompletas</option>
+            <option value="empty">🔴 Vazias</option>
+            <option value="dissolved">⚫ Dissolvidas</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
+          Tamanho
           <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value as typeof sizeFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
-            <option value="full">Lotadas</option>
-            <option value="available">Com vagas</option>
+            <option value="solo">Solo (1)</option>
+            <option value="small">2-4 membros</option>
+            <option value="full">Lotada</option>
           </select>
         </label>
 
@@ -190,6 +265,34 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
             <option value={100}>100</option>
           </select>
         </label>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <AdminButton
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            const ids = selectedIds.join(",");
+            const query = ids ? `?ids=${encodeURIComponent(ids)}` : "";
+            window.open(`/admin/teams/export${query}`, "_blank");
+          }}
+        >
+          Exportar CSV
+        </AdminButton>
+        <AdminButton
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            const ids = selectedIds.join(",");
+            const query = new URLSearchParams();
+            query.set("format", "json");
+            if (ids) query.set("ids", ids);
+            window.open(`/admin/teams/export?${query.toString()}`, "_blank");
+          }}
+        >
+          Exportar JSON
+        </AdminButton>
+        <span className="text-xs text-slate-400">Selecionadas: {selectedIds.length}</span>
       </div>
 
       <AdminTable data={filtered} columns={columns} pageSize={pageSize} emptyText="Nenhuma equipe encontrada." />

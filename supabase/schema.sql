@@ -63,6 +63,7 @@ create table if not exists public.profiles (
   avatar_url text,
   role text not null default 'user',
   is_banned boolean not null default false,
+  ban_reason text,
   banned_reason text,
   banned_at timestamptz,
   banned_by uuid references public.profiles (id) on delete set null,
@@ -78,9 +79,13 @@ alter table public.profiles add column if not exists xbox_gamertag text;
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists role text;
 alter table public.profiles add column if not exists is_banned boolean;
+alter table public.profiles add column if not exists ban_reason text;
 alter table public.profiles add column if not exists banned_reason text;
 alter table public.profiles add column if not exists banned_at timestamptz;
 alter table public.profiles add column if not exists banned_by uuid;
+alter table public.profiles add column if not exists force_logout_after timestamptz;
+alter table public.profiles add column if not exists deleted_at timestamptz;
+alter table public.profiles add column if not exists deleted_by uuid;
 alter table public.profiles add column if not exists created_at timestamptz;
 alter table public.profiles add column if not exists updated_at timestamptz;
 alter table public.profiles drop column if exists bio;
@@ -88,6 +93,14 @@ alter table public.profiles drop column if exists bio;
 alter table public.profiles alter column is_banned set default false;
 update public.profiles set is_banned = false where is_banned is null;
 alter table public.profiles alter column is_banned set not null;
+
+update public.profiles
+set ban_reason = coalesce(ban_reason, banned_reason)
+where ban_reason is null and banned_reason is not null;
+
+update public.profiles
+set banned_reason = coalesce(banned_reason, ban_reason)
+where banned_reason is null and ban_reason is not null;
 
 do $$
 begin
@@ -100,6 +113,21 @@ begin
     alter table public.profiles
       add constraint profiles_banned_by_fkey
       foreign key (banned_by) references public.profiles (id) on delete set null;
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_deleted_by_fkey'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_deleted_by_fkey
+      foreign key (deleted_by) references public.profiles (id) on delete set null;
   end if;
 end
 $$;
@@ -194,7 +222,7 @@ update public.profiles set updated_at = timezone('utc', now()) where updated_at 
 alter table public.profiles alter column created_at set not null;
 alter table public.profiles alter column updated_at set not null;
 
-create or replace function public.is_admin()
+create or replace function public.is_admin(p_user_id uuid)
 returns boolean
 language sql
 stable
@@ -204,8 +232,33 @@ as $$
   select exists (
     select 1
     from public.profiles
-    where id = auth.uid()
+    where id = p_user_id
       and role::text in ('admin', 'owner')
+  );
+$$;
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.is_admin(auth.uid());
+$$;
+
+create or replace function public.is_owner(p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = p_user_id
+      and role::text = 'owner'
   );
 $$;
 
@@ -216,12 +269,65 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
-    select 1
-    from public.profiles
-    where id = auth.uid()
-      and role::text = 'owner'
-  );
+  select public.is_owner(auth.uid());
+$$;
+
+create or replace function public.is_banned(p_user_id uuid)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  profile_banned boolean;
+  active_ban_exists boolean := false;
+begin
+  select coalesce(p.is_banned, false)
+  into profile_banned
+  from public.profiles p
+  where p.id = p_user_id;
+
+  if to_regclass('public.bans') is not null then
+    execute $q$
+      select exists (
+        select 1
+        from public.bans b
+        where b.user_id = $1
+          and b.is_active = true
+          and (b.expires_at is null or b.expires_at > timezone('utc', now()))
+      )
+    $q$
+    into active_ban_exists
+    using p_user_id;
+  end if;
+
+  return coalesce(profile_banned, false) or active_ban_exists;
+end;
+$$;
+
+create or replace function public.can_perform_action(p_user_id uuid, p_action text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if public.is_owner(p_user_id) then
+    return true;
+  end if;
+
+  if not public.is_admin(p_user_id) then
+    return false;
+  end if;
+
+  if lower(coalesce(p_action, '')) in ('owner:settings', 'owner:backup', 'owner:logs') then
+    return false;
+  end if;
+
+  return true;
+end;
 $$;
 
 create or replace function public.promote_owner_profile()
@@ -383,10 +489,16 @@ alter table public.teams add column if not exists captain_id uuid;
 alter table public.teams add column if not exists created_at timestamptz;
 alter table public.teams add column if not exists updated_at timestamptz;
 alter table public.teams add column if not exists max_members integer;
+alter table public.teams add column if not exists dissolved_at timestamptz;
+alter table public.teams add column if not exists dissolved_by uuid;
+alter table public.teams add column if not exists dissolve_reason text;
 alter table public.teams drop column if exists members;
 comment on column public.teams.logo_url is 'URL opcional do logo da equipe.';
 comment on column public.teams.captain_id is 'Usuário que lidera a equipe.';
 comment on column public.teams.max_members is 'Limite máximo de membros por equipe (até 10).';
+comment on column public.teams.dissolved_at is 'Data/hora em que a equipe foi dissolvida (soft delete).';
+comment on column public.teams.dissolved_by is 'Admin responsável por dissolver a equipe.';
+comment on column public.teams.dissolve_reason is 'Motivo informado para a dissolução da equipe.';
 alter table public.teams alter column updated_at set default timezone('utc', now());
 alter table public.teams alter column max_members set default 10;
 update public.teams set updated_at = coalesce(updated_at, created_at, timezone('utc', now()));
@@ -404,6 +516,21 @@ begin
   ) then
     alter table public.teams
       add constraint teams_max_members_check check (max_members > 0 and max_members <= 10);
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'teams_dissolved_by_fkey'
+      and conrelid = 'public.teams'::regclass
+  ) then
+    alter table public.teams
+      add constraint teams_dissolved_by_fkey
+      foreign key (dissolved_by) references public.profiles (id) on delete set null;
   end if;
 end
 $$;
@@ -594,6 +721,7 @@ end
 $$;
 
 create index if not exists teams_captain_id_idx on public.teams (captain_id);
+create index if not exists teams_dissolved_at_idx on public.teams (dissolved_at);
 create index if not exists team_members_user_id_idx on public.team_members (user_id);
 create index if not exists team_members_team_id_idx on public.team_members (team_id);
 create index if not exists team_join_requests_team_id_idx on public.team_join_requests (team_id);
@@ -880,6 +1008,8 @@ alter table public.events add column if not exists created_at timestamptz;
 alter table public.events add column if not exists updated_at timestamptz;
 alter table public.events add column if not exists registration_deadline timestamptz;
 alter table public.events add column if not exists event_kind text;
+alter table public.events add column if not exists event_type text;
+alter table public.events add column if not exists visibility text;
 alter table public.events add column if not exists team_size integer;
 alter table public.events add column if not exists prize_description text;
 alter table public.events add column if not exists logo_url text;
@@ -911,6 +1041,17 @@ alter table public.events alter column updated_at set not null;
 alter table public.events alter column event_kind set default 'event';
 update public.events set event_kind = 'event' where event_kind is null;
 alter table public.events alter column event_kind set not null;
+update public.events
+set event_type = case
+  when event_kind = 'tournament' then 'tournament'
+  else 'special'
+end
+where event_type is null;
+alter table public.events alter column event_type set default 'special';
+alter table public.events alter column event_type set not null;
+update public.events set visibility = 'public' where visibility is null;
+alter table public.events alter column visibility set default 'public';
+alter table public.events alter column visibility set not null;
 alter table public.events alter column team_size set default 4;
 update public.events set team_size = 4 where team_size is null or team_size < 1;
 alter table public.events alter column team_size set not null;
@@ -940,6 +1081,38 @@ begin
 
   alter table public.events
     add constraint events_event_kind_check check (event_kind in ('event', 'tournament'));
+end
+$$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'events_event_type_check'
+      and conrelid = 'public.events'::regclass
+  ) then
+    alter table public.events drop constraint events_event_type_check;
+  end if;
+
+  alter table public.events
+    add constraint events_event_type_check check (event_type in ('tournament', 'special', 'scrimmage'));
+end
+$$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'events_visibility_check'
+      and conrelid = 'public.events'::regclass
+  ) then
+    alter table public.events drop constraint events_visibility_check;
+  end if;
+
+  alter table public.events
+    add constraint events_visibility_check check (visibility in ('public', 'private'));
 end
 $$;
 
@@ -1395,6 +1568,32 @@ begin
 end
 $$;
 
+create table if not exists public.admin_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  old_value jsonb,
+  new_value jsonb,
+  ip_address text,
+  created_at timestamptz not null default timezone('utc', now()),
+  check (entity_type in ('user', 'team', 'event', 'match', 'tournament'))
+);
+
+create table if not exists public.bans (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  banned_by uuid not null references public.profiles (id) on delete restrict,
+  reason text not null,
+  duration integer,
+  expires_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  is_active boolean not null default true,
+  check (duration is null or duration >= 1),
+  check (expires_at is null or expires_at >= created_at)
+);
+
 create table if not exists public.team_rankings (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null unique references public.teams (id) on delete cascade,
@@ -1529,6 +1728,7 @@ create table if not exists public.notifications_outbox (
 insert into public.notification_templates (type, label, template)
 values
   ('tournament_published', 'Novo torneio publicado', 'Novo torneio publicado: {{title}}. Inicio: {{startDate}}.'),
+  ('event_finalized', 'Evento finalizado', 'Evento finalizado: {{title}}.'),
   ('registration_approved', 'Inscricao aprovada', 'Inscricao aprovada para {{teamName}} em {{eventTitle}}.'),
   ('registration_rejected', 'Inscricao rejeitada', 'Inscricao rejeitada para {{teamName}} em {{eventTitle}}. Motivo: {{reason}}.'),
   ('match_scheduled', 'Partida agendada', 'Partida agendada em {{eventTitle}}: {{teamA}} vs {{teamB}} em {{scheduledAt}}.'),
@@ -1552,7 +1752,7 @@ begin
 
   alter table public.team_notifications
     add constraint team_notifications_kind_check check (
-      kind in ('event_published', 'registration_approved', 'registration_rejected', 'event_starting_soon')
+      kind in ('event_published', 'registration_approved', 'registration_rejected', 'event_starting_soon', 'event_finished')
     );
 end
 $$;
@@ -1561,6 +1761,10 @@ create index if not exists admin_action_logs_admin_idx on public.admin_action_lo
 create index if not exists admin_action_logs_target_idx on public.admin_action_logs (target_type, target_id);
 create index if not exists admin_action_logs_suspicious_idx on public.admin_action_logs (suspicious, created_at desc);
 create index if not exists admin_action_logs_ip_idx on public.admin_action_logs (ip_address, created_at desc);
+create index if not exists admin_logs_user_idx on public.admin_logs (user_id, created_at desc);
+create index if not exists admin_logs_entity_idx on public.admin_logs (entity_type, entity_id, created_at desc);
+create index if not exists bans_user_active_idx on public.bans (user_id, is_active, expires_at);
+create index if not exists bans_created_at_idx on public.bans (created_at desc);
 create index if not exists ranking_adjustments_entity_idx on public.ranking_adjustments (entity_type, entity_id, created_at desc);
 create index if not exists ranking_adjustments_archived_idx on public.ranking_adjustments (archived, created_at desc);
 create index if not exists ranking_seasons_season_idx on public.ranking_seasons (season, archived_at desc);
@@ -1604,8 +1808,10 @@ alter table public.ranking_adjustments enable row level security;
 alter table public.ranking_seasons enable row level security;
 alter table public.system_settings enable row level security;
 alter table public.admin_action_logs enable row level security;
+alter table public.admin_logs enable row level security;
 alter table public.admin_security_alerts enable row level security;
 alter table public.backup_jobs enable row level security;
+alter table public.bans enable row level security;
 alter table public.team_notifications enable row level security;
 alter table public.notification_templates enable row level security;
 alter table public.notifications_outbox enable row level security;
@@ -1616,7 +1822,13 @@ create policy "Public can read active data from events"
 on public.events
 for select
 to anon, authenticated
-using (public.is_admin() or status::text in ('published', 'active', 'finished'));
+using (
+  public.is_admin()
+  or (
+    visibility = 'public'
+    and status::text in ('published', 'active', 'finished')
+  )
+);
 
 drop policy if exists "Admins manage events" on public.events;
 create policy "Admins manage events"
@@ -1906,6 +2118,35 @@ to authenticated
 using (public.is_admin())
 with check (public.is_admin());
 
+drop policy if exists "Admins read admin_logs" on public.admin_logs;
+create policy "Admins read admin_logs"
+on public.admin_logs
+for select
+to authenticated
+using (public.is_admin());
+
+drop policy if exists "Admins insert admin_logs" on public.admin_logs;
+create policy "Admins insert admin_logs"
+on public.admin_logs
+for insert
+to authenticated
+with check (public.is_admin());
+
+drop policy if exists "Admins manage bans" on public.bans;
+create policy "Admins manage bans"
+on public.bans
+for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+drop policy if exists "Users read own bans" on public.bans;
+create policy "Users read own bans"
+on public.bans
+for select
+to authenticated
+using (user_id = auth.uid());
+
 drop policy if exists "Admins read security alerts" on public.admin_security_alerts;
 create policy "Admins read security alerts"
 on public.admin_security_alerts
@@ -1951,7 +2192,18 @@ for update
 to authenticated
 using (id = auth.uid() or public.is_admin())
 with check (
-  (id = auth.uid() and role = (select role from public.profiles where id = auth.uid()))
+  (
+    id = auth.uid()
+    and role = (select p.role from public.profiles p where p.id = auth.uid())
+    and is_banned = (select p.is_banned from public.profiles p where p.id = auth.uid())
+    and coalesce(ban_reason, '') = coalesce((select p.ban_reason from public.profiles p where p.id = auth.uid()), '')
+    and coalesce(banned_reason, '') = coalesce((select p.banned_reason from public.profiles p where p.id = auth.uid()), '')
+    and banned_at is not distinct from (select p.banned_at from public.profiles p where p.id = auth.uid())
+    and banned_by is not distinct from (select p.banned_by from public.profiles p where p.id = auth.uid())
+    and force_logout_after is not distinct from (select p.force_logout_after from public.profiles p where p.id = auth.uid())
+    and deleted_at is not distinct from (select p.deleted_at from public.profiles p where p.id = auth.uid())
+    and deleted_by is not distinct from (select p.deleted_by from public.profiles p where p.id = auth.uid())
+  )
   or public.is_admin()
 );
 

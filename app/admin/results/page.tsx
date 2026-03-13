@@ -3,8 +3,21 @@ import { Medal } from "lucide-react";
 import { getResultsData } from "@/app/admin/matches/_data";
 import { ResultsTable } from "@/components/admin/results-table";
 
-export default async function AdminResultsPage() {
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminResultsPage({ searchParams }: Props) {
+  const query = await searchParams;
   const rows = await getResultsData();
+  const eventId = firstValue(query.eventId);
+  const initialFilters = {
+    eventId: eventId && rows.some((row) => row.event_id === eventId) ? eventId : "all",
+  };
 
   return (
     <section className="space-y-5">
@@ -19,7 +32,7 @@ export default async function AdminResultsPage() {
         </p>
       </header>
 
-      <ResultsTable rows={rows} />
+      <ResultsTable rows={rows} initialFilters={initialFilters} />
     </section>
   );
 }

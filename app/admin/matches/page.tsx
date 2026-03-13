@@ -4,7 +4,16 @@ import { getAdminMatches } from "@/app/admin/matches/_data";
 import { MatchesTable } from "@/components/admin/matches-table";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function AdminMatchesPage() {
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+function firstValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function AdminMatchesPage({ searchParams }: Props) {
+  const query = await searchParams;
   const supabase = await createClient();
   const [rows, { data: eventsRaw }, { data: teamsRaw }] = await Promise.all([
     getAdminMatches(),
@@ -14,6 +23,18 @@ export default async function AdminMatchesPage() {
 
   const events = (eventsRaw ?? []).map((event) => ({ id: String(event.id), title: String(event.title) }));
   const teams = (teamsRaw ?? []).map((team) => ({ id: String(team.id), name: String(team.name) }));
+
+  const eventId = firstValue(query.eventId);
+  const status = firstValue(query.status);
+  const round = firstValue(query.round);
+
+  const statusFilter = status === "pending" || status === "in_progress" || status === "finished" || status === "cancelled" ? status : "all";
+
+  const initialFilters = {
+    eventId: eventId && events.some((event) => event.id === eventId) ? eventId : "all",
+    status: statusFilter,
+    round: round && /^\d+$/.test(round) ? round : "all",
+  } as const;
 
   return (
     <section className="space-y-5">
@@ -28,7 +49,7 @@ export default async function AdminMatchesPage() {
         </p>
       </header>
 
-      <MatchesTable rows={rows} events={events} teams={teams} />
+      <MatchesTable rows={rows} events={events} teams={teams} initialFilters={initialFilters} />
     </section>
   );
 }

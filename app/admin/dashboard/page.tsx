@@ -1,192 +1,203 @@
 import Link from "next/link";
-import { CalendarDays, Gamepad2, ShieldCheck, Trophy, Users } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  ClipboardList,
+  Gamepad2,
+  ShieldCheck,
+  Trophy,
+  UserCheck,
+  Users,
+} from "lucide-react";
 
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
 import { AdminCard } from "@/components/admin/admin-card";
-import { DashboardRecentActivityTable } from "@/components/admin/dashboard-recent-activity-table";
-import { createClient } from "@/lib/supabase/server";
+import { DashboardCharts } from "@/components/admin/dashboard-charts";
+import { DashboardExportButton } from "@/components/admin/dashboard-export-button";
+import { getAlerts, getDashboardStats, getRecentActivity } from "@/app/admin/dashboard/actions";
 
-type ActivityItem = {
-  type: "user" | "team" | "event";
+const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const moneyFmt = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+function ActivityList({
+  title,
+  items,
+}: {
   title: string;
-  created_at: string;
-};
-
-const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
+  items: Array<{ title: string; createdAt: string }>;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-base font-semibold text-white">{title}</h3>
+        <AdminBadge tone="info">Atualizado</AdminBadge>
+      </div>
+      <ul className="mt-4 space-y-2">
+        {items.length === 0 ? (
+          <li className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-400">Sem registros.</li>
+        ) : (
+          items.map((item, idx) => (
+            <li key={`${item.title}-${idx}`} className="rounded-lg border border-white/10 bg-white/5 px-3 py-2">
+              <p className="text-sm font-medium text-slate-100">{item.title}</p>
+              <p className="mt-1 text-xs text-slate-400">{dateFmt.format(new Date(item.createdAt))}</p>
+            </li>
+          ))
+        )}
+      </ul>
+    </section>
+  );
+}
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 29);
-  cutoff.setHours(0, 0, 0, 0);
-
-  const [
-    { count: usersCount },
-    { count: teamsCount },
-    { count: eventsCount },
-    { count: activeEventsCount },
-    { data: registrationsRaw },
-    { data: recentUsersRaw },
-    { data: recentTeamsRaw },
-    { data: recentEventsRaw },
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("teams").select("*", { count: "exact", head: true }),
-    supabase.from("events").select("*", { count: "exact", head: true }),
-    supabase.from("events").select("*", { count: "exact", head: true }).eq("status", "active"),
-    supabase
-      .from("registrations")
-      .select("created_at")
-      .gte("created_at", cutoff.toISOString()),
-    supabase
-      .from("profiles")
-      .select("display_name, username, created_at")
-      .order("created_at", { ascending: false })
-      .limit(8),
-    supabase
-      .from("teams")
-      .select("name, created_at")
-      .order("created_at", { ascending: false })
-      .limit(8),
-    supabase
-      .from("events")
-      .select("title, created_at")
-      .order("created_at", { ascending: false })
-      .limit(8),
+  const [dashboard, activity, alerts] = await Promise.all([
+    getDashboardStats(),
+    getRecentActivity(10),
+    getAlerts(),
   ]);
 
-  const chartMap = new Map<string, number>();
-  for (let i = 0; i < 30; i += 1) {
-    const d = new Date(cutoff);
-    d.setDate(cutoff.getDate() + i);
-    chartMap.set(d.toISOString().slice(0, 10), 0);
-  }
-
-  for (const row of registrationsRaw ?? []) {
-    const key = String(row.created_at).slice(0, 10);
-    chartMap.set(key, (chartMap.get(key) ?? 0) + 1);
-  }
-
-  const registrationsChart = Array.from(chartMap.entries()).map(([iso, total]) => ({
-    iso,
-    total,
-  }));
-
-  const maxChart = Math.max(...registrationsChart.map((item) => item.total), 1);
-
-  const recentUsers = (recentUsersRaw ?? []).map((user) => ({
-    type: "user" as const,
-    title: `Novo usuário: ${(user.display_name as string) || (user.username as string) || "Usuário"}`,
-    created_at: user.created_at as string,
-  }));
-
-  const recentTeams = (recentTeamsRaw ?? []).map((team) => ({
-    type: "team" as const,
-    title: `Nova equipe: ${(team.name as string) || "Equipe"}`,
-    created_at: team.created_at as string,
-  }));
-
-  const recentEvents = (recentEventsRaw ?? []).map((event) => ({
-    type: "event" as const,
-    title: `Novo evento: ${(event.title as string) || "Evento"}`,
-    created_at: event.created_at as string,
-  }));
-
-  const recentActivity: ActivityItem[] = [...recentUsers, ...recentTeams, ...recentEvents]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 18);
+  const totalAlerts =
+    alerts.lowMemberTeams.length +
+    alerts.upcomingTournaments24h.length +
+    alerts.staleMatches48h.length +
+    alerts.usersWithMultiplePendingRequests.length;
 
   return (
     <section className="space-y-6">
       <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-        <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Visão Geral</p>
+        <p className="text-xs uppercase tracking-[0.25em] text-slate-400">Painel Central</p>
         <h1 className="mt-2 text-3xl font-bold text-white">Dashboard Administrativo</h1>
         <p className="mt-2 text-sm text-slate-400">
-          Panorama operacional do MadnessArena com métricas em tempo real do banco.
+          Vis�o operacional completa da plataforma com estat�sticas, alertas e atividades recentes.
         </p>
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <AdminCard label="Total de Usuários" value={String(usersCount ?? 0)} helper="Perfis cadastrados" icon={<Users className="h-5 w-5" />} />
-        <AdminCard label="Total de Equipes" value={String(teamsCount ?? 0)} helper="Tripulações ativas" icon={<ShieldCheck className="h-5 w-5" />} />
-        <AdminCard label="Total de Torneios" value={String(eventsCount ?? 0)} helper="Eventos cadastrados" icon={<Trophy className="h-5 w-5" />} />
-        <AdminCard label="Eventos Ativos" value={String(activeEventsCount ?? 0)} helper="Em andamento" icon={<Gamepad2 className="h-5 w-5" />} />
+        <AdminCard
+          label="Total de Usu�rios"
+          value={String(dashboard.stats.totalUsers)}
+          helper={`${dashboard.stats.activeUsers30d} ativos em 30 dias`}
+          icon={<Users className="h-5 w-5" />}
+        />
+        <AdminCard
+          label="Total de Equipes"
+          value={String(dashboard.stats.totalTeams)}
+          helper={`${dashboard.stats.activeTeams} com 2+ membros`}
+          icon={<ShieldCheck className="h-5 w-5" />}
+        />
+        <AdminCard
+          label="Total de Torneios"
+          value={String(dashboard.stats.totalTournaments)}
+          helper={`${dashboard.stats.activeTournaments} ativos`}
+          icon={<Trophy className="h-5 w-5" />}
+        />
+        <AdminCard
+          label="Partidas Hoje"
+          value={String(dashboard.stats.matchesToday)}
+          helper={`Receita total: ${moneyFmt.format(dashboard.stats.totalRevenue)}`}
+          icon={<Gamepad2 className="h-5 w-5" />}
+        />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+      <DashboardCharts
+        registrations30d={dashboard.charts.registrations30d}
+        usersByMonth={dashboard.charts.usersByMonth}
+        teamsByMonth={dashboard.charts.teamsByMonth}
+        tournamentStatus={dashboard.charts.tournamentStatus}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-white">Inscrições nos últimos 30 dias</h2>
-            <AdminBadge tone="info">Dados reais</AdminBadge>
+            <h2 className="text-lg font-semibold text-white">Alertas e Notifica��es</h2>
+            <AdminBadge tone={totalAlerts > 0 ? "pending" : "active"}>
+              {totalAlerts > 0 ? `${totalAlerts} alertas` : "Sem alertas"}
+            </AdminBadge>
           </div>
-          <div className="mt-5 flex h-56 items-end gap-1 overflow-hidden rounded-xl border border-white/10 bg-black/20 px-2 pb-2 pt-4">
-            {registrationsChart.map((point) => {
-              const height = Math.max(6, Math.round((point.total / maxChart) * 190));
-              return (
-                <div key={point.iso} className="group relative flex flex-1 items-end">
-                  <div
-                    className="w-full rounded-t bg-gradient-to-t from-cyan-500/70 to-cyan-300/80 transition group-hover:from-amber-500/80 group-hover:to-amber-300/90"
-                    style={{ height }}
-                    title={`${dateFmt.format(new Date(point.iso))}: ${point.total} inscrição(ões)`}
-                  />
-                </div>
-              );
-            })}
+
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <article className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Equipes com menos de 2 membros</p>
+              <p className="mt-1 text-2xl font-bold text-amber-200">{alerts.lowMemberTeams.length}</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                {alerts.lowMemberTeams.slice(0, 3).map((team) => (
+                  <li key={team.id}>{team.name} ({team.members} membro(s))</li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Torneios nas pr�ximas 24h</p>
+              <p className="mt-1 text-2xl font-bold text-cyan-200">{alerts.upcomingTournaments24h.length}</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                {alerts.upcomingTournaments24h.slice(0, 3).map((event) => (
+                  <li key={event.id}>{event.title}</li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Partidas sem resultado &gt; 48h</p>
+              <p className="mt-1 text-2xl font-bold text-rose-200">{alerts.staleMatches48h.length}</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                {alerts.staleMatches48h.slice(0, 3).map((match) => (
+                  <li key={match.id}>Partida {match.id.slice(0, 8)}</li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Usu�rios com pend�ncias m�ltiplas</p>
+              <p className="mt-1 text-2xl font-bold text-fuchsia-200">{alerts.usersWithMultiplePendingRequests.length}</p>
+              <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                {alerts.usersWithMultiplePendingRequests.slice(0, 3).map((user) => (
+                  <li key={user.userId}>{user.name} ({user.pendingRequests} pend�ncias)</li>
+                ))}
+              </ul>
+            </article>
           </div>
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-          <h2 className="text-lg font-semibold text-white">Ações Rápidas</h2>
+          <h2 className="text-lg font-semibold text-white">A��es R�pidas</h2>
           <div className="mt-4 space-y-2">
-            <form action="/admin/events">
-              <AdminButton className="w-full justify-start" type="submit">
+            <Link href="/admin/tournaments/new" className="block">
+              <AdminButton className="w-full justify-start" type="button">
                 <CalendarDays className="h-4 w-4" />
-                Gerenciar eventos
+                Criar Novo Torneio
               </AdminButton>
-            </form>
-            <form action="/admin/tournaments">
-              <AdminButton className="w-full justify-start" type="submit" variant="ghost">
-                <Trophy className="h-4 w-4" />
-                Gerenciar torneios
+            </Link>
+
+            <Link href="/admin/members" className="block">
+              <AdminButton className="w-full justify-start" type="button" variant="ghost">
+                <UserCheck className="h-4 w-4" />
+                Gerenciar Usu�rios
               </AdminButton>
-            </form>
-            <form action="/admin/teams">
-              <AdminButton className="w-full justify-start" type="submit" variant="ghost">
-                <ShieldCheck className="h-4 w-4" />
-                Gerenciar equipes
+            </Link>
+
+            <Link href="/admin/teams" className="block">
+              <AdminButton className="w-full justify-start" type="button" variant="ghost">
+                <ClipboardList className="h-4 w-4" />
+                Ver Solicita��es Pendentes
               </AdminButton>
-            </form>
-            <form action="/admin/members">
-              <AdminButton className="w-full justify-start" type="submit" variant="ghost">
-                <Users className="h-4 w-4" />
-                Gerenciar membros
-              </AdminButton>
-            </form>
-            <form action="/admin/matches">
-              <AdminButton className="w-full justify-start" type="submit" variant="ghost">
-                <Gamepad2 className="h-4 w-4" />
-                Gerenciar partidas
-              </AdminButton>
-            </form>
-            <form action="/admin/results">
-              <AdminButton className="w-full justify-start" type="submit" variant="ghost">
-                <Trophy className="h-4 w-4" />
-                Ver resultados
-              </AdminButton>
-            </form>
-            <Link href="/events" className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 hover:bg-white/10">
-              Ver portal público
+            </Link>
+
+            <DashboardExportButton type="overview" />
+
+            <Link href="/admin/dashboard" className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 hover:bg-white/10">
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Atualizar Dashboard
             </Link>
           </div>
         </section>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-white">Atividades recentes</h2>
-        <DashboardRecentActivityTable data={recentActivity} />
-      </section>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ActivityList title="�ltimos 10 logins de usu�rios" items={activity.latestLogins} />
+        <ActivityList title="�ltimas 5 equipes criadas" items={activity.latestTeams} />
+        <ActivityList title="�ltimos 3 torneios publicados" items={activity.latestPublishedTournaments} />
+        <ActivityList title="�ltimas 5 a��es de admin" items={activity.latestAdminActions} />
+      </div>
     </section>
   );
 }

@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-import { removeTeamMember, transferTeamCaptain } from "@/app/admin/team-actions";
+import { removeTeamMember, transferCaptain } from "@/app/admin/team-actions";
 import { AdminButton } from "@/components/admin/admin-button";
 import { useAdminToast } from "@/components/admin/admin-toast";
 
@@ -23,7 +23,11 @@ export function TeamDetailMemberActions({
   const [isPending, startTransition] = useTransition();
 
   if (isCaptain) {
-    return (
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-1">
       <AdminButton
         variant="ghost"
         className="px-2 py-1 text-xs"
@@ -32,33 +36,31 @@ export function TeamDetailMemberActions({
           const ok = window.confirm(`Transferir liderança para ${displayName}?`);
           if (!ok) return;
           startTransition(async () => {
-            const result = await transferTeamCaptain(teamId, userId);
+            const result = await transferCaptain(teamId, userId);
             pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
             router.refresh();
           });
         }}
       >
-        Transferir liderança
+        Transferir capitão
       </AdminButton>
-    );
-  }
 
-  return (
-    <AdminButton
-      variant="danger"
-      className="px-2 py-1 text-xs"
-      disabled={isPending}
-      onClick={() => {
-        const ok = window.confirm(`Remover ${displayName} da equipe?`);
-        if (!ok) return;
-        startTransition(async () => {
-          const result = await removeTeamMember(teamId, userId);
-          pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
-          router.refresh();
-        });
-      }}
-    >
-      Remover
-    </AdminButton>
+      <AdminButton
+        variant="danger"
+        className="px-2 py-1 text-xs"
+        disabled={isPending}
+        onClick={() => {
+          const ok = window.confirm(`Remover ${displayName} da equipe?`);
+          if (!ok) return;
+          startTransition(async () => {
+            const result = await removeTeamMember(teamId, userId);
+            pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+            router.refresh();
+          });
+        }}
+      >
+        Remover
+      </AdminButton>
+    </div>
   );
 }

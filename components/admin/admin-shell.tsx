@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import {
   BarChart3,
+  Ban,
   Bell,
   Calendar,
   Crown,
@@ -29,13 +30,16 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard", icon: <BarChart3 className="h-4 w-4" /> },
   { href: "/admin/tournaments", label: "Torneios", icon: <Trophy className="h-4 w-4" /> },
   { href: "/admin/members", label: "Membros", icon: <Users className="h-4 w-4" /> },
+  { href: "/admin/bans", label: "Banimentos", icon: <Ban className="h-4 w-4" /> },
   { href: "/admin/teams", label: "Equipes", icon: <Shield className="h-4 w-4" /> },
   { href: "/admin/events", label: "Eventos", icon: <Calendar className="h-4 w-4" /> },
   { href: "/admin/matches", label: "Partidas", icon: <Swords className="h-4 w-4" /> },
   { href: "/admin/results", label: "Resultados", icon: <BarChart3 className="h-4 w-4" /> },
   { href: "/admin/notifications", label: "Notificações", icon: <Bell className="h-4 w-4" /> },
   { href: "/admin/rankings", label: "Rankings", icon: <BarChart3 className="h-4 w-4" /> },
-  { href: "/admin/configuracoes", label: "Configurações", icon: <Settings className="h-4 w-4" /> },
+  { href: "/admin/settings", label: "Configurações", icon: <Settings className="h-4 w-4" /> },
+  { href: "/admin/logs", label: "Logs", icon: <Shield className="h-4 w-4" /> },
+  { href: "/admin/backup", label: "Backup", icon: <Crown className="h-4 w-4" /> },
 ];
 
 export function AdminShell({

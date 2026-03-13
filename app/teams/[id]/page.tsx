@@ -87,6 +87,7 @@ export default async function TeamDetailPage({ params }: Props) {
     .from("teams")
     .select("id, name, logo_url, captain_id, max_members, created_at")
     .eq("id", id)
+    .is("dissolved_at", null)
     .single<TeamDetailRow>();
 
   if (!team) notFound();

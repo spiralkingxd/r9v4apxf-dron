@@ -7,7 +7,9 @@ import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/
 import { queueOrSendDiscordNotification } from "@/lib/discord-notifications";
 import {
   EVENT_KIND_VALUES,
+  EVENT_TYPE_VALUES,
   EVENT_STATUS_VALUES,
+  EVENT_VISIBILITY_VALUES,
   SEEDING_METHOD_VALUES,
   TOURNAMENT_FORMAT_VALUES,
   formatTeamSize,
@@ -15,6 +17,8 @@ import {
 
 const eventStatusSchema = z.enum(EVENT_STATUS_VALUES);
 const eventKindSchema = z.enum(EVENT_KIND_VALUES);
+const eventTypeSchema = z.enum(EVENT_TYPE_VALUES);
+const eventVisibilitySchema = z.enum(EVENT_VISIBILITY_VALUES);
 const tournamentFormatSchema = z.enum(TOURNAMENT_FORMAT_VALUES);
 const seedingMethodSchema = z.enum(SEEDING_METHOD_VALUES);
 const registrationStatusSchema = z.enum(["pending", "approved", "rejected", "cancelled"]);
@@ -26,6 +30,8 @@ const eventPayloadSchema = z.object({
   end_date: z.string().optional().nullable(),
   registration_deadline: z.string().optional().nullable(),
   event_kind: eventKindSchema,
+  event_type: eventTypeSchema,
+  visibility: eventVisibilitySchema,
   team_size: z.coerce.number().int().min(1).max(10),
   prize_description: z.string().max(4000, "Premiação muito longa.").optional().nullable(),
   rules: z.string().max(40000, "Regras muito longas.").optional().nullable(),
@@ -65,6 +71,8 @@ export type EventMutationInput = {
   end_date?: string | null;
   registration_deadline?: string | null;
   event_kind: "event" | "tournament";
+  event_type: "tournament" | "special" | "scrimmage";
+  visibility: "public" | "private";
   team_size: number;
   prize_description?: string | null;
   rules?: string | null;
@@ -95,6 +103,8 @@ type EventRow = EventMutationInput & {
   paused_at: string | null;
   finalized_at: string | null;
   registration_deadline: string | null;
+  event_type: EventMutationInput["event_type"];
+  visibility: EventMutationInput["visibility"];
 };
 
 type RankingAccumulator = {
@@ -131,6 +141,7 @@ function revalidateEventPaths(eventId?: string) {
   if (eventId) {
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events/${eventId}/bracket`);
+    revalidatePath(`/admin/events/${eventId}`);
     revalidatePath(`/admin/events/${eventId}/edit`);
     revalidatePath(`/admin/events/${eventId}/registrations`);
     revalidatePath(`/admin/tournaments/${eventId}/edit`);
@@ -206,12 +217,17 @@ function buildStatusTimestamps(previousStatus: string | null, nextStatus: EventM
   };
 }
 
+function normalizeEventType(kind: EventMutationInput["event_kind"], type: EventMutationInput["event_type"]) {
+  if (kind === "tournament") return "tournament" as const;
+  return type;
+}
+
 async function queueTeamNotifications(
   supabase: Awaited<ReturnType<typeof assertAdminAccess>>["supabase"],
   rows: Array<{
     team_id: string;
     event_id: string;
-    kind: "event_published" | "registration_approved" | "registration_rejected" | "event_starting_soon";
+    kind: "event_published" | "registration_approved" | "registration_rejected" | "event_starting_soon" | "event_finished";
     title: string;
     message: string;
     metadata?: Record<string, unknown>;
@@ -230,6 +246,30 @@ async function queueTeamNotifications(
       delivered_at: getNowIso(),
     })),
     { onConflict: "team_id,event_id,kind", ignoreDuplicates: false },
+  );
+}
+
+async function queueEventFinishedNotifications(
+  supabase: Awaited<ReturnType<typeof assertAdminAccess>>["supabase"],
+  eventId: string,
+  eventTitle: string,
+) {
+  const { data: registrations } = await supabase
+    .from("registrations")
+    .select("team_id")
+    .eq("event_id", eventId)
+    .eq("status", "approved");
+
+  await queueTeamNotifications(
+    supabase,
+    (registrations ?? []).map((registration) => ({
+      team_id: String(registration.team_id),
+      event_id: eventId,
+      kind: "event_finished" as const,
+      title: `${eventTitle} foi finalizado`,
+      message: `O evento ${eventTitle} foi encerrado. Confira os resultados e o ranking atualizado.`,
+      metadata: { eventId },
+    })),
   );
 }
 
@@ -420,6 +460,8 @@ export async function createEvent(data: EventMutationInput): Promise<ActionResul
       registration_deadline: normalizeOptionalDate(parsed.data.registration_deadline),
       prize_description: normalizeOptionalText(parsed.data.prize_description),
       rules: normalizeOptionalText(parsed.data.rules),
+      event_type: normalizeEventType(parsed.data.event_kind, parsed.data.event_type),
+      visibility: parsed.data.visibility,
       logo_url: normalizeOptionalText(parsed.data.logo_url),
       banner_url: normalizeOptionalText(parsed.data.banner_url),
       tournament_format: normalizeOptionalText(parsed.data.tournament_format) as EventMutationInput["tournament_format"],
@@ -486,6 +528,8 @@ export async function updateEvent(eventId: string, data: EventMutationInput): Pr
       registration_deadline: normalizeOptionalDate(parsed.data.registration_deadline),
       prize_description: normalizeOptionalText(parsed.data.prize_description),
       rules: normalizeOptionalText(parsed.data.rules),
+      event_type: normalizeEventType(parsed.data.event_kind, parsed.data.event_type),
+      visibility: parsed.data.visibility,
       logo_url: normalizeOptionalText(parsed.data.logo_url),
       banner_url: normalizeOptionalText(parsed.data.banner_url),
       tournament_format: normalizeOptionalText(parsed.data.tournament_format) as EventMutationInput["tournament_format"],
@@ -637,6 +681,40 @@ export async function pauseEvent(eventId: string): Promise<ActionResult> {
   }
 }
 
+export async function activateEvent(eventId: string): Promise<ActionResult> {
+  const parsed = eventIdSchema.safeParse({ eventId });
+  if (!parsed.success) return { error: "Evento inválido." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "activate_event");
+
+    const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.status !== "published" && event.status !== "paused") {
+      return { error: "Somente eventos publicados ou pausados podem ser ativados." };
+    }
+
+    const { error } = await supabase
+      .from("events")
+      .update({ status: "active", paused_at: null, updated_at: getNowIso() })
+      .eq("id", event.id);
+    if (error) return { error: "Não foi possível ativar o evento." };
+
+    await logAdminAction(supabase, {
+      adminId,
+      action: "activate_event",
+      targetType: "event",
+      targetId: event.id,
+      details: { title: event.title },
+    });
+
+    revalidateEventPaths(event.id);
+    return { success: "Evento ativado com sucesso." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao ativar evento." };
+  }
+}
+
 export async function finalizeEvent(eventId: string): Promise<ActionResult> {
   const parsed = eventIdSchema.safeParse({ eventId });
   if (!parsed.success) return { error: "Evento inválido." };
@@ -654,6 +732,18 @@ export async function finalizeEvent(eventId: string): Promise<ActionResult> {
 
     const rankingResult = await recalculateRankings(supabase);
     if (rankingResult.error) return rankingResult;
+
+    await queueEventFinishedNotifications(supabase, event.id, event.title);
+
+    await queueOrSendDiscordNotification({
+      supabase,
+      createdBy: adminId,
+      type: "event_finalized",
+      data: {
+        title: event.title,
+        eventId: event.id,
+      },
+    });
 
     await queueOrSendDiscordNotification({
       supabase,
@@ -707,6 +797,8 @@ export async function duplicateEvent(eventId: string): Promise<ActionResult<{ id
       end_date: duration ? new Date(baseStart.getTime() + duration).toISOString() : null,
       registration_deadline: deadlineDelta ? new Date(baseStart.getTime() - deadlineDelta).toISOString() : null,
       event_kind: event.event_kind,
+      event_type: event.event_type,
+      visibility: event.visibility,
       team_size: event.team_size,
       prize_description: event.prize_description,
       rules: event.rules,

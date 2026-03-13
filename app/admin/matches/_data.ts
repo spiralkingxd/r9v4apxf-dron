@@ -30,8 +30,10 @@ export type MatchDetail = {
   bracket_position: string | null;
   team_a_id: string | null;
   team_a_name: string;
+  team_a_logo_url: string | null;
   team_b_id: string | null;
   team_b_name: string;
+  team_b_logo_url: string | null;
   score_a: number;
   score_b: number;
   winner_id: string | null;
@@ -98,10 +100,13 @@ async function getEventMap(supabase: Awaited<ReturnType<typeof createClient>>) {
 }
 
 async function getTeamNameMap(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data } = await supabase.from("teams").select("id, name");
-  const map = new Map<string, string>();
+  const { data } = await supabase.from("teams").select("id, name, logo_url");
+  const map = new Map<string, { name: string; logoUrl: string | null }>();
   for (const row of data ?? []) {
-    map.set(String(row.id), String(row.name));
+    map.set(String(row.id), {
+      name: String(row.name),
+      logoUrl: (row.logo_url as string | null) ?? null,
+    });
   }
   return map;
 }
@@ -129,13 +134,13 @@ export async function getAdminMatches() {
       event_title: eventMap.get(eventId)?.title ?? "Evento removido",
       round: Number(row.round ?? 1),
       team_a_id: teamAId,
-      team_a_name: teamAId ? teamMap.get(teamAId) ?? "Equipe removida" : "A definir",
+      team_a_name: teamAId ? teamMap.get(teamAId)?.name ?? "Equipe removida" : "A definir",
       team_b_id: teamBId,
-      team_b_name: teamBId ? teamMap.get(teamBId) ?? "Equipe removida" : "A definir",
+      team_b_name: teamBId ? teamMap.get(teamBId)?.name ?? "Equipe removida" : "A definir",
       score_a: Number(row.score_a ?? 0),
       score_b: Number(row.score_b ?? 0),
       winner_id: winnerId,
-      winner_name: winnerId ? teamMap.get(winnerId) ?? "Equipe removida" : "-",
+      winner_name: winnerId ? teamMap.get(winnerId)?.name ?? "Equipe removida" : "-",
       status: (row.status as AdminMatchRow["status"]) ?? "pending",
       scheduled_at: (row.scheduled_at as string | null) ?? null,
       updated_at: String(row.updated_at),
@@ -178,9 +183,11 @@ export async function getMatchDetail(matchId: string) {
     round: Number(match.round ?? 1),
     bracket_position: (match.bracket_position as string | null) ?? null,
     team_a_id: (match.team_a_id as string | null) ?? null,
-    team_a_name: match.team_a_id ? teamMap.get(String(match.team_a_id)) ?? "Equipe removida" : "A definir",
+    team_a_name: match.team_a_id ? teamMap.get(String(match.team_a_id))?.name ?? "Equipe removida" : "A definir",
+    team_a_logo_url: match.team_a_id ? teamMap.get(String(match.team_a_id))?.logoUrl ?? null : null,
     team_b_id: (match.team_b_id as string | null) ?? null,
-    team_b_name: match.team_b_id ? teamMap.get(String(match.team_b_id)) ?? "Equipe removida" : "A definir",
+    team_b_name: match.team_b_id ? teamMap.get(String(match.team_b_id))?.name ?? "Equipe removida" : "A definir",
+    team_b_logo_url: match.team_b_id ? teamMap.get(String(match.team_b_id))?.logoUrl ?? null : null,
     score_a: Number(match.score_a ?? 0),
     score_b: Number(match.score_b ?? 0),
     winner_id: (match.winner_id as string | null) ?? null,
@@ -236,9 +243,9 @@ export async function getTournamentBracketData(eventId: string) {
       bracket_position: (row.bracket_position as string | null) ?? null,
       status: (row.status as BracketMatchRow["status"]) ?? "pending",
       team_a_id: teamAId,
-      team_a_name: teamAId ? teamMap.get(teamAId) ?? "Equipe removida" : "A definir",
+      team_a_name: teamAId ? teamMap.get(teamAId)?.name ?? "Equipe removida" : "A definir",
       team_b_id: teamBId,
-      team_b_name: teamBId ? teamMap.get(teamBId) ?? "Equipe removida" : "A definir",
+      team_b_name: teamBId ? teamMap.get(teamBId)?.name ?? "Equipe removida" : "A definir",
       score_a: Number(row.score_a ?? 0),
       score_b: Number(row.score_b ?? 0),
       winner_id: winnerId,
@@ -280,11 +287,11 @@ export async function getResultsData() {
       event_id: String(row.event_id),
       event_title: eventMap.get(String(row.event_id))?.title ?? "Evento removido",
       round: Number(row.round ?? 1),
-      team_a_name: teamAId ? teamMap.get(teamAId) ?? "Equipe removida" : "A definir",
-      team_b_name: teamBId ? teamMap.get(teamBId) ?? "Equipe removida" : "A definir",
+      team_a_name: teamAId ? teamMap.get(teamAId)?.name ?? "Equipe removida" : "A definir",
+      team_b_name: teamBId ? teamMap.get(teamBId)?.name ?? "Equipe removida" : "A definir",
       score_a: Number(row.score_a ?? 0),
       score_b: Number(row.score_b ?? 0),
-      winner_name: winnerId ? teamMap.get(winnerId) ?? "Equipe removida" : "Empate",
+      winner_name: winnerId ? teamMap.get(winnerId)?.name ?? "Equipe removida" : "Empate",
       ended_at: (row.ended_at as string | null) ?? null,
       updated_at: String(row.updated_at),
     };

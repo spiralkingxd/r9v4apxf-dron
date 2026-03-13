@@ -23,28 +23,34 @@ function statusTone(status: AdminMatchRow["status"]) {
 }
 
 function statusLabel(status: AdminMatchRow["status"]) {
-  if (status === "finished") return "Finalizada";
-  if (status === "in_progress") return "Em andamento";
-  if (status === "cancelled") return "Cancelada";
-  return "Pendente";
+  if (status === "finished") return "🟢 Finalizada";
+  if (status === "in_progress") return "🔵 Em andamento";
+  if (status === "cancelled") return "🔴 Cancelada";
+  return "🟡 Pendente";
 }
 
 export function MatchesTable({
   rows,
   events,
   teams,
+  initialFilters,
 }: {
   rows: AdminMatchRow[];
   events: Array<{ id: string; title: string }>;
   teams: Array<{ id: string; name: string }>;
+  initialFilters?: {
+    eventId?: string;
+    status?: AdminMatchRow["status"] | "all";
+    round?: string;
+  };
 }) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
-  const [eventFilter, setEventFilter] = useState("all");
-  const [roundFilter, setRoundFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | AdminMatchRow["status"]>("all");
+  const [eventFilter, setEventFilter] = useState(initialFilters?.eventId ?? "all");
+  const [roundFilter, setRoundFilter] = useState(initialFilters?.round ?? "all");
+  const [statusFilter, setStatusFilter] = useState<"all" | AdminMatchRow["status"]>(initialFilters?.status ?? "all");
   const [dateFilter, setDateFilter] = useState<"all" | "7" | "30">("all");
   const [pageSize, setPageSize] = useState(25);
   const [createOpen, setCreateOpen] = useState(false);

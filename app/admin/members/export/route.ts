@@ -24,6 +24,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids") ?? "";
+  const format = (url.searchParams.get("format") ?? "csv").toLowerCase();
   const ids = idsParam
     .split(",")
     .map((item) => item.trim())
@@ -36,6 +37,14 @@ export async function GET(request: Request) {
     .limit(2000);
 
   const { data } = ids.length ? await query.in("id", ids) : await query;
+
+  if (format === "json") {
+    return NextResponse.json(data ?? [], {
+      headers: {
+        "content-disposition": "attachment; filename=members-export.json",
+      },
+    });
+  }
 
   const lines = [
     "id,display_name,username,discord_id,xbox_gamertag,email,role,is_banned,created_at",

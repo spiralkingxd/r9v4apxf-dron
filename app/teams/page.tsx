@@ -34,6 +34,7 @@ async function getData() {
     supabase
       .from("teams")
       .select("id, name, logo_url, captain_id, max_members, created_at")
+      .is("dissolved_at", null)
       .order("created_at", { ascending: false }),
   ]);
 
