@@ -1,22 +1,136 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 
-const createTeamSchema = z.object({
-  name: z
-    .string()
-    .min(2, "O nome deve ter pelo menos 2 caracteres.")
-    .max(50, "O nome pode ter no máximo 50 caracteres.")
-    .trim(),
-});
+// ---------------------------------------------------------------------------
+// Tipos públicos
+// ---------------------------------------------------------------------------
 
 export type CreateTeamState = {
   error?: string | null;
+  success?: string | null;
+  teamId?: string | null;
 };
+
+export type SearchUsersResult = {
+  id: string;
+  display_name: string;
+  username: string;
+  avatar_url: string | null;
+}[];
+
+function toFriendlyTeamError(message?: string | null): string {
+  const msg = (message ?? "").toLowerCase();
+
+  if (msg.includes("3 equipes") || msg.includes("limite máximo")) {
+    return "Você atingiu o limite de 3 equipes";
+  }
+  if (msg.includes("10 membros") || msg.includes("equipe atingiu")) {
+    return "Esta equipe está cheia (10/10)";
+  }
+  if (msg.includes("duplicate") || msg.includes("já existe")) {
+    return "Este nome de equipe já está em uso";
+  }
+
+  return "Não foi possível concluir a ação. Tente novamente.";
+}
+
+// ---------------------------------------------------------------------------
+// Schemas de validação
+// ---------------------------------------------------------------------------
+
+const createTeamSchema = z.object({
+  name: z
+    .string()
+    .min(3, "O nome deve ter pelo menos 3 caracteres.")
+    .max(30, "O nome pode ter no máximo 30 caracteres.")
+    .trim(),
+  logo_url: z
+    .string()
+    .url("URL do logo inválida.")
+    .or(z.literal(""))
+    .default(""),
+  member_ids: z
+    .array(z.string().uuid())
+    .max(9, "Você pode adicionar no máximo 9 membros além de você.")
+    .default([]),
+});
+
+// ---------------------------------------------------------------------------
+// Busca de usuários (chamada por Client Component via Server Action)
+// ---------------------------------------------------------------------------
+
+export async function searchUsers(term: string): Promise<SearchUsersResult> {
+  const q = term.trim();
+  if (q.length < 2) return [];
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, display_name, username, avatar_url")
+    .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+    .neq("id", user.id)
+    .limit(10);
+
+  const profileRows = (data ?? []) as {
+    id: string;
+    display_name: string;
+    username: string;
+    avatar_url: string | null;
+  }[];
+
+  if (profileRows.length === 0) return [];
+
+  const ids = profileRows.map((row) => row.id);
+  const { data: captainLinks } = await supabase
+    .from("team_members")
+    .select("user_id")
+    .eq("role", "captain")
+    .in("user_id", ids);
+
+  const captainMap = new Map<string, number>();
+  for (const row of captainLinks ?? []) {
+    const uid = row.user_id as string;
+    captainMap.set(uid, (captainMap.get(uid) ?? 0) + 1);
+  }
+
+  return profileRows
+    .filter((row) => (captainMap.get(row.id) ?? 0) < 3)
+    .slice(0, 10) as SearchUsersResult;
+}
+
+// ---------------------------------------------------------------------------
+// Verificar disponibilidade de nome (debounce gerenciado pelo cliente)
+// ---------------------------------------------------------------------------
+
+export async function checkTeamNameAvailable(
+  name: string,
+): Promise<{ available: boolean }> {
+  const q = name.trim();
+  if (q.length < 3) return { available: false };
+
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("teams")
+    .select("id")
+    .ilike("name", q)
+    .maybeSingle();
+
+  return { available: !data };
+}
+
+// ---------------------------------------------------------------------------
+// Criação da equipe
+// ---------------------------------------------------------------------------
 
 export async function createTeam(
   _prevState: CreateTeamState,
@@ -31,25 +145,80 @@ export async function createTeam(
     return { error: "Você precisa estar logado para criar uma equipe." };
   }
 
-  const parsed = createTeamSchema.safeParse({ name: formData.get("name") });
+  // Verifica limite de 3 equipes por conta.
+  const { count } = await supabase
+    .from("team_members")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("role", "captain");
+
+  if ((count ?? 0) >= 3) {
+    return { error: "Você atingiu o limite de 3 equipes" };
+  }
+
+  const rawMemberIds: string[] = [];
+  for (const val of formData.getAll("member_id")) {
+    if (typeof val === "string" && val) rawMemberIds.push(val);
+  }
+
+  const parsed = createTeamSchema.safeParse({
+    name: formData.get("name"),
+    logo_url: formData.get("logo_url") ?? "",
+    member_ids: rawMemberIds,
+  });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
-  const { data, error } = await supabase
+  const { name, logo_url, member_ids } = parsed.data;
+
+  // Insere a equipe — o trigger sync_team_captain_membership adiciona o capitão
+  // em team_members automaticamente.
+  const { data: team, error: teamError } = await supabase
     .from("teams")
-    .insert({ name: parsed.data.name, captain_id: user.id })
+    .insert({
+      name,
+      logo_url: logo_url || null,
+      captain_id: user.id,
+    })
     .select("id")
     .single();
 
-  if (error) {
-    if (error.code === "23505") {
-      return { error: "Já existe uma equipe com esse nome. Tente outro." };
+  if (teamError) {
+    if (teamError.code === "23505") {
+      return { error: "Este nome de equipe já está em uso" };
     }
-    return { error: "Não foi possível criar a equipe. Tente novamente." };
+    return { error: toFriendlyTeamError(teamError.message) };
+  }
+
+  // Adiciona membros extras selecionados.
+  if (member_ids.length > 0) {
+    const memberRows = member_ids.map((uid) => ({
+      team_id: team.id,
+      user_id: uid,
+      role: "member" as const,
+    }));
+
+    const { error: memberError } = await supabase
+      .from("team_members")
+      .insert(memberRows);
+
+    if (memberError) {
+      // Equipe já criada; não desfeita aqui para evitar orphan — apenas avisa.
+      return {
+        error: toFriendlyTeamError(memberError.message),
+        success: "Equipe criada com sucesso.",
+        teamId: team.id,
+      };
+    }
   }
 
   revalidatePath("/teams");
-  redirect(`/teams/${data.id}`);
+  revalidatePath("/profile/me");
+
+  return {
+    success: "Equipe criada com sucesso.",
+    teamId: team.id,
+  };
 }

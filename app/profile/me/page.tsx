@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { AtSign, Calendar, Users } from "lucide-react";
+import { AtSign, Calendar } from "lucide-react";
 
 import { upsertProfileFromOAuth } from "@/lib/auth/profile";
 import { createClient } from "@/lib/supabase/server";
+import { ProfileTeamsSection } from "@/components/profile-teams-section";
 import { XboxStatusTag } from "@/components/xbox-status-tag";
 
 type ProfileRow = {
@@ -21,6 +21,24 @@ type TeamRow = {
   id: string;
   name: string;
   logo_url: string | null;
+  max_members: number;
+};
+
+type TeamMemberRow = {
+  team_id: string;
+  role: "captain" | "member";
+  joined_at: string;
+  teams: TeamRow | TeamRow[] | null;
+};
+
+type UserTeamCard = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  role: "captain" | "member";
+  joined_at: string;
+  member_count: number;
+  max_members: number;
 };
 
 export default async function MyProfilePage() {
@@ -55,35 +73,66 @@ export default async function MyProfilePage() {
     redirect("/");
   }
 
-  // Fetch teams: where user is captain, or a member via team_members table
-  const [{ data: captainTeams }, { data: memberLinks }] = await Promise.all([
-    supabase
-      .from("teams")
-      .select("id, name, logo_url")
-      .eq("captain_id", user.id),
-    supabase
-      .from("team_members")
-      .select("teams(id, name, logo_url)")
-      .eq("profile_id", user.id),
-  ]);
+  let teamsError: string | null = null;
+  let userTeams: UserTeamCard[] = [];
 
-  // Merge and deduplicate by team id
-  const teamsMap = new Map<string, TeamRow>();
-  for (const t of (captainTeams ?? []) as TeamRow[]) {
-    teamsMap.set(t.id, t);
+  const { data: membershipsRaw, error: membershipsError } = await supabase
+    .from("team_members")
+    .select("team_id, role, joined_at, teams(id, name, logo_url, max_members)")
+    .eq("user_id", user.id);
+
+  if (membershipsError) {
+    teamsError = "Não foi possível carregar suas equipes agora.";
+  } else {
+    const memberships = (membershipsRaw ?? []) as TeamMemberRow[];
+    const teamIds = memberships.map((m) => m.team_id);
+
+    let countMap = new Map<string, number>();
+
+    if (teamIds.length > 0) {
+      const { data: countsRaw } = await supabase
+        .from("team_members")
+        .select("team_id")
+        .in("team_id", teamIds);
+
+      for (const row of countsRaw ?? []) {
+        const teamId = row.team_id as string;
+        countMap.set(teamId, (countMap.get(teamId) ?? 0) + 1);
+      }
+    }
+
+    userTeams = memberships
+      .map((membership) => {
+        const related = Array.isArray(membership.teams)
+          ? membership.teams[0]
+          : membership.teams;
+
+        if (!related) return null;
+
+        return {
+          id: related.id,
+          name: related.name,
+          logo_url: related.logo_url,
+          role: membership.role,
+          joined_at: membership.joined_at,
+          member_count: countMap.get(related.id) ?? 1,
+          max_members: related.max_members ?? 10,
+        } satisfies UserTeamCard;
+      })
+      .filter((team): team is UserTeamCard => Boolean(team))
+      .sort((a, b) => {
+        const roleA = a.role === "captain" ? 0 : 1;
+        const roleB = b.role === "captain" ? 0 : 1;
+        if (roleA !== roleB) return roleA - roleB;
+        return new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime();
+      });
   }
-  for (const link of memberLinks ?? []) {
-    const teamData = (link as unknown as { teams: TeamRow[] | null }).teams;
-    const t = Array.isArray(teamData) ? teamData[0] : teamData;
-    if (t) teamsMap.set(t.id, t);
-  }
-  const teams = Array.from(teamsMap.values());
 
   const memberSince = new Date(profile.created_at).toLocaleDateString("pt-BR");
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-100">
-      <div className="mx-auto w-full max-w-2xl">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
         <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-2xl shadow-black/40 backdrop-blur-sm">
           {/* Gold accent bar */}
           <div className="h-1.5 w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />
@@ -120,7 +169,7 @@ export default async function MyProfilePage() {
           <div className="mx-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
           {/* Info grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x sm:divide-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-white/5">
             <InfoCard
               icon={<AtSign className="h-4 w-4 text-cyan-400" />}
               label="Username"
@@ -128,28 +177,6 @@ export default async function MyProfilePage() {
               <span className="text-sm font-semibold text-slate-100">
                 @{profile.username}
               </span>
-            </InfoCard>
-
-            {/* Teams cell */}
-            <InfoCard
-              icon={<Users className="h-4 w-4 text-cyan-400" />}
-              label="Equipe"
-            >
-              {teams.length > 0 ? (
-                <div className="flex flex-col items-center gap-1">
-                  {teams.map((team) => (
-                    <Link
-                      key={team.id}
-                      href={`/teams/${team.id}`}
-                      className="text-sm font-semibold text-yellow-300 transition-colors hover:text-yellow-200 hover:underline"
-                    >
-                      {team.name}
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-sm text-slate-500">Sem equipe</span>
-              )}
             </InfoCard>
 
             <InfoCard
@@ -164,6 +191,12 @@ export default async function MyProfilePage() {
 
           <div className="pb-8" />
         </div>
+
+        <ProfileTeamsSection
+          userId={user.id}
+          teams={userTeams}
+          teamsError={teamsError}
+        />
       </div>
     </main>
   );

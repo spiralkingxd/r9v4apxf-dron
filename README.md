@@ -13,6 +13,7 @@ Plataforma competitiva para torneios de Sea of Thieves, com autenticação via D
 - [Configuração do Supabase](#configuração-do-supabase)
 - [Configuração do Discord](#configuração-do-discord)
 - [Fluxo de autenticação e permissões](#fluxo-de-autenticação-e-permissões)
+- [Fluxo de equipes e solicitações](#fluxo-de-equipes-e-solicitações)
 - [Rotas principais](#rotas-principais)
 - [Scripts](#scripts)
 - [Deploy na Vercel](#deploy-na-vercel)
@@ -55,6 +56,8 @@ O MadnessArena oferece um fluxo completo para gestão de campeonatos:
 
 - login/logout com Discord
 - página de perfil em /profile/me
+- criação e gerenciamento de equipes
+- solicitações de entrada em equipes com aprovação do capitão
 - inscrição de time em eventos
 
 ### Área administrativa
@@ -194,6 +197,56 @@ Referências:
 
 - Promoção automática: se discord_id for igual a OWNER_DISCORD_ID.
 - Promoção manual: por ação administrativa no painel.
+
+## Fluxo de equipes e solicitações
+
+### Regras de equipes
+
+- cada usuário pode participar de até 3 equipes
+- cada equipe pode ter até 10 membros
+- o capitão também é registrado em team_members com role captain
+- apenas o capitão pode aprovar ou rejeitar solicitações pendentes
+
+### Tabelas envolvidas
+
+- teams: metadados da equipe, capitão e limite de membros
+- team_members: vínculo relacional entre usuário e equipe com role captain/member
+- team_join_requests: fila de solicitações com status pending, approved ou rejected
+
+### Fluxo da solicitação
+
+1. O jogador acessa /teams/[id] e vê o botão de solicitação apenas se não for capitão nem membro da equipe.
+2. O frontend bloqueia a ação quando a equipe já está cheia ou quando o usuário já atingiu o limite de 3 equipes.
+3. Ao enviar a solicitação, o servidor valida autenticação, duplicidade, limite de equipes e limite de membros antes de criar o registro.
+4. O capitão gerencia a fila no modal de equipe, aprovando ou rejeitando cada pedido.
+5. Quando uma solicitação é aprovada, o usuário é inserido em team_members e a solicitação recebe status approved.
+6. O próprio jogador pode cancelar uma solicitação pendente na página da equipe.
+
+### Garantias de backend
+
+- RLS restringe leitura, criação e moderação ao usuário correto ou ao capitão correto
+- índices e validações evitam solicitações pendentes duplicadas
+- server actions repetem as regras críticas mesmo quando o frontend já bloqueou a ação
+- rotas relevantes são revalidadas após criar, aprovar, rejeitar ou cancelar solicitações
+
+### Pontos principais no código
+
+- [app/actions/team-requests.ts](app/actions/team-requests.ts)
+- [components/join-request-button.tsx](components/join-request-button.tsx)
+- [components/join-request-list.tsx](components/join-request-list.tsx)
+- [components/manage-team-modal.tsx](components/manage-team-modal.tsx)
+- [supabase/schema.sql](supabase/schema.sql)
+
+### Checklist manual sugerido
+
+1. Fazer login com um usuário sem equipe e enviar uma solicitação válida.
+2. Confirmar que o botão muda para estado pendente e permite cancelamento.
+3. Cancelar a solicitação e verificar se a equipe volta a aceitar novo envio.
+4. Entrar como capitão e aprovar uma solicitação pendente.
+5. Confirmar que o membro aparece na equipe e que a solicitação sai da fila.
+6. Repetir com rejeição e validar histórico de respondidas.
+7. Validar bloqueio ao atingir 3 equipes no frontend e no backend.
+8. Validar bloqueio ao atingir 10 membros na equipe.
 
 ## Rotas principais
 

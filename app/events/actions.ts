@@ -185,7 +185,7 @@ export async function updateRanking(formData: FormData): Promise<UpdateMatchStat
   }
 
   const { data: allTeams } = await supabase.from("teams").select("id, captain_id");
-  const { data: members } = await supabase.from("team_members").select("team_id, profile_id");
+  const { data: members } = await supabase.from("team_members").select("team_id, user_id");
   const { data: matches } = await supabase
     .from("matches")
     .select("id, team_a_id, team_b_id, winner_id, score_a, score_b");
@@ -205,7 +205,7 @@ export async function updateRanking(formData: FormData): Promise<UpdateMatchStat
     if (!rosterByTeam.has(teamId)) {
       rosterByTeam.set(teamId, new Set<string>());
     }
-    rosterByTeam.get(teamId)?.add(member.profile_id as string);
+    rosterByTeam.get(teamId)?.add(member.user_id as string);
   }
 
   const standings = new Map<string, RankingAccumulator>();

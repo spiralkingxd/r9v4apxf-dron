@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Anchor, Plus, Users } from "lucide-react";
+import { Anchor, Calendar, Crown, Users } from "lucide-react";
 
-import { CreateTeamForm } from "@/components/create-team-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,9 +10,14 @@ type TeamListRow = {
   name: string;
   logo_url: string | null;
   created_at: string;
-  captain: { display_name: string; avatar_url: string | null } | null;
+  captain_id: string;
+  captain: { id: string; display_name: string; avatar_url: string | null } | null;
   member_count: number;
+  max_members: number;
+  is_user_member: boolean;
 };
+
+const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
 async function getData() {
   if (!isSupabaseConfigured()) {
@@ -29,7 +33,7 @@ async function getData() {
     supabase.auth.getUser(),
     supabase
       .from("teams")
-      .select("id, name, logo_url, created_at")
+      .select("id, name, logo_url, captain_id, max_members, created_at")
       .order("created_at", { ascending: false }),
   ]);
 
@@ -41,21 +45,44 @@ async function getData() {
   const teamIds = teamsRaw.map((t) => t.id as string);
   const { data: memberCounts } = await supabase
     .from("team_members")
-    .select("team_id")
+    .select("team_id, user_id")
     .in("team_id", teamIds);
 
+  const captainIds = Array.from(new Set(teamsRaw.map((t) => t.captain_id as string)));
+  const { data: captainProfiles } = await supabase
+    .from("profiles")
+    .select("id, display_name, avatar_url")
+    .in("id", captainIds);
+
+  const captainMap = new Map<string, { id: string; display_name: string; avatar_url: string | null }>();
+  for (const row of captainProfiles ?? []) {
+    captainMap.set(row.id as string, {
+      id: row.id as string,
+      display_name: (row.display_name as string) ?? "Capitão",
+      avatar_url: (row.avatar_url as string | null) ?? null,
+    });
+  }
+
   const countMap = new Map<string, number>();
+  const myTeamSet = new Set<string>();
   for (const row of memberCounts ?? []) {
-    countMap.set(row.team_id, (countMap.get(row.team_id) ?? 0) + 1);
+    const teamId = row.team_id as string;
+    countMap.set(teamId, (countMap.get(teamId) ?? 0) + 1);
+    if (user?.id && (row.user_id as string) === user.id) {
+      myTeamSet.add(teamId);
+    }
   }
 
   const teams: TeamListRow[] = teamsRaw.map((t) => ({
     id: t.id as string,
     name: t.name as string,
     logo_url: (t.logo_url as string | null) ?? null,
+    captain_id: t.captain_id as string,
     created_at: t.created_at as string,
-    captain: null,
+    captain: captainMap.get(t.captain_id as string) ?? null,
     member_count: countMap.get(t.id as string) ?? 0,
+    max_members: (t.max_members as number) ?? 10,
+    is_user_member: myTeamSet.has(t.id as string),
   }));
 
   return { teams, userId: user?.id ?? null };
@@ -114,8 +141,27 @@ export default async function TeamsPage() {
                         </p>
                         <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                           <Users className="h-3 w-3" />
-                          {team.member_count} membro{team.member_count !== 1 ? "s" : ""}
+                          {team.member_count}/{team.max_members}
                         </p>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                          <Crown className="h-3 w-3" />
+                          Capitão: {team.captain?.display_name ?? "Não identificado"}
+                        </p>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                          <Calendar className="h-3 w-3" />
+                          Criada em {dateFmt.format(new Date(team.created_at))}
+                        </p>
+
+                        <div className="mt-3 flex items-center gap-2">
+                          {team.is_user_member ? (
+                            <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
+                              Sua equipe
+                            </span>
+                          ) : null}
+                          <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300">
+                            {userId && !team.is_user_member ? "Solicitar entrada" : "Ver equipe"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -131,31 +177,42 @@ export default async function TeamsPage() {
             )}
           </section>
 
-          {/* Barra lateral de criação de equipe */}
+          {/* Barra lateral informativa */}
           <aside>
-            <div className="sticky top-24 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-                <Plus className="h-5 w-5 text-amber-400" />
-                Fundar nova equipe
-              </h2>
-              <p className="mt-2 text-sm text-slate-400">
-                Apenas capitães podem inscrever equipes em torneios.
-              </p>
+            <div className="sticky top-24 space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+              <h2 className="text-base font-bold text-white">Como funciona?</h2>
+              <ul className="space-y-3 text-sm text-slate-400">
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">1</span>
+                  Explore equipes, veja membros e histórico competitivo.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">2</span>
+                  Entre em contato com capitães para solicitar entrada.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/10 text-xs font-bold text-amber-400">3</span>
+                  Gerencie suas equipes a partir do seu perfil.
+                </li>
+              </ul>
 
               {userId ? (
-                <div className="mt-6">
-                  <CreateTeamForm />
-                </div>
+                <Link
+                  href="/profile/me#teams"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
+                >
+                  Gerenciar minhas equipes
+                </Link>
               ) : (
-                <div className="mt-6 space-y-3">
-                  <p className="rounded-xl border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-amber-200">
-                    Faça login para fundar uma equipe.
+                <div className="space-y-3">
+                  <p className="rounded-xl border border-amber-300/20 bg-amber-300/8 px-4 py-3 text-sm text-amber-100">
+                    Faça login para criar ou entrar em equipes.
                   </p>
                   <Link
                     href="/auth/login?next=/teams"
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
                   >
-                    Login com Discord
+                    Entrar com Discord
                   </Link>
                 </div>
               )}

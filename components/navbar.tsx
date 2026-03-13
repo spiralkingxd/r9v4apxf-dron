@@ -43,6 +43,17 @@ export async function Navbar() {
     }
   }
 
+  let teamsCount = 0;
+  if (user) {
+    const { count } = await supabase
+      .from("team_members")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("role", "captain");
+
+    teamsCount = count ?? 0;
+  }
+
   const avatarUrl = profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
   const nickname = profile?.display_name ?? profile?.username ?? user?.email ?? "Jogador";
 
@@ -79,6 +90,12 @@ export async function Navbar() {
                 Painel Admin
               </Link>
             )}
+            <Link
+              href="/profile/me#teams"
+              className="hidden rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/20 sm:inline-flex"
+            >
+              Minhas Equipes ({teamsCount}/3)
+            </Link>
             <Link
               href="/profile/me"
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 transition hover:bg-white/10"
