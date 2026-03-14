@@ -63,7 +63,7 @@ export default async function RankingPage() {
   const rows = await getRankingData();
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] px-6 py-10 text-slate-100 lg:px-10">
+    <main className="page-shell px-6 py-10 lg:px-10">
       <RankingLiveSync />
       <div className="mx-auto w-full max-w-6xl space-y-8">
         <div>
@@ -77,7 +77,7 @@ export default async function RankingPage() {
             Ainda não há pontuação registrada.
           </section>
         ) : (
-          <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60">
+          <section className="glass-card soft-ring overflow-hidden rounded-2xl">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[720px]">
                 <thead className="border-b border-white/10 bg-white/5 text-left text-xs uppercase tracking-wide text-slate-400">

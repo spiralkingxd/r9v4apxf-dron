@@ -266,15 +266,15 @@ export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+      <div className="admin-surface flex flex-wrap items-end gap-3 rounded-2xl p-4">
         <label className="flex min-w-[260px] flex-1 flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Buscar por nome
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nome do evento" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Nome do evento" className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100 outline-none" />
         </label>
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Status
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
             {EVENT_STATUS_VALUES.map((status) => (
               <option key={status} value={status}>{EVENT_STATUS_LABELS[status]}</option>
@@ -284,7 +284,7 @@ export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Data
-          <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as typeof dateFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value as typeof dateFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todas</option>
             <option value="7">Próximos 7 dias</option>
             <option value="30">Próximos 30 dias</option>
@@ -294,7 +294,7 @@ export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Subtipo
-          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
             <option value="special">Evento Especial</option>
             <option value="scrimmage">Scrimmage</option>
@@ -304,7 +304,7 @@ export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Visibilidade
-          <select value={visibilityFilter} onChange={(event) => setVisibilityFilter(event.target.value as typeof visibilityFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={visibilityFilter} onChange={(event) => setVisibilityFilter(event.target.value as typeof visibilityFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todas</option>
             <option value="public">Pública</option>
             <option value="private">Privada</option>
@@ -313,7 +313,7 @@ export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Página
-          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value={25}>25</option>
             <option value={50}>50</option>
             <option value={100}>100</option>

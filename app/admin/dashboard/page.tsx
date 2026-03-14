@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   AlertCircle,
   Ban,
@@ -18,8 +19,23 @@ import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
 import { AlertBanner } from "@/components/admin/alert-banner";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
-import { DashboardCharts } from "@/components/admin/dashboard-charts";
 import { DashboardExportButton } from "@/components/admin/dashboard-export-button";
+
+const DashboardCharts = dynamic(
+  () => import("@/components/admin/dashboard-charts").then((mod) => mod.DashboardCharts),
+  {
+    loading: () => (
+      <section className="admin-surface rounded-2xl p-6">
+        <div className="h-8 w-52 animate-pulse rounded-lg bg-white/10" />
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <div className="h-72 animate-pulse rounded-xl bg-white/5 lg:col-span-2" />
+          <div className="h-72 animate-pulse rounded-xl bg-white/5" />
+          <div className="h-72 animate-pulse rounded-xl bg-white/5 lg:col-span-3" />
+        </div>
+      </section>
+    ),
+  },
+);
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" });
 const numberFmt = new Intl.NumberFormat("pt-BR");
@@ -94,7 +110,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <section className="space-y-6">
-      <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <header className="admin-surface rounded-2xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Painel Admin</p>
@@ -126,7 +142,7 @@ export default async function AdminDashboardPage() {
 
       <DashboardCharts weeklyUsers={weeklyUsers} monthlyTeams={monthlyTeams} tournamentStatus={statsPayload.tournamentStatus} />
 
-      <section className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <section className="admin-surface space-y-4 rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Alertas do Sistema</h2>
           <Link href="/admin/teams" className="text-xs uppercase tracking-[0.14em] text-cyan-300 hover:text-cyan-200">
@@ -197,7 +213,7 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <section className="admin-surface space-y-4 rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Atividades Recentes</h2>
           <Link href="/admin/logs" className="text-xs uppercase tracking-[0.14em] text-cyan-300 hover:text-cyan-200">
@@ -206,7 +222,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-4 xl:grid-cols-3">
-          <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="admin-surface-muted space-y-2 rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Ultimos 5 usuarios cadastrados</p>
             <div className="space-y-2">
               {activity.latestUsers.length > 0 ? (
@@ -219,7 +235,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="admin-surface-muted space-y-2 rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Ultimas 3 equipes criadas</p>
             <div className="space-y-2">
               {activity.latestTeams.length > 0 ? (
@@ -232,7 +248,7 @@ export default async function AdminDashboardPage() {
             </div>
           </div>
 
-          <div className="space-y-2 rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="admin-surface-muted space-y-2 rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Ultimas 5 acoes administrativas</p>
             <div className="space-y-2">
               {activity.latestAdminActions.length > 0 ? (
@@ -247,7 +263,7 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <section className="admin-surface rounded-2xl p-6">
         <div className="flex flex-wrap gap-2">
           <Link href="/admin/tournaments/new">
             <AdminButton type="button">

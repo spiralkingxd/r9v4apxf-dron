@@ -1,8 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050b12;
-  --foreground: #e2ecf7;
+  --background: #0a1522;
+  --foreground: #e7eff8;
+  --bg-soft: #102033;
+  --accent-cyan: #2ec5e8;
+  --accent-amber: #d9a24d;
+  --surface-bg: linear-gradient(180deg, rgba(16, 32, 51, 0.82), rgba(12, 24, 40, 0.74));
+  --surface-border: rgba(125, 154, 185, 0.2);
+  --topbar-bg: rgba(10, 21, 34, 0.86);
+  --hero-bg: linear-gradient(180deg, #13283d 0%, #102033 52%, #0a1522 100%);
+  --text-strong: #f0f6ff;
+  --text-base: #dbe8f6;
+  --text-muted: #a9bfd6;
+  --page-bg:
+    radial-gradient(1000px 520px at 50% -130px, rgba(46, 197, 232, 0.15), transparent 64%),
+    radial-gradient(860px 420px at 8% 0%, rgba(217, 162, 77, 0.1), transparent 60%),
+    linear-gradient(180deg, #102033 0%, #0d1a2b 48%, #0a1522 100%);
+}
+
+[data-theme="light"] {
+  --background: #f3f6fa;
+  --foreground: #1b2d40;
+  --bg-soft: #f8fafc;
+  --accent-cyan: #0f7fa8;
+  --accent-amber: #9b6a24;
+  --surface-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 251, 255, 0.92));
+  --surface-border: rgba(47, 72, 99, 0.18);
+  --topbar-bg: rgba(245, 249, 253, 0.92);
+  --hero-bg: linear-gradient(180deg, #dce9f4 0%, #d5e4f1 52%, #cfdfee 100%);
+  --text-strong: #1b2f46;
+  --text-base: #2b4763;
+  --text-muted: #5b7590;
+  --page-bg:
+    radial-gradient(900px 440px at 50% -120px, rgba(15, 127, 168, 0.12), transparent 65%),
+    radial-gradient(760px 380px at 10% 0%, rgba(155, 106, 36, 0.08), transparent 60%),
+    linear-gradient(180deg, #f8fafd 0%, #eef4fa 48%, #e7eef6 100%);
 }
 
 @theme inline {
@@ -21,13 +54,304 @@ html {
 }
 
 body {
-  background: var(--background);
+  background: var(--page-bg);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }
 
 body::selection {
   background: rgba(125, 211, 252, 0.3);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.75);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.7), rgba(245, 158, 11, 0.55));
+  border-radius: 999px;
+}
+
+.glass-card {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-bg);
+  backdrop-filter: blur(6px);
+}
+
+.page-shell {
+  min-height: 100vh;
+  color: var(--foreground);
+  background: var(--page-bg);
+}
+
+.section-hero {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.action-primary {
+  background: linear-gradient(135deg, var(--accent-cyan), color-mix(in srgb, var(--accent-cyan) 78%, #ffffff 22%));
+  color: color-mix(in srgb, var(--background) 72%, #000000 28%);
+}
+
+.action-primary:hover {
+  filter: brightness(1.06);
+}
+
+.action-secondary {
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: color-mix(in srgb, var(--foreground) 92%, #ffffff 8%);
+}
+
+.action-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.soft-ring {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--surface-border) 80%, transparent),
+    0 24px 60px color-mix(in srgb, var(--background) 65%, transparent);
+}
+
+.site-topbar {
+  border-bottom: 1px solid var(--surface-border);
+  background: var(--topbar-bg);
+  backdrop-filter: blur(12px);
+}
+
+.hero-shell {
+  background: var(--hero-bg);
+}
+
+.sot-display {
+  font-family: var(--font-geist-sans), sans-serif;
+  letter-spacing: 0;
+}
+
+.sot-board {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-bg);
+  color: var(--foreground);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--surface-border) 80%, transparent),
+    0 14px 34px color-mix(in srgb, var(--background) 65%, transparent);
+}
+
+[data-theme="light"] .site-topbar {
+  background: rgba(243, 247, 252, 0.88);
+}
+
+[data-theme="light"] .action-primary {
+  color: #f7fbff;
+}
+
+[data-theme="light"] .action-secondary {
+  color: #1c334c;
+  background: rgba(28, 51, 76, 0.06);
+}
+
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-slate-100 {
+  color: #1b2d40 !important;
+}
+
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+  color: #2c445d !important;
+}
+
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500,
+[data-theme="light"] .text-slate-600 {
+  color: #587089 !important;
+}
+
+/* Light mode overrides for hardcoded Tailwind colors */
+[data-theme="light"] [class*="text-cyan-1"],
+[data-theme="light"] [class*="text-cyan-2"],
+[data-theme="light"] [class*="text-cyan-3"],
+[data-theme="light"] [class*="text-cyan-4"],
+[data-theme="light"] [class*="text-cyan-5"] {
+  color: #0a5c7a !important;
+}
+
+[data-theme="light"] [class*="text-cyan-100"],
+[data-theme="light"] [class*="text-cyan-200"],
+[data-theme="light"] [class*="text-cyan-300"],
+[data-theme="light"] [class*="text-cyan-400"],
+[data-theme="light"] [class*="text-cyan-500"] {
+  color: rgba(10, 92, 122, 0.9) !important;
+}
+
+[data-theme="light"] [class*="text-amber-1"],
+[data-theme="light"] [class*="text-amber-2"],
+[data-theme="light"] [class*="text-amber-3"],
+[data-theme="light"] [class*="text-amber-4"] {
+  color: #8c5a15 !important;
+}
+
+[data-theme="light"] [class*="text-amber-100"],
+[data-theme="light"] [class*="text-amber-200"],
+[data-theme="light"] [class*="text-amber-300"],
+[data-theme="light"] [class*="text-amber-400"] {
+  color: rgba(140, 90, 21, 0.9) !important;
+}
+
+[data-theme="light"] [class*="text-emerald-1"],
+[data-theme="light"] [class*="text-emerald-2"],
+[data-theme="light"] [class*="text-emerald-3"],
+[data-theme="light"] [class*="text-emerald-4"] {
+  color: #047857 !important;
+}
+
+[data-theme="light"] [class*="text-emerald-100"],
+[data-theme="light"] [class*="text-emerald-200"],
+[data-theme="light"] [class*="text-emerald-300"],
+[data-theme="light"] [class*="text-emerald-400"] {
+  color: rgba(4, 120, 87, 0.9) !important;
+}
+
+[data-theme="light"] .from-amber-300 {
+  --tw-gradient-from: #9b6a24 var(--tw-gradient-from-position) !important;
+}
+[data-theme="light"] .via-amber-400 {
+  --tw-gradient-stops: var(--tw-gradient-from), #c28825 var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+[data-theme="light"] .to-yellow-300 {
+  --tw-gradient-to: #d6961c var(--tw-gradient-to-position) !important;
+}
+
+[data-theme="light"] .bg-clip-text.text-transparent {
+  background: none !important;
+  color: var(--accent-amber) !important;
+  -webkit-text-fill-color: var(--accent-amber) !important;
+}
+
+[data-theme="light"] [class*="bg-cyan-300"],
+[data-theme="light"] [class*="bg-cyan-400"] {
+  background-color: rgba(15, 127, 168, 0.12) !important;
+}
+
+[data-theme="light"] [class*="border-cyan-300"],
+[data-theme="light"] [class*="border-cyan-400"] {
+  border-color: rgba(15, 127, 168, 0.3) !important;
+}
+
+[data-theme="light"] [class*="bg-amber-400"],
+[data-theme="light"] [class*="bg-amber-500"] {
+  background-color: rgba(155, 106, 36, 0.12) !important;
+}
+
+[data-theme="light"] [class*="border-amber-400"] {
+  border-color: rgba(155, 106, 36, 0.3) !important;
+}
+
+[data-theme="light"] [class*="bg-emerald-400"] {
+  background-color: rgba(4, 120, 87, 0.12) !important;
+}
+
+[data-theme="light"] [class*="border-emerald-400"] {
+  border-color: rgba(4, 120, 87, 0.3) !important;
+}
+
+[data-theme="light"] [class*="bg-white/5"],
+[data-theme="light"] [class*="bg-white/6"],
+[data-theme="light"] [class*="bg-white/8"],
+[data-theme="light"] [class*="bg-white/10"] {
+  background: rgba(23, 45, 70, 0.05) !important;
+}
+
+[data-theme="light"] [class*="border-white/10"],
+[data-theme="light"] [class*="border-white/12"],
+[data-theme="light"] [class*="border-white/15"] {
+  border-color: rgba(47, 72, 99, 0.2) !important;
+}
+
+[data-theme="light"] [class*="bg-[#050b12]"] {
+  background-color: var(--topbar-bg) !important;
+}
+
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200 {
+  color: var(--text-strong) !important;
+}
+
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] .text-slate-400 {
+  color: var(--text-base) !important;
+}
+
+[data-theme="light"] .text-slate-500,
+[data-theme="light"] .text-slate-600 {
+  color: var(--text-muted) !important;
+}
+
+/* Aplica visual mais consistente em páginas antigas sem refatorar cada arquivo */
+[class*="bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)]"],
+[class*="bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)]"] {
+  background: var(--page-bg) !important;
+}
+
+[class*="bg-slate-950/60"],
+[class*="bg-black/20"] {
+  background: var(--surface-bg) !important;
+  border-color: var(--surface-border) !important;
+}
+
+.admin-shell-bg {
+  min-height: 100vh;
+  color: var(--foreground);
+  background: var(--page-bg);
+}
+
+.admin-surface {
+  border: 1px solid var(--surface-border);
+  background: var(--topbar-bg);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--background) 50%, transparent);
+}
+
+.admin-surface-muted {
+  border: 1px solid var(--surface-border);
+  background: color-mix(in srgb, var(--topbar-bg) 60%, transparent);
+}
+
+.admin-nav-item {
+  color: var(--text-muted);
+  transition: all 0.2s ease-in-out;
+}
+
+.admin-nav-item:hover {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--text-strong);
+}
+
+.admin-nav-active {
+  border: 1px solid color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  color: var(--accent-cyan);
+  font-weight: 600;
+  box-shadow: inset 4px 0 0 var(--accent-cyan);
 }
 
 @keyframes dashboard-fade-in {
@@ -39,5 +363,16 @@ body::selection {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

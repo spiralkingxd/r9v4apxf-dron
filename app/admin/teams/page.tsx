@@ -8,7 +8,7 @@ export default async function AdminTeamsPage() {
 
   return (
     <section className="space-y-5">
-      <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <header className="admin-surface rounded-2xl p-6">
         <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Admin</p>
         <h1 className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-white">
           <Shield className="h-6 w-6 text-cyan-300" />

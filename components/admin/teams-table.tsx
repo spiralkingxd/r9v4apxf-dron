@@ -216,20 +216,20 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4">
+      <div className="admin-surface flex flex-wrap items-end gap-3 rounded-2xl p-4">
         <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Buscar
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Nome da equipe ou capitão"
-            className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none"
+            className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100 outline-none"
           />
         </label>
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Status
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
             <option value="active">🟢 Ativas</option>
             <option value="incomplete">🟡 Incompletas</option>
@@ -240,7 +240,7 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Tamanho
-          <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value as typeof sizeFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={sizeFilter} onChange={(e) => setSizeFilter(e.target.value as typeof sizeFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todos</option>
             <option value="solo">Solo (1)</option>
             <option value="small">2-4 membros</option>
@@ -250,7 +250,7 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Data
-          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as typeof dateFilter)} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value="all">Todas</option>
             <option value="7">Últimos 7 dias</option>
             <option value="30">Últimos 30 dias</option>
@@ -259,7 +259,7 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Página
-          <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100">
+          <select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-100">
             <option value={25}>25</option>
             <option value={50}>50</option>
             <option value={100}>100</option>

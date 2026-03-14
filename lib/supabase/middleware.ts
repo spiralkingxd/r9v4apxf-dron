@@ -13,11 +13,18 @@ function isBanExemptPath(pathname: string) {
   return BAN_EXEMPT_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
+function hasAuthCookie(request: NextRequest) {
+  return request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.includes("-auth-token"));
+}
+
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isPrivatePath = PRIVATE_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAdminPath = pathname.startsWith(ADMIN_PATH_PREFIX);
   const isOwnerOnlyPath = OWNER_ONLY_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isBannedPagePath = pathname.startsWith("/account-banned");
 
   if (!isSupabaseConfigured()) {
     if (isPrivatePath || isAdminPath) {
@@ -28,6 +35,11 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
+    return NextResponse.next({ request });
+  }
+
+  const hasSessionCookie = hasAuthCookie(request);
+  if (!hasSessionCookie && !isPrivatePath && !isAdminPath && !isBannedPagePath) {
     return NextResponse.next({ request });
   }
 

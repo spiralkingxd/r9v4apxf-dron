@@ -26,16 +26,16 @@ export function AdminStatCard({
 }: Props) {
   return (
     <article
-      className="group rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-lg shadow-black/20 transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-slate-900/70"
+      className="admin-surface group rounded-2xl p-5 transition-all hover:-translate-y-0.5"
       style={{ animation: "dashboard-fade-in 0.45s ease-out both", animationDelay: `${delayMs}ms` }}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-          <p className="mt-2 text-3xl font-bold text-white">{value}</p>
-          <p className="mt-1 text-sm text-slate-400">{helper}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">{label}</p>
+          <p className="mt-2 text-3xl font-bold text-[color:var(--text-strong)]">{value}</p>
+          <p className="mt-1 text-sm text-[color:var(--text-muted)] opacity-80">{helper}</p>
         </div>
-        <span className={`rounded-xl border p-3 transition group-hover:scale-105 ${tones[tone]}`}>
+        <span className={`rounded-xl border p-3 backdrop-blur-md transition group-hover:scale-105 ${tones[tone]}`}>
           {icon}
         </span>
       </div>

@@ -93,7 +93,7 @@ export default async function TeamsPage() {
   const { teams, userId } = await getData();
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] text-slate-100">
+    <main className="page-shell">
       <div className="mx-auto w-full max-w-7xl space-y-10 px-6 py-10 lg:px-10">
 
         {/* Header */}
@@ -118,7 +118,7 @@ export default async function TeamsPage() {
                 <Link
                   key={team.id}
                   href={`/teams/${team.id}`}
-                  className="group rounded-2xl border border-white/8 bg-white/4 p-5 transition hover:border-amber-400/30 hover:bg-amber-400/5"
+                  className="glass-card soft-ring group rounded-2xl p-5 transition hover:border-amber-400/30 hover:bg-amber-400/5"
                 >
                   <div className="flex items-start gap-4">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">

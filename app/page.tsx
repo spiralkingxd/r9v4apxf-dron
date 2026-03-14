@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Anchor, Calendar, Coins, Skull, Sword, Trophy, Users } from "lucide-react";
+import { unstable_cache } from "next/cache";
+import { Anchor, Calendar, Coins, Flame, Trophy, Users } from "lucide-react";
 
 import { formatTeamSize } from "@/lib/events";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -30,13 +32,48 @@ const STATUS_LABELS: Record<string, string> = {
   finished: "Finalizado",
 };
 
+const getCachedHomeData = unstable_cache(
+  async () => {
+    const supabase = createAdminClient();
+    if (!supabase) {
+      return { featuredEvent: null, finishedEvents: [] as FinishedEventRow[] };
+    }
+
+    const [{ data: activeEvents }, { data: finishedEvents }] = await Promise.all([
+      supabase
+        .from("events")
+        .select("id, title, description, start_date, end_date, status, prize_description, team_size")
+        .in("status", ["active", "published"])
+        .order("start_date", { ascending: true })
+        .limit(1),
+      supabase
+        .from("events")
+        .select("id, title, end_date, prize_description")
+        .eq("status", "finished")
+        .order("end_date", { ascending: false })
+        .limit(6),
+    ]);
+
+    return {
+      featuredEvent: (activeEvents?.[0] as ActiveEventRow) ?? null,
+      finishedEvents: (finishedEvents ?? []) as FinishedEventRow[],
+    };
+  },
+  ["home-public-data"],
+  { revalidate: 45 },
+);
+
 async function getHomeData() {
   if (!isSupabaseConfigured()) {
     return { featuredEvent: null, finishedEvents: [] };
   }
 
-  const supabase = await createClient();
+  const cached = await getCachedHomeData();
+  if (cached.featuredEvent || cached.finishedEvents.length > 0) {
+    return cached;
+  }
 
+  const supabase = await createClient();
   const [{ data: activeEvents }, { data: finishedEvents }] = await Promise.all([
     supabase
       .from("events")
@@ -63,52 +100,104 @@ export default async function Home() {
   const { featuredEvent, finishedEvents } = await getHomeData();
 
   return (
-    <main className="min-h-screen bg-[#050b12] text-slate-100">
+    <main className="page-shell">
 
-      {/* ─── Hero ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-10%,#0d2640_0%,#050b12_65%)]">
-        {/* Grid de fundo */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-            backgroundSize: "48px 48px",
-          }}
-        />
-        {/* Brilhos */}
-        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-cyan-600/8 blur-[130px]" />
-        <div aria-hidden className="pointer-events-none absolute bottom-0 left-1/4 h-64 w-80 rounded-full bg-amber-500/6 blur-[100px]" />
+      <section className="hero-shell relative overflow-hidden border-b border-white/10">
+        <div className="relative mx-auto grid max-w-7xl gap-8 px-6 py-14 lg:grid-cols-[1.15fr_0.85fr] lg:px-10 lg:py-20">
+          <div className="space-y-5">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/25 bg-cyan-300/8 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-200/90">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
+              Sea of Thieves · Temporada competitiva
+            </div>
 
-        <div className="relative mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-10 text-center lg:px-10 lg:py-12">
-          <div className="inline-flex items-center gap-2.5 rounded-full border border-amber-400/25 bg-amber-400/8 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-amber-300">
-            <Skull className="h-3.5 w-3.5" />
-            Sea of Thieves · Temporada Competitiva
+            <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.04] tracking-tight text-white sm:text-6xl lg:text-7xl">
+              A arena dos mares.
+              <br />
+              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
+                Prove seu valor.
+              </span>
+            </h1>
+
+            <p className="max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+              Competições oficiais de Sea of Thieves. Monte sua tripulação,
+              participe de torneios e conquiste o topo dos mares.
+            </p>
+
+            <div className="flex flex-wrap gap-3">
+              <Link href="/events" className="action-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition">
+                <Flame className="h-4 w-4" />
+                Ver torneios
+              </Link>
+              <Link href="/teams" className="action-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition">
+                <Users className="h-4 w-4" />
+                Criar equipe
+              </Link>
+            </div>
           </div>
 
-          <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-6xl lg:text-7xl">
-            A arena dos mares.
-            <br />
-            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent">
-              Prove seu valor.
-            </span>
-          </h1>
-
-          <p className="max-w-xl text-sm leading-6 text-slate-400 sm:text-base">
-            Competições oficiais de Sea of Thieves. Monte sua tripulação,
-            participe de torneios e conquiste o topo dos mares.
-          </p>
+          <aside className="glass-card soft-ring h-fit rounded-2xl p-6 lg:p-7">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Resumo rápido</p>
+            <div className="mt-4 grid gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Status atual</p>
+                <p className="mt-1 text-sm font-semibold text-white">{featuredEvent ? "Torneio ativo/publicado" : "Sem torneio ativo"}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Histórico</p>
+                <p className="mt-1 text-sm font-semibold text-white">{finishedEvents.length} finalizado{finishedEvents.length === 1 ? "" : "s"}</p>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
       <div className="mx-auto w-full max-w-7xl space-y-20 px-6 py-16 lg:px-10">
 
+        <section>
+          <SectionHeader eyebrow="Ações rápidas" title="Comece por aqui" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            {[
+              {
+                icon: <Users className="h-6 w-6" />,
+                title: "Montar equipe",
+                desc: "Crie ou organize sua tripulação para entrar nos campeonatos.",
+                href: "/teams",
+                cta: "Abrir equipes",
+              },
+              {
+                icon: <Anchor className="h-6 w-6" />,
+                title: "Escolher torneio",
+                desc: "Veja eventos publicados e selecione o torneio certo para seu time.",
+                href: "/events",
+                cta: "Ver eventos",
+              },
+              {
+                icon: <Trophy className="h-6 w-6" />,
+                title: "Acompanhar ranking",
+                desc: "Monitore sua evolução e compare desempenho com outras equipes.",
+                href: "/ranking",
+                cta: "Ver ranking",
+              },
+            ].map(({ icon, title, desc, href, cta }) => (
+              <article key={title} className="glass-card soft-ring rounded-2xl p-6">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/8 text-cyan-400">
+                  {icon}
+                </span>
+                <h3 className="mt-4 font-bold text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-400">{desc}</p>
+                <Link href={href} className="mt-5 inline-flex text-xs font-semibold text-cyan-300 transition hover:text-cyan-200">
+                  {cta} →
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
+
         {/* ─── Torneio em Destaque ─────────────────────────────── */}
         {featuredEvent ? (
           <section>
             <SectionHeader eyebrow="Próximo Torneio" title="Destaque da Arena" />
-            <article className="relative mt-6 overflow-hidden rounded-[2rem] border border-amber-400/20 bg-gradient-to-br from-amber-950/25 via-slate-900/60 to-[#050b12] p-8 shadow-2xl lg:p-10">
+            <article className="glass-card soft-ring relative mt-6 overflow-hidden rounded-[2rem] p-8 lg:p-10">
               <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-72 w-72 rounded-full bg-amber-500/6 blur-[80px]" />
               <div className="relative grid gap-8 lg:grid-cols-[1fr_auto]">
                 <div className="space-y-4">
@@ -141,7 +230,7 @@ export default async function Home() {
                   </span>
                   <Link
                     href={`/events/${featuredEvent.id}`}
-                    className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-300"
+                    className="action-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition"
                   >
                     <Trophy className="h-4 w-4" />
                     Ver detalhes
@@ -164,53 +253,6 @@ export default async function Home() {
           </section>
         )}
 
-        {/* ─── Como Participar ─────────────────────────────────── */}
-        <section>
-          <SectionHeader eyebrow="Guia" title="Como Participar" />
-          <div className="mt-6 grid gap-5 sm:grid-cols-3">
-            {[
-              {
-                icon: <Users className="h-6 w-6" />,
-                step: "01",
-                title: "Forme sua equipe",
-                desc: "Crie uma equipe na plataforma e convide seus aliados para embarcar na aventura.",
-                href: "/teams",
-                cta: "Criar equipe",
-              },
-              {
-                icon: <Anchor className="h-6 w-6" />,
-                step: "02",
-                title: "Inscreva-se no torneio",
-                desc: "Escolha um torneio aberto e registre sua equipe antes do prazo de inscrição.",
-                href: "/events",
-                cta: "Ver torneios",
-              },
-              {
-                icon: <Sword className="h-6 w-6" />,
-                step: "03",
-                title: "Compita e conquiste",
-                desc: "Enfrente outras tripulações, acumule pontos e escale o ranking dos mares.",
-                href: "/ranking",
-                cta: "Ver ranking",
-              },
-            ].map(({ icon, step, title, desc, href, cta }) => (
-              <div key={step} className="flex flex-col rounded-2xl border border-white/8 bg-white/3 p-6">
-                <div className="flex items-start justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/8 text-cyan-400">
-                    {icon}
-                  </span>
-                  <span className="text-4xl font-black text-white/5">{step}</span>
-                </div>
-                <h3 className="mt-4 font-bold text-white">{title}</h3>
-                <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">{desc}</p>
-                <Link href={href} className="mt-5 self-start text-xs font-semibold text-cyan-300 transition hover:text-cyan-200">
-                  {cta} →
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* ─── Últimos Torneios ─────────────────────────────────── */}
         <section>
           <div className="flex items-end justify-between">
@@ -229,7 +271,7 @@ export default async function Home() {
                 <Link
                   key={event.id}
                   href={`/events/${event.id}`}
-                  className="group flex flex-col rounded-2xl border border-white/8 bg-white/3 p-5 transition hover:border-amber-400/25 hover:bg-amber-400/4"
+                  className="glass-card soft-ring group flex flex-col rounded-2xl p-5 transition hover:border-amber-400/25"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-slate-100 group-hover:text-white">{event.title}</h3>
@@ -263,7 +305,7 @@ export default async function Home() {
         </section>
 
         {/* ─── CTA Final ───────────────────────────────────────── */}
-        <section className="overflow-hidden rounded-[2rem] border border-cyan-400/12 bg-gradient-to-br from-cyan-950/20 to-[#050b12] p-8 text-center lg:p-14">
+        <section className="glass-card soft-ring overflow-hidden rounded-[2rem] p-8 text-center lg:p-14">
           <Users className="mx-auto h-10 w-10 text-cyan-400/50" />
           <h2 className="mt-4 text-2xl font-bold text-white lg:text-3xl">Pronto para a batalha?</h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-400">
@@ -271,17 +313,11 @@ export default async function Home() {
             Cada partida conta para o ranking.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/teams"
-              className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
-            >
+            <Link href="/teams" className="action-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition">
               <Anchor className="h-4 w-4" />
               Criar equipe
             </Link>
-            <Link
-              href="/ranking"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
-            >
+            <Link href="/ranking" className="action-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition">
               <Trophy className="h-4 w-4" />
               Ver ranking
             </Link>
@@ -297,7 +333,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-300/70">{eyebrow}</p>
-      <h2 className="mt-1 text-2xl font-bold text-white">{title}</h2>
+      <h2 className="black-goth mt-1 text-2xl font-bold text-white">{title}</h2>
     </div>
   );
 }

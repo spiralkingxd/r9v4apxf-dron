@@ -61,10 +61,10 @@ export function AdminTable<T>({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60">
+    <div className="admin-surface overflow-hidden rounded-2xl">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-white/10">
-          <thead className="bg-white/5">
+          <thead className="bg-white/6">
             <tr>
               {columns.map((column) => (
                 <th
@@ -90,7 +90,7 @@ export function AdminTable<T>({
           <tbody className="divide-y divide-white/10">
             {visible.length > 0 ? (
               visible.map((row, idx) => (
-                <tr key={idx} className="hover:bg-white/5">
+                <tr key={idx} className="hover:bg-white/6">
                   {columns.map((column) => (
                     <td key={column.key} className={cn("px-4 py-3 text-sm text-slate-200", column.className)}>
                       {column.render(row)}

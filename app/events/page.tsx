@@ -12,7 +12,7 @@ type EventRow = {
   id: string;
   title: string;
   description: string | null;
-  status: "published" | "active" | "finished";
+  status: "published" | "active" | "paused" | "finished";
   start_date: string;
   end_date: string | null;
   prize_description: string | null;
@@ -31,37 +31,33 @@ const STATUS_LABELS: Record<string, string> = {
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium" });
 
-async function getEvents(status: StatusFilter | null) {
-  if (!isSupabaseConfigured()) return [] as EventRow[];
+async function getEventsData(status: StatusFilter | null) {
+  if (!isSupabaseConfigured()) {
+    return {
+      events: [] as EventRow[],
+      stats: { total: 0, active: 0, upcoming: 0, paused: 0, finished: 0 },
+    };
+  }
 
   const supabase = await createClient();
-  let query = supabase
+  const { data } = await supabase
     .from("events")
     .select("id, title, description, status, start_date, end_date, prize_description, team_size")
     .in("status", ["published", "active", "paused", "finished"])
     .order("start_date", { ascending: false });
 
-  if (status) {
-    query = query.eq("status", status);
-  }
-
-  const { data } = await query;
-  return (data ?? []) as EventRow[];
-}
-
-async function getAllEventStatuses() {
-  if (!isSupabaseConfigured()) return { total: 0, active: 0, upcoming: 0, finished: 0 };
-
-  const supabase = await createClient();
-  const { data } = await supabase.from("events").select("status");
-  const all = data ?? [];
+  const allEvents = (data ?? []) as EventRow[];
+  const events = status ? allEvents.filter((event) => event.status === status) : allEvents;
 
   return {
-    total: all.length,
-    active: all.filter((e) => e.status === "active").length,
-    upcoming: all.filter((e) => e.status === "published").length,
-    paused: all.filter((e) => e.status === "paused").length,
-    finished: all.filter((e) => e.status === "finished").length,
+    events,
+    stats: {
+      total: allEvents.length,
+      active: allEvents.filter((event) => event.status === "active").length,
+      upcoming: allEvents.filter((event) => event.status === "published").length,
+      paused: allEvents.filter((event) => event.status === "paused").length,
+      finished: allEvents.filter((event) => event.status === "finished").length,
+    },
   };
 }
 
@@ -74,13 +70,13 @@ export default async function EventsPage({ searchParams }: Props) {
     ? (rawStatus as StatusFilter)
     : null;
 
-  const [events, stats] = await Promise.all([getEvents(status), getAllEventStatuses()]);
+  const { events, stats } = await getEventsData(status);
 
   return (
-    <main className="min-h-screen bg-[#050b12] text-slate-100">
+    <main className="page-shell">
 
       {/* ─── Page Hero ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden border-b border-white/8 bg-[radial-gradient(ellipse_100%_80%_at_50%_-10%,#0d2640_0%,#050b12_70%)]">
+      <section className="section-hero">
         <div aria-hidden className="pointer-events-none absolute -top-20 left-1/2 h-64 w-[500px] -translate-x-1/2 rounded-full bg-amber-500/6 blur-[90px]" />
 
         <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-6 py-14 lg:px-10 lg:py-20">
@@ -110,10 +106,7 @@ export default async function EventsPage({ searchParams }: Props) {
             ]
               .filter(({ label, value }) => Number(value) > 0 || label === "Total")
               .map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="rounded-xl border border-white/8 bg-white/4 px-5 py-3 text-center min-w-[80px]"
-              >
+              <div key={label} className="glass-card soft-ring min-w-[80px] rounded-xl px-5 py-3 text-center">
                 <p className={cn("text-2xl font-extrabold", color)}>{value}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{label}</p>
               </div>
@@ -146,7 +139,7 @@ export default async function EventsPage({ searchParams }: Props) {
               <Link
                 key={event.id}
                 href={`/events/${event.id}`}
-                className="group flex flex-col rounded-2xl border border-white/8 bg-white/3 p-6 transition hover:border-amber-400/25 hover:bg-amber-400/4"
+                className="glass-card soft-ring group flex flex-col rounded-2xl p-6 transition hover:border-amber-400/25 hover:bg-amber-400/4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="font-semibold leading-snug text-slate-100 group-hover:text-white">
