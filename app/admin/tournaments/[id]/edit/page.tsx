@@ -1,5 +1,5 @@
 import { EventForm } from "@/components/admin/event-form";
-import { getEventForForm } from "@/app/admin/events/_data";
+import { getEventForForm } from "@/app/admin/tournaments/_data";
 
 type Props = {
   params: Promise<{ id: string }>;

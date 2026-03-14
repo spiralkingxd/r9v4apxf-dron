@@ -793,7 +793,7 @@ language sql
 stable
 set search_path = public
 as $$
-  select count(distinct tm.team_id) < 3
+  select count(distinct tm.team_id) < 1
   from public.team_members tm
   where tm.user_id = p_user_id;
 $$;
@@ -839,7 +839,7 @@ begin
 
   if tg_op = 'INSERT' or new.user_id <> old.user_id then
     if not public.check_user_team_limit(new.user_id) then
-      raise exception 'Usuário já participa de 3 equipes.';
+      raise exception 'Usuário já participa de 1 equipe.';
     end if;
   end if;
 
@@ -878,8 +878,8 @@ begin
   where user_id = new.user_id
     and role = 'captain';
 
-  if team_count >= 3 then
-    raise exception 'Usuário já possui 3 equipes. Limite máximo atingido.';
+  if team_count >= 1 then
+    raise exception 'Usuário já possui 1 equipe. Limite máximo atingido.';
   end if;
 
   return new;

@@ -1,13 +1,13 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
   Legend,
-  Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -16,31 +16,26 @@ import {
   YAxis,
 } from "recharts";
 
+import { AdminChart } from "@/components/admin/admin-chart";
+
 type LinePoint = { label: string; total: number };
 type PiePoint = { name: string; value: number };
 
 const PIE_COLORS = ["#22d3ee", "#60a5fa", "#34d399", "#f59e0b", "#f43f5e"];
 
-export function DashboardCharts({
-  registrations30d,
-  usersByMonth,
-  teamsByMonth,
-  tournamentStatus,
-}: {
-  registrations30d: LinePoint[];
-  usersByMonth: LinePoint[];
-  teamsByMonth: LinePoint[];
+export function DashboardCharts({ weeklyUsers, monthlyTeams, tournamentStatus }: {
+  weeklyUsers: LinePoint[];
+  monthlyTeams: LinePoint[];
   tournamentStatus: PiePoint[];
 }) {
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-        <h3 className="text-base font-semibold text-white">Inscrições nos últimos 30 dias</h3>
+    <div className="grid gap-6 lg:grid-cols-3">
+      <AdminChart title="Novos usuarios por semana" subtitle="Ultimas 8 semanas" className="lg:col-span-2">
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={registrations30d}>
+            <AreaChart data={weeklyUsers}>
               <CartesianGrid stroke="rgba(148,163,184,0.2)" strokeDasharray="3 3" />
-              <XAxis dataKey="label" stroke="#94a3b8" tick={{ fontSize: 12 }} interval={4} />
+              <XAxis dataKey="label" stroke="#94a3b8" tick={{ fontSize: 12 }} />
               <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} allowDecimals={false} />
               <Tooltip
                 cursor={{ stroke: "rgba(34,211,238,0.35)", strokeWidth: 2 }}
@@ -51,14 +46,13 @@ export function DashboardCharts({
                   color: "#e2e8f0",
                 }}
               />
-              <Line type="monotone" dataKey="total" stroke="#22d3ee" strokeWidth={3} dot={false} />
-            </LineChart>
+              <Area type="monotone" dataKey="total" stroke="#22d3ee" fill="rgba(34,211,238,0.25)" strokeWidth={3} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </AdminChart>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-        <h3 className="text-base font-semibold text-white">Status dos torneios</h3>
+      <AdminChart title="Status dos torneios" subtitle="Ativos, finalizados e planejamento">
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -79,35 +73,12 @@ export function DashboardCharts({
             </PieChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </AdminChart>
 
-      <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-        <h3 className="text-base font-semibold text-white">Novos usuários por mês</h3>
+      <AdminChart title="Equipes criadas por mes" subtitle="Ultimos 6 meses" className="lg:col-span-3">
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={usersByMonth}>
-              <CartesianGrid stroke="rgba(148,163,184,0.2)" strokeDasharray="3 3" />
-              <XAxis dataKey="label" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-              <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  background: "#0f172a",
-                  border: "1px solid rgba(148,163,184,0.2)",
-                  borderRadius: 10,
-                  color: "#e2e8f0",
-                }}
-              />
-              <Bar dataKey="total" fill="#38bdf8" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-        <h3 className="text-base font-semibold text-white">Equipes criadas por mês</h3>
-        <div className="mt-4 h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={teamsByMonth}>
+            <BarChart data={monthlyTeams}>
               <CartesianGrid stroke="rgba(148,163,184,0.2)" strokeDasharray="3 3" />
               <XAxis dataKey="label" stroke="#94a3b8" tick={{ fontSize: 12 }} />
               <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} allowDecimals={false} />
@@ -123,7 +94,7 @@ export function DashboardCharts({
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </AdminChart>
     </div>
   );
 }

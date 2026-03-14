@@ -25,8 +25,8 @@ export type SearchUsersResult = {
 function toFriendlyTeamError(message?: string | null): string {
   const msg = (message ?? "").toLowerCase();
 
-  if (msg.includes("3 equipes") || msg.includes("limite máximo")) {
-    return "Você atingiu o limite de 3 equipes";
+  if (msg.includes("1 equipe") || msg.includes("limite máximo")) {
+    return "Você já participa de uma equipe";
   }
   if (msg.includes("10 membros") || msg.includes("equipe atingiu")) {
     return "Esta equipe está cheia (10/10)";
@@ -91,20 +91,19 @@ export async function searchUsers(term: string): Promise<SearchUsersResult> {
   if (profileRows.length === 0) return [];
 
   const ids = profileRows.map((row) => row.id);
-  const { data: captainLinks } = await supabase
+  const { data: membershipLinks } = await supabase
     .from("team_members")
     .select("user_id")
-    .eq("role", "captain")
     .in("user_id", ids);
 
-  const captainMap = new Map<string, number>();
-  for (const row of captainLinks ?? []) {
+  const membershipMap = new Map<string, number>();
+  for (const row of membershipLinks ?? []) {
     const uid = row.user_id as string;
-    captainMap.set(uid, (captainMap.get(uid) ?? 0) + 1);
+    membershipMap.set(uid, (membershipMap.get(uid) ?? 0) + 1);
   }
 
   return profileRows
-    .filter((row) => (captainMap.get(row.id) ?? 0) < 3)
+    .filter((row) => (membershipMap.get(row.id) ?? 0) < 1)
     .slice(0, 10) as SearchUsersResult;
 }
 
@@ -128,6 +127,22 @@ export async function checkTeamNameAvailable(
   return { available: !data };
 }
 
+export async function getCurrentUserTeamCount(): Promise<number> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return 0;
+
+  const { count } = await supabase
+    .from("team_members")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  return count ?? 0;
+}
+
 // ---------------------------------------------------------------------------
 // Criação da equipe
 // ---------------------------------------------------------------------------
@@ -145,14 +160,14 @@ export async function createTeam(
     return { error: "Você precisa estar logado para criar uma equipe." };
   }
 
-  // Verifica limite de 3 equipes por conta.
+  // Verifica limite de 1 equipe por conta.
   const { count } = await supabase
     .from("team_members")
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
-  if ((count ?? 0) >= 3) {
-    return { error: "Você atingiu o limite de 3 equipes" };
+  if ((count ?? 0) >= 1) {
+    return { error: "Você já participa de uma equipe" };
   }
 
   const rawMemberIds: string[] = [];

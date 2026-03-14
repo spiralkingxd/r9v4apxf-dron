@@ -177,7 +177,7 @@ export function EventForm({
       pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
       if (result.error) return;
 
-      const kindPath = (fixedKind ?? payload.event_kind) === "tournament" ? "/admin/tournaments" : "/admin/events";
+      const kindPath = "/admin/tournaments";
       if (mode === "create" && result.data?.id) {
         router.push(`${kindPath}/${result.data.id}/edit`);
       } else {

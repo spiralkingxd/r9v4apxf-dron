@@ -2,9 +2,9 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Ban, LogOut, ShieldCheck, Trash2, UserCheck } from "lucide-react";
+import { Ban, LogOut, ShieldCheck, UserCheck } from "lucide-react";
 
-import { banUser, deleteUser, forceLogout, unbanUser, updateUserRole } from "@/app/admin/member-actions";
+import { banUser, forceLogout, unbanUser, updateUserRole } from "@/app/admin/member-actions";
 import { AdminButton } from "@/components/admin/admin-button";
 import { useAdminToast } from "@/components/admin/admin-toast";
 
@@ -101,19 +101,6 @@ export function MemberDetailActions({
       >
         <LogOut className="h-4 w-4" />
         Forçar Logout Global
-      </AdminButton>
-
-      <AdminButton
-        type="button"
-        variant="danger"
-        disabled={isPending || currentRole === "owner"}
-        onClick={() => {
-          if (!window.confirm("Confirma soft delete da conta?")) return;
-          run(() => deleteUser(userId));
-        }}
-      >
-        <Trash2 className="h-4 w-4" />
-        Soft Delete da Conta
       </AdminButton>
     </div>
   );

@@ -48,7 +48,7 @@ export type AdminEventRow = {
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
-export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "events" | "tournaments" }) {
+export function EventsTable({ rows }: { rows: AdminEventRow[] }) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
   const [search, setSearch] = useState("");
@@ -79,7 +79,7 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
   const columns: AdminTableColumn<AdminEventRow>[] = [
     {
       key: "name",
-      header: scope === "tournaments" ? "Torneio" : "Evento",
+      header: "Torneio",
       sortable: true,
       accessor: (row) => row.title,
       render: (row) => (
@@ -150,8 +150,8 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
       key: "actions",
       header: "Ações",
       render: (row) => {
-        const editPath = scope === "tournaments" ? `/admin/tournaments/${row.id}/edit` : `/admin/events/${row.id}/edit`;
-        const detailPath = `/admin/events/${row.id}`;
+        const editPath = `/admin/tournaments/${row.id}/edit`;
+        const detailPath = `/admin/tournaments/${row.id}`;
         return (
           <div className="flex flex-wrap gap-1">
             <Link href={detailPath} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
@@ -161,12 +161,10 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
             <Link href={editPath} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
               Editar
             </Link>
-            {scope === "tournaments" ? (
-              <Link href={`/admin/tournaments/${row.id}/bracket`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
-                Bracket
-              </Link>
-            ) : null}
-            <Link href={`/admin/events/${row.id}/registrations`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
+            <Link href={`/admin/tournaments/${row.id}/bracket`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
+              Bracket
+            </Link>
+            <Link href={`/admin/tournaments/${row.id}/registrations`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
               <Eye className="mr-1 inline h-3 w-3" />
               Inscrições
             </Link>
@@ -178,7 +176,7 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
                   const result = await duplicateEvent(row.id);
                   pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
                   if (!result.error && result.data?.id) {
-                    router.push(scope === "tournaments" ? `/admin/tournaments/${result.data.id}/edit` : `/admin/events/${result.data.id}/edit`);
+                    router.push(`/admin/tournaments/${result.data.id}/edit`);
                   }
                   router.refresh();
                 })
@@ -324,8 +322,8 @@ export function EventsTable({ rows, scope }: { rows: AdminEventRow[]; scope: "ev
       </div>
 
       <div className="flex justify-end">
-        <Link href={scope === "tournaments" ? "/admin/tournaments/new" : "/admin/events/new"}>
-          <AdminButton>Novo {scope === "tournaments" ? "torneio" : "evento"}</AdminButton>
+        <Link href="/admin/tournaments/new">
+          <AdminButton>Novo torneio</AdminButton>
         </Link>
       </div>
 

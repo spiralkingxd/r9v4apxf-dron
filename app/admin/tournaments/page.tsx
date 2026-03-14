@@ -1,10 +1,10 @@
 import { Trophy } from "lucide-react";
 
-import { getAdminEvents } from "@/app/admin/events/_data";
+import { getAdminEvents } from "@/app/admin/tournaments/_data";
 import { EventsTable } from "@/components/admin/events-table";
 
 export default async function AdminTournamentsPage() {
-  const rows = await getAdminEvents("tournament");
+  const rows = await getAdminEvents();
 
   return (
     <section className="space-y-5">
@@ -19,7 +19,7 @@ export default async function AdminTournamentsPage() {
         </p>
       </header>
 
-      <EventsTable rows={rows} scope="tournaments" />
+      <EventsTable rows={rows} />
     </section>
   );
 }

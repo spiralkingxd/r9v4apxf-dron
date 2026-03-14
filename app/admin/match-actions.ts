@@ -120,10 +120,9 @@ function revalidateMatchPaths(eventId?: string, matchId?: string) {
   if (eventId) {
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events/${eventId}/bracket`);
-    revalidatePath(`/admin/events/${eventId}`);
-    revalidatePath(`/admin/events/${eventId}/registrations`);
     revalidatePath(`/admin/tournaments/${eventId}`);
     revalidatePath(`/admin/tournaments/${eventId}/bracket`);
+    revalidatePath(`/admin/tournaments/${eventId}/registrations`);
   }
 }
 

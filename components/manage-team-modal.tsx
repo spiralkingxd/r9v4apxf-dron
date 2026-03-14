@@ -178,8 +178,8 @@ export function ManageTeamModal({
   }, [debouncedCandidateQuery, pendingAdds, tab, team.id]);
 
   function queueCandidate(candidate: SearchCandidate) {
-    if (candidate.team_count >= 3) {
-      setFeedback({ type: "error", msg: "Usuário atingiu limite de equipes" });
+    if (candidate.team_count >= 1) {
+      setFeedback({ type: "error", msg: "Usuário já participa de uma equipe" });
       return;
     }
 
@@ -503,14 +503,14 @@ export function ManageTeamModal({
                     <button
                       type="button"
                       title={
-                        candidate.team_count >= 3
-                          ? "Usuário atingiu limite de equipes"
+                        candidate.team_count >= 1
+                          ? "Usuário já participa de uma equipe"
                           : "Adicionar membro"
                       }
                       onClick={() => queueCandidate(candidate)}
                       disabled={
                         isBusy ||
-                        candidate.team_count >= 3 ||
+                        candidate.team_count >= 1 ||
                         memberCount + pendingAdds.length >= team.max_members
                       }
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-50"

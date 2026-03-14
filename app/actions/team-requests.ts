@@ -145,7 +145,7 @@ export async function createJoinRequest(teamId: string): Promise<ActionResult<Jo
       };
     }
 
-    if (myTeamCount >= 3) {
+    if (myTeamCount >= 1) {
       return { success: false, error: teamRequestMessages.TEAM_LIMIT };
     }
 
@@ -231,7 +231,7 @@ export async function respondToJoinRequest(
         return { success: false, error: teamRequestMessages.TEAM_FULL };
       }
 
-      if (targetUserTeams >= 3) {
+      if (targetUserTeams >= 1) {
         return { success: false, error: teamRequestMessages.TEAM_LIMIT };
       }
 

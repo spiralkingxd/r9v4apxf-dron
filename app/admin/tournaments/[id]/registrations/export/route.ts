@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { assertAdminAccess } from "@/app/admin/_lib";
-import { getEventRegistrations } from "@/app/admin/events/_data";
+import { getEventRegistrations } from "@/app/admin/tournaments/_data";
 
 export async function GET(
   _request: Request,
@@ -10,7 +10,7 @@ export async function GET(
   try {
     await assertAdminAccess();
     const { id } = await context.params;
-    const { event, registrations } = await getEventRegistrations(id);
+    const { event, registrations } = await getEventRegistrations(id, "tournament");
 
     const header = ["team_id", "team_name", "captain_name", "status", "source", "created_at", "rejection_reason"];
     const lines = [header.join(",")];

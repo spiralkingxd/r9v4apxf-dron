@@ -136,14 +136,13 @@ function revalidateEventPaths(eventId?: string) {
   revalidatePath("/");
   revalidatePath("/events");
   revalidatePath("/admin/dashboard");
-  revalidatePath("/admin/events");
   revalidatePath("/admin/tournaments");
   if (eventId) {
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events/${eventId}/bracket`);
-    revalidatePath(`/admin/events/${eventId}`);
-    revalidatePath(`/admin/events/${eventId}/edit`);
-    revalidatePath(`/admin/events/${eventId}/registrations`);
+    revalidatePath(`/admin/tournaments/${eventId}`);
+    revalidatePath(`/admin/tournaments/${eventId}/registrations`);
+    revalidatePath(`/admin/tournaments/${eventId}/registrations/export`);
     revalidatePath(`/admin/tournaments/${eventId}/edit`);
   }
 }
@@ -471,6 +470,10 @@ export async function createEvent(data: EventMutationInput): Promise<ActionResul
       start_date: new Date(parsed.data.start_date).toISOString(),
     };
 
+    if (payload.event_kind !== "tournament") {
+      return { error: "A criação de eventos foi desativada no painel admin." };
+    }
+
     validateEventDates(payload, "create");
     if (payload.status === "published" || payload.status === "active") {
       await ensureUniqueVisibleTitle(supabase, payload.title);
@@ -539,6 +542,10 @@ export async function updateEvent(eventId: string, data: EventMutationInput): Pr
       start_date: new Date(parsed.data.start_date).toISOString(),
     };
 
+    if (payload.event_kind !== "tournament" || existing.event_kind !== "tournament") {
+      return { error: "A edição de eventos foi desativada no painel admin." };
+    }
+
     validateEventDates(payload, "update", existing.start_date);
     if (payload.status === "published" || payload.status === "active") {
       await ensureUniqueVisibleTitle(supabase, payload.title, parsedId.data.eventId);
@@ -586,6 +593,9 @@ export async function deleteEvent(eventId: string): Promise<ActionResult> {
     await enforceAdminRateLimit(supabase, adminId, "delete_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A remoção de eventos foi desativada no painel admin." };
+    }
     const { error } = await supabase.from("events").delete().eq("id", parsed.data.eventId);
     if (error) return { error: "Não foi possível deletar o evento." };
 
@@ -613,6 +623,9 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
     await enforceAdminRateLimit(supabase, adminId, "publish_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A publicação de eventos foi desativada no painel admin." };
+    }
     await ensureUniqueVisibleTitle(supabase, event.title, event.id);
 
     const { error } = await supabase
@@ -660,6 +673,9 @@ export async function pauseEvent(eventId: string): Promise<ActionResult> {
     await enforceAdminRateLimit(supabase, adminId, "pause_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A pausa de eventos foi desativada no painel admin." };
+    }
     const { error } = await supabase
       .from("events")
       .update({ status: "paused", paused_at: getNowIso(), updated_at: getNowIso() })
@@ -690,6 +706,9 @@ export async function activateEvent(eventId: string): Promise<ActionResult> {
     await enforceAdminRateLimit(supabase, adminId, "activate_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A ativação de eventos foi desativada no painel admin." };
+    }
     if (event.status !== "published" && event.status !== "paused") {
       return { error: "Somente eventos publicados ou pausados podem ser ativados." };
     }
@@ -724,6 +743,9 @@ export async function finalizeEvent(eventId: string): Promise<ActionResult> {
     await enforceAdminRateLimit(supabase, adminId, "finalize_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A finalização de eventos foi desativada no painel admin." };
+    }
     const { error } = await supabase
       .from("events")
       .update({ status: "finished", finalized_at: getNowIso(), updated_at: getNowIso() })
@@ -776,6 +798,9 @@ export async function duplicateEvent(eventId: string): Promise<ActionResult<{ id
     await enforceAdminRateLimit(supabase, adminId, "duplicate_event");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "A duplicação de eventos foi desativada no painel admin." };
+    }
     const currentStart = new Date(event.start_date);
     const currentEnd = event.end_date ? new Date(event.end_date) : null;
     const currentDeadline = event.registration_deadline ? new Date(event.registration_deadline) : null;
@@ -853,6 +878,10 @@ export async function approveRegistration(eventId: string, teamId: string): Prom
         .maybeSingle<{ id: string; status: z.infer<typeof registrationStatusSchema> }>(),
     ]);
 
+    if (event.event_kind !== "tournament") {
+      return { error: "O gerenciamento de inscrições de eventos foi desativado no painel admin." };
+    }
+
     if (!registration.data) return { error: "Inscrição não encontrada." };
 
     if (event.max_teams) {
@@ -927,6 +956,9 @@ export async function rejectRegistration(eventId: string, teamId: string, reason
     await enforceAdminRateLimit(supabase, adminId, "reject_registration");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "O gerenciamento de inscrições de eventos foi desativado no painel admin." };
+    }
     const { error } = await supabase
       .from("registrations")
       .update({
@@ -1016,6 +1048,9 @@ export async function addWildcardRegistration(eventId: string, teamId: string): 
     await enforceAdminRateLimit(supabase, adminId, "add_wildcard_registration");
 
     const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "O gerenciamento de inscrições de eventos foi desativado no painel admin." };
+    }
     if (event.max_teams) {
       const { count } = await supabase
         .from("registrations")
@@ -1077,6 +1112,11 @@ export async function removeRegistration(eventId: string, teamId: string): Promi
   try {
     const { supabase, adminId } = await assertAdminAccess();
     await enforceAdminRateLimit(supabase, adminId, "remove_registration");
+
+    const event = await loadEventOrThrow(supabase, parsed.data.eventId);
+    if (event.event_kind !== "tournament") {
+      return { error: "O gerenciamento de inscrições de eventos foi desativado no painel admin." };
+    }
 
     const { error } = await supabase
       .from("registrations")

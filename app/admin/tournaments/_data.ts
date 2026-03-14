@@ -60,13 +60,13 @@ export type AvailableTeamRow = {
   captain_name: string;
 };
 
-export async function getAdminEvents(scope: "event" | "tournament") {
+export async function getAdminEvents() {
   const supabase = await createClient();
   const [{ data: eventsRaw }, { data: registrationsRaw }] = await Promise.all([
     supabase
       .from("events")
       .select("id, title, status, event_kind, event_type, visibility, start_date, end_date, team_size, prize_description, created_at, tournament_format")
-      .eq("event_kind", scope)
+      .eq("event_kind", "tournament")
       .order("start_date", { ascending: false }),
     supabase.from("registrations").select("event_id, status"),
   ]);
@@ -98,7 +98,7 @@ export async function getEventForForm(eventId: string, expectedKind?: "event" | 
   return data;
 }
 
-export async function getEventRegistrations(eventId: string) {
+export async function getEventRegistrations(eventId: string, expectedKind?: "event" | "tournament") {
   const supabase = await createClient();
   const [{ data: event }, { data: registrationsRaw }, { data: teamsRaw }] = await Promise.all([
     supabase
@@ -125,6 +125,7 @@ export async function getEventRegistrations(eventId: string) {
   ]);
 
   if (!event) notFound();
+  if (expectedKind && event.event_kind !== expectedKind) notFound();
 
   const captainIds = (teamsRaw ?? []).map((row) => String(row.captain_id));
   const uniqueCaptainIds = [...new Set(captainIds)];
@@ -172,7 +173,7 @@ export async function getEventRegistrations(eventId: string) {
   };
 }
 
-export async function getAdminEventDetail(eventId: string) {
+export async function getAdminEventDetail(eventId: string, expectedKind?: "event" | "tournament") {
   const supabase = await createClient();
 
   const [eventRes, registrationsRes, matchesRes, logsRes] = await Promise.all([
@@ -216,6 +217,7 @@ export async function getAdminEventDetail(eventId: string) {
 
   const event = eventRes.data;
   if (!event) notFound();
+  if (expectedKind && event.event_kind !== expectedKind) notFound();
 
   const registrations = registrationsRes.data ?? [];
   const matches = matchesRes.data ?? [];

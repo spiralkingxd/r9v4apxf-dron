@@ -31,7 +31,7 @@ export function JoinRequestButton({
   hasPendingRequest,
   pendingRequestId,
   currentUserTeamCount,
-  maxUserTeams = 3,
+  maxUserTeams = 1,
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -212,7 +212,7 @@ export function JoinRequestButton({
           className="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2.5 text-sm font-semibold text-amber-100"
         >
           <Users className="h-4 w-4" />
-          Limite de 3 Equipes Atingido
+          Limite de 1 Equipe Atingido
         </button>
       ) : null}
 

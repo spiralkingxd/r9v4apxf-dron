@@ -219,7 +219,7 @@ Referências:
 
 ### Regras de equipes
 
-- cada usuário pode participar de até 3 equipes
+- cada usuário pode participar de até 1 equipe
 - cada equipe pode ter até 10 membros
 - o capitão também é registrado em team_members com role captain
 - apenas o capitão pode aprovar ou rejeitar solicitações pendentes
@@ -233,7 +233,7 @@ Referências:
 ### Fluxo da solicitação
 
 1. O jogador acessa /teams/[id] e vê o botão de solicitação apenas se não for capitão nem membro da equipe.
-2. O frontend bloqueia a ação quando a equipe já está cheia ou quando o usuário já atingiu o limite de 3 equipes.
+2. O frontend bloqueia a ação quando a equipe já está cheia ou quando o usuário já atingiu o limite de 1 equipe.
 3. Ao enviar a solicitação, o servidor valida autenticação, duplicidade, limite de equipes e limite de membros antes de criar o registro.
 4. O capitão gerencia a fila no modal de equipe, aprovando ou rejeitando cada pedido.
 5. Quando uma solicitação é aprovada, o usuário é inserido em team_members e a solicitação recebe status approved.
@@ -262,7 +262,7 @@ Referências:
 4. Entrar como capitão e aprovar uma solicitação pendente.
 5. Confirmar que o membro aparece na equipe e que a solicitação sai da fila.
 6. Repetir com rejeição e validar histórico de respondidas.
-7. Validar bloqueio ao atingir 3 equipes no frontend e no backend.
+7. Validar bloqueio ao atingir 1 equipe no frontend e no backend.
 8. Validar bloqueio ao atingir 10 membros na equipe.
 
 ## Rotas principais

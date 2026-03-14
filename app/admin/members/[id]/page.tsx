@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Calendar, Shield, Users } from "lucide-react";
+import { AlertTriangle, Calendar, Shield, Users } from "lucide-react";
 
 import { AdminBadge } from "@/components/admin/admin-badge";
+import { DeleteUserAccountControl } from "@/components/admin/delete-user-account-control";
 import { MemberDetailActions } from "@/components/admin/member-detail-actions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,14 +36,27 @@ export default async function AdminMemberDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
+  const {
+    data: { user: adminUser },
+  } = await supabase.auth.getUser();
+
+  const { data: adminProfile } = adminUser
+    ? await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", adminUser.id)
+        .maybeSingle<{ id: string; role: "user" | "admin" | "owner" }>()
+    : { data: null as { id: string; role: "user" | "admin" | "owner" } | null };
+
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "id, display_name, username, discord_id, xbox_gamertag, email, role, is_banned, created_at, updated_at, banned_reason, ban_reason, banned_at",
+      "id, avatar_url, display_name, username, discord_id, xbox_gamertag, email, role, is_banned, created_at, updated_at, banned_reason, ban_reason, banned_at",
     )
     .eq("id", id)
     .maybeSingle<{
       id: string;
+      avatar_url: string | null;
       display_name: string | null;
       username: string | null;
       discord_id: string | null;
@@ -225,6 +239,43 @@ export default async function AdminMemberDetailPage({ params }: Props) {
           </ul>
         </article>
       </div>
+
+      <section className="rounded-2xl border border-rose-300/35 bg-rose-300/10 p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-rose-100">
+              <AlertTriangle className="h-5 w-5" />
+              Gerenciamento de Conta
+            </h2>
+            <p className="mt-1 text-sm text-rose-50/90">
+              Esta zona permite deletar permanentemente a conta. A acao e irreversivel.
+            </p>
+          </div>
+
+          {adminProfile?.id ? (
+            <DeleteUserAccountControl
+              target={{
+                id: profile.id,
+                avatarUrl: profile.avatar_url,
+                displayName: profile.display_name,
+                username: profile.username,
+                discordId: profile.discord_id,
+                role: profile.role,
+              }}
+              currentAdminId={adminProfile.id}
+              currentAdminRole={adminProfile.role === "owner" ? "owner" : "admin"}
+              buttonLabel="Deletar Conta Permanentemente"
+              redirectTo="/admin/members"
+            />
+          ) : null}
+        </div>
+
+        <div className="mt-4 grid gap-3 text-sm text-rose-50 md:grid-cols-3">
+          <p className="rounded-xl border border-rose-300/30 bg-black/20 px-4 py-2">Equipes vinculadas: {teams.length}</p>
+          <p className="rounded-xl border border-rose-300/30 bg-black/20 px-4 py-2">Partidas jogadas: {matchesPlayed}</p>
+          <p className="rounded-xl border border-rose-300/30 bg-black/20 px-4 py-2">Cadastro: {dateFmt.format(new Date(profile.created_at))}</p>
+        </div>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <article className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">

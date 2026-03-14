@@ -26,6 +26,7 @@ import { z } from "zod";
 import {
   checkTeamNameAvailable,
   createTeam,
+  getCurrentUserTeamCount,
   searchUsers,
   type CreateTeamState,
   type SearchUsersResult,
@@ -114,13 +115,15 @@ function Avatar({
 interface CreateTeamModalProps {
   /** Identificador do usuário autenticado passado pelo servidor (Server Component pai) */
   userId: string;
+  hasReachedTeamLimit?: boolean;
   onClose?: () => void;
 }
 
-export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
+export function CreateTeamModal({ userId, hasReachedTeamLimit = false, onClose }: CreateTeamModalProps) {
   const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [teamLimitReached, setTeamLimitReached] = useState(hasReachedTeamLimit);
 
   // Form state
   const {
@@ -144,6 +147,20 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
   const debouncedName = useDebounce(watchedName, SEARCH_DEBOUNCE);
   const [nameAvailable, setNameAvailable] = useState<boolean | null>(null);
   const [checkingName, setCheckingName] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getCurrentUserTeamCount().then((count) => {
+      if (!cancelled) {
+        setTeamLimitReached(count >= 1);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (debouncedName.trim().length < 3) {
@@ -321,7 +338,7 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
               <div className="relative">
                 <input
                   {...register("name")}
-                  disabled={isPending}
+                  disabled={isPending || teamLimitReached}
                   placeholder="Ex: Corsários do Abismo"
                   maxLength={30}
                   className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 pr-10 text-sm text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-500 focus:ring disabled:opacity-50"
@@ -366,7 +383,7 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
                 </span>
                 <input
                   {...register("logo_url")}
-                  disabled={isPending}
+                  disabled={isPending || teamLimitReached}
                   placeholder="https://exemplo.com/logo.png"
                   className="flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-500 focus:ring disabled:opacity-50"
                 />
@@ -451,7 +468,7 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
                       onFocus={() =>
                         searchResults.length > 0 && setDropdownOpen(true)
                       }
-                      disabled={isPending}
+                      disabled={isPending || teamLimitReached}
                       placeholder="Buscar por nome ou @username…"
                       className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500 disabled:opacity-50"
                     />
@@ -509,6 +526,12 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
               </div>
             ) : null}
 
+            {teamLimitReached ? (
+              <div className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                Você já participa de uma equipe. Saia da equipe atual para poder fundar outra.
+              </div>
+            ) : null}
+
             {/* ----- Ações ----- */}
             <div className="flex gap-3 pt-1">
               <button
@@ -521,7 +544,7 @@ export function CreateTeamModal({ userId, onClose }: CreateTeamModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={isPending || nameAvailable === false}
+                disabled={isPending || nameAvailable === false || teamLimitReached}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:opacity-50"
               >
                 {isPending ? (

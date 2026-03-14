@@ -4,13 +4,13 @@ import { assertAdminAccess } from "@/app/admin/_lib";
 
 type DashboardStat = {
   totalUsers: number;
-  activeUsers30d: number;
+  newUsersThisMonth: number;
   totalTeams: number;
   activeTeams: number;
-  totalTournaments: number;
   activeTournaments: number;
   matchesToday: number;
-  totalRevenue: number;
+  bannedUsers: number;
+  pendingJoinRequests: number;
 };
 
 type LinePoint = {
@@ -24,27 +24,22 @@ type PiePoint = {
 };
 
 export type DashboardStatsPayload = {
+  generatedAt: string;
   stats: DashboardStat;
-  charts: {
-    registrations30d: LinePoint[];
-    usersByMonth: LinePoint[];
-    teamsByMonth: LinePoint[];
-    tournamentStatus: PiePoint[];
-  };
+  tournamentStatus: PiePoint[];
 };
 
 export type DashboardActivityPayload = {
-  latestLogins: Array<{ title: string; createdAt: string }>;
-  latestTeams: Array<{ title: string; createdAt: string }>;
-  latestPublishedTournaments: Array<{ title: string; createdAt: string }>;
-  latestAdminActions: Array<{ title: string; createdAt: string }>;
+  latestUsers: Array<{ id: string; kind: "user"; title: string; createdAt: string; href: string }>;
+  latestTeams: Array<{ id: string; kind: "team"; title: string; createdAt: string; href: string }>;
+  latestAdminActions: Array<{ id: string; kind: "admin"; title: string; createdAt: string; href: string }>;
 };
 
 export type DashboardAlertsPayload = {
   lowMemberTeams: Array<{ id: string; name: string; members: number }>;
-  upcomingTournaments24h: Array<{ id: string; title: string; startDate: string }>;
-  staleMatches48h: Array<{ id: string; eventId: string; scheduledAt: string }>;
-  usersWithMultiplePendingRequests: Array<{ userId: string; name: string; pendingRequests: number }>;
+  staleJoinRequests48h: Array<{ id: string; teamId: string; teamName: string; userId: string; userName: string; createdAt: string }>;
+  staleMatches72h: Array<{ id: string; eventId: string; scheduledAt: string | null; createdAt: string }>;
+  potentialMultiAccounts: Array<{ email: string; count: number; users: string[] }>;
 };
 
 type ExportType = "overview" | "users" | "teams" | "events" | "registrations";
@@ -63,6 +58,19 @@ function endOfDay(date = new Date()) {
 
 function monthLabel(date: Date) {
   return new Intl.DateTimeFormat("pt-BR", { month: "short", year: "2-digit" }).format(date);
+}
+
+function startOfWeek(date = new Date()) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isoDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function asNumber(value: unknown) {
@@ -86,42 +94,32 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
   const { supabase } = await assertAdminAccess();
 
   const now = new Date();
-  const cutoff30d = new Date(now);
-  cutoff30d.setDate(now.getDate() - 30);
-
-  const usersMonths = 6;
-  const usersCutoff = new Date(now.getFullYear(), now.getMonth() - (usersMonths - 1), 1);
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const [
     { count: totalUsers },
-    { count: activeUsers30d },
-    { count: totalTeams },
+    { count: newUsersThisMonth },
+    { count: bannedUsers },
+    teamsRes,
     teamMembersRes,
-    { count: totalTournaments },
     { count: activeTournaments },
     { count: matchesToday },
-    eventsPrizeRes,
-    registrationsRes,
-    usersCreatedRes,
-    teamsCreatedRes,
+    { count: pendingJoinRequests },
     eventsStatusRes,
   ] = await Promise.all([
     supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("profiles").select("id", { count: "exact", head: true }).gte("updated_at", cutoff30d.toISOString()),
-    supabase.from("teams").select("id", { count: "exact", head: true }),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()),
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_banned", true),
+    supabase.from("teams").select("id, dissolved_at"),
     supabase.from("team_members").select("team_id"),
-    supabase.from("events").select("id", { count: "exact", head: true }),
-    supabase.from("events").select("id", { count: "exact", head: true }).eq("status", "active"),
+    supabase.from("events").select("id", { count: "exact", head: true }).eq("event_kind", "tournament").eq("status", "active"),
     supabase
       .from("matches")
       .select("id", { count: "exact", head: true })
       .gte("scheduled_at", startOfDay(now).toISOString())
       .lte("scheduled_at", endOfDay(now).toISOString()),
-    supabase.from("events").select("prize_pool"),
-    supabase.from("registrations").select("created_at").gte("created_at", cutoff30d.toISOString()),
-    supabase.from("profiles").select("created_at").gte("created_at", usersCutoff.toISOString()),
-    supabase.from("teams").select("created_at").gte("created_at", usersCutoff.toISOString()),
-    supabase.from("events").select("status"),
+    supabase.from("team_join_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("events").select("status").eq("event_kind", "tournament"),
   ]);
 
   const membersByTeam = new Map<string, number>();
@@ -130,60 +128,11 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
     if (!teamId) continue;
     membersByTeam.set(teamId, (membersByTeam.get(teamId) ?? 0) + 1);
   }
-  const activeTeams = Array.from(membersByTeam.values()).filter((count) => count >= 2).length;
-
-  const totalRevenue = (eventsPrizeRes.data ?? []).reduce((acc, row) => acc + asNumber(row.prize_pool), 0);
-
-  const registrationsMap = new Map<string, number>();
-  for (let i = 29; i >= 0; i -= 1) {
-    const date = new Date(now);
-    date.setDate(now.getDate() - i);
-    registrationsMap.set(date.toISOString().slice(0, 10), 0);
-  }
-  for (const row of registrationsRes.data ?? []) {
-    const key = String(row.created_at ?? "").slice(0, 10);
-    if (!registrationsMap.has(key)) continue;
-    registrationsMap.set(key, (registrationsMap.get(key) ?? 0) + 1);
-  }
-  const registrations30d: LinePoint[] = Array.from(registrationsMap.entries()).map(([dateKey, total]) => ({
-    label: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(dateKey)),
-    total,
-  }));
-
-  const usersByMonthMap = new Map<string, number>();
-  const teamsByMonthMap = new Map<string, number>();
-  for (let i = usersMonths - 1; i >= 0; i -= 1) {
-    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = `${date.getFullYear()}-${date.getMonth()}`;
-    usersByMonthMap.set(key, 0);
-    teamsByMonthMap.set(key, 0);
-  }
-
-  for (const row of usersCreatedRes.data ?? []) {
-    const created = row.created_at ? new Date(String(row.created_at)) : null;
-    if (!created || Number.isNaN(created.getTime())) continue;
-    const key = `${created.getFullYear()}-${created.getMonth()}`;
-    if (!usersByMonthMap.has(key)) continue;
-    usersByMonthMap.set(key, (usersByMonthMap.get(key) ?? 0) + 1);
-  }
-
-  for (const row of teamsCreatedRes.data ?? []) {
-    const created = row.created_at ? new Date(String(row.created_at)) : null;
-    if (!created || Number.isNaN(created.getTime())) continue;
-    const key = `${created.getFullYear()}-${created.getMonth()}`;
-    if (!teamsByMonthMap.has(key)) continue;
-    teamsByMonthMap.set(key, (teamsByMonthMap.get(key) ?? 0) + 1);
-  }
-
-  const usersByMonth: LinePoint[] = Array.from(usersByMonthMap.entries()).map(([key, total]) => {
-    const [year, month] = key.split("-").map((v) => Number(v));
-    return { label: monthLabel(new Date(year, month, 1)), total };
-  });
-
-  const teamsByMonth: LinePoint[] = Array.from(teamsByMonthMap.entries()).map(([key, total]) => {
-    const [year, month] = key.split("-").map((v) => Number(v));
-    return { label: monthLabel(new Date(year, month, 1)), total };
-  });
+  const activeTeams = (teamsRes.data ?? []).filter((team) => {
+    if (team.dissolved_at) return false;
+    const members = membersByTeam.get(String(team.id)) ?? 0;
+    return members >= 2;
+  }).length;
 
   const statusCounts = new Map<string, number>([
     ["draft", 0],
@@ -199,119 +148,180 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
   }
 
   const tournamentStatus: PiePoint[] = [
-    { name: "Rascunho", value: statusCounts.get("draft") ?? 0 },
-    { name: "Publicado", value: statusCounts.get("published") ?? 0 },
-    { name: "Ativo", value: statusCounts.get("active") ?? 0 },
-    { name: "Pausado", value: statusCounts.get("paused") ?? 0 },
-    { name: "Finalizado", value: statusCounts.get("finished") ?? 0 },
+    { name: "Ativos", value: statusCounts.get("active") ?? 0 },
+    { name: "Finalizados", value: statusCounts.get("finished") ?? 0 },
+    {
+      name: "Em planejamento",
+      value: (statusCounts.get("draft") ?? 0) + (statusCounts.get("published") ?? 0) + (statusCounts.get("paused") ?? 0),
+    },
   ];
 
   return {
+    generatedAt: now.toISOString(),
     stats: {
       totalUsers: totalUsers ?? 0,
-      activeUsers30d: activeUsers30d ?? 0,
-      totalTeams: totalTeams ?? 0,
+      newUsersThisMonth: newUsersThisMonth ?? 0,
+      totalTeams: (teamsRes.data ?? []).length,
       activeTeams,
-      totalTournaments: totalTournaments ?? 0,
       activeTournaments: activeTournaments ?? 0,
       matchesToday: matchesToday ?? 0,
-      totalRevenue,
+      bannedUsers: bannedUsers ?? 0,
+      pendingJoinRequests: pendingJoinRequests ?? 0,
     },
-    charts: {
-      registrations30d,
-      usersByMonth,
-      teamsByMonth,
-      tournamentStatus,
-    },
+    tournamentStatus,
   };
 }
 
-export async function getRecentActivity(limit = 10): Promise<DashboardActivityPayload> {
+export async function getWeeklyUsers(): Promise<LinePoint[]> {
+  const { supabase } = await assertAdminAccess();
+  const now = new Date();
+  const weekCount = 8;
+  const firstWeek = startOfWeek(new Date(now.getFullYear(), now.getMonth(), now.getDate() - (weekCount - 1) * 7));
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("created_at")
+    .gte("created_at", firstWeek.toISOString());
+
+  const weekMap = new Map<string, number>();
+  for (let i = 0; i < weekCount; i += 1) {
+    const weekDate = startOfWeek(new Date(firstWeek.getFullYear(), firstWeek.getMonth(), firstWeek.getDate() + i * 7));
+    weekMap.set(isoDateKey(weekDate), 0);
+  }
+
+  for (const row of data ?? []) {
+    const created = row.created_at ? new Date(String(row.created_at)) : null;
+    if (!created || Number.isNaN(created.getTime())) continue;
+    const key = isoDateKey(startOfWeek(created));
+    if (!weekMap.has(key)) continue;
+    weekMap.set(key, (weekMap.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(weekMap.entries()).map(([key, total]) => ({
+    label: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(new Date(key)),
+    total,
+  }));
+}
+
+export async function getMonthlyTeams(): Promise<LinePoint[]> {
+  const { supabase } = await assertAdminAccess();
+  const now = new Date();
+  const months = 6;
+  const firstMonth = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+
+  const { data } = await supabase
+    .from("teams")
+    .select("created_at")
+    .gte("created_at", firstMonth.toISOString());
+
+  const byMonth = new Map<string, number>();
+  for (let i = 0; i < months; i += 1) {
+    const date = new Date(firstMonth.getFullYear(), firstMonth.getMonth() + i, 1);
+    byMonth.set(`${date.getFullYear()}-${date.getMonth()}`, 0);
+  }
+
+  for (const row of data ?? []) {
+    const created = row.created_at ? new Date(String(row.created_at)) : null;
+    if (!created || Number.isNaN(created.getTime())) continue;
+    const key = `${created.getFullYear()}-${created.getMonth()}`;
+    if (!byMonth.has(key)) continue;
+    byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+  }
+
+  return Array.from(byMonth.entries()).map(([key, total]) => {
+    const [year, month] = key.split("-").map((value) => Number(value));
+    return { label: monthLabel(new Date(year, month, 1)), total };
+  });
+}
+
+export async function getRecentActivity(limit = 5): Promise<DashboardActivityPayload> {
   const { supabase } = await assertAdminAccess();
 
   const safeLimit = Math.max(1, Math.min(limit, 30));
 
-  const [usersRes, teamsRes, eventsRes, adminLogsRes] = await Promise.all([
+  const [usersRes, teamsRes, adminLogsRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, username, updated_at")
-      .order("updated_at", { ascending: false })
-      .limit(Math.max(10, safeLimit)),
+      .select("id, display_name, username, created_at")
+      .order("created_at", { ascending: false })
+      .limit(Math.min(5, safeLimit)),
     supabase
       .from("teams")
-      .select("name, created_at")
+      .select("id, name, created_at")
       .order("created_at", { ascending: false })
-      .limit(5),
-    supabase
-      .from("events")
-      .select("title, status, published_at, created_at")
-      .in("status", ["published", "active", "finished"])
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(Math.min(3, safeLimit)),
     supabase
       .from("admin_logs")
-      .select("action, entity_type, created_at, user_id")
+      .select("id, action, entity_type, entity_id, created_at")
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(Math.min(5, safeLimit)),
   ]);
 
-  const latestLogins = (usersRes.data ?? []).slice(0, 10).map((row) => ({
-    title: `Login: ${String(row.display_name ?? row.username ?? "Usuário")}`,
-    createdAt: String(row.updated_at ?? new Date().toISOString()),
+  const latestUsers = (usersRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    kind: "user" as const,
+    title: `Novo usuário: ${String(row.display_name ?? row.username ?? "Usuário")}`,
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    href: `/admin/members/${row.id}`,
   }));
 
-  const latestTeams = (teamsRes.data ?? []).slice(0, 5).map((row) => ({
+  const latestTeams = (teamsRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    kind: "team" as const,
     title: `Equipe criada: ${String(row.name ?? "Equipe")}`,
     createdAt: String(row.created_at ?? new Date().toISOString()),
+    href: `/admin/teams/${row.id}`,
   }));
 
-  const latestPublishedTournaments = (eventsRes.data ?? []).slice(0, 3).map((row) => ({
-    title: `Torneio publicado: ${String(row.title ?? "Torneio")}`,
-    createdAt: String(row.published_at ?? row.created_at ?? new Date().toISOString()),
-  }));
-
-  const latestAdminActions = (adminLogsRes.data ?? []).slice(0, 5).map((row) => ({
-    title: `Admin ${String(row.action)} em ${String(row.entity_type)}`,
+  const latestAdminActions = (adminLogsRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    kind: "admin" as const,
+    title: `Ação admin: ${String(row.action)} (${String(row.entity_type)})`,
     createdAt: String(row.created_at ?? new Date().toISOString()),
+    href:
+      row.entity_type === "user" && row.entity_id
+        ? `/admin/members/${row.entity_id}`
+        : row.entity_type === "team" && row.entity_id
+          ? `/admin/teams/${row.entity_id}`
+          : row.entity_type === "match" && row.entity_id
+            ? `/admin/matches/${row.entity_id}`
+            : (row.entity_type === "event" || row.entity_type === "tournament") && row.entity_id
+              ? `/admin/tournaments/${row.entity_id}`
+              : "/admin/logs",
   }));
 
   return {
-    latestLogins,
+    latestUsers,
     latestTeams,
-    latestPublishedTournaments,
     latestAdminActions,
   };
 }
 
-export async function getAlerts(): Promise<DashboardAlertsPayload> {
+export async function getSystemAlerts(): Promise<DashboardAlertsPayload> {
   const { supabase } = await assertAdminAccess();
 
   const now = new Date();
-  const next24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const before48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+  const before72h = new Date(now.getTime() - 72 * 60 * 60 * 1000);
 
-  const [teamsRes, teamMembersRes, upcomingRes, staleMatchesRes, pendingReqRes] = await Promise.all([
-    supabase.from("teams").select("id, name"),
+  const [teamsRes, teamMembersRes, staleJoinRequestsRes, staleMatchesRes, profilesRes] = await Promise.all([
+    supabase.from("teams").select("id, name, dissolved_at"),
     supabase.from("team_members").select("team_id"),
     supabase
-      .from("events")
-      .select("id, title, start_date")
-      .in("status", ["published", "active"])
-      .gte("start_date", now.toISOString())
-      .lte("start_date", next24h.toISOString())
-      .order("start_date", { ascending: true }),
+      .from("team_join_requests")
+      .select("id, team_id, user_id, created_at")
+      .eq("status", "pending")
+      .lte("created_at", before48h.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(100),
     supabase
       .from("matches")
-      .select("id, event_id, scheduled_at")
+      .select("id, event_id, scheduled_at, created_at")
       .in("status", ["pending", "in_progress"])
-      .lte("scheduled_at", before48h.toISOString())
-      .order("scheduled_at", { ascending: true })
+      .lte("created_at", before72h.toISOString())
+      .order("created_at", { ascending: true })
       .limit(50),
-    supabase
-      .from("team_join_requests")
-      .select("user_id")
-      .eq("status", "pending"),
+    supabase.from("profiles").select("id, display_name, username, email"),
   ]);
 
   const memberCounts = new Map<string, number>();
@@ -327,55 +337,74 @@ export async function getAlerts(): Promise<DashboardAlertsPayload> {
       name: String(row.name ?? "Equipe"),
       members: memberCounts.get(String(row.id)) ?? 0,
     }))
-    .filter((row) => row.members < 2)
+    .filter((row) => {
+      const team = (teamsRes.data ?? []).find((item) => String(item.id) === row.id);
+      if (team?.dissolved_at) return false;
+      return row.members < 2;
+    })
     .slice(0, 20);
 
-  const upcomingTournaments24h = (upcomingRes.data ?? []).map((row) => ({
-    id: String(row.id),
-    title: String(row.title ?? "Torneio"),
-    startDate: String(row.start_date),
-  }));
-
-  const staleMatches48h = (staleMatchesRes.data ?? []).map((row) => ({
-    id: String(row.id),
-    eventId: String(row.event_id),
-    scheduledAt: String(row.scheduled_at),
-  }));
-
-  const pendingByUser = new Map<string, number>();
-  for (const row of pendingReqRes.data ?? []) {
-    const userId = String(row.user_id ?? "");
-    if (!userId) continue;
-    pendingByUser.set(userId, (pendingByUser.get(userId) ?? 0) + 1);
-  }
-
-  const repeatedUsers = Array.from(pendingByUser.entries())
-    .filter(([, total]) => total > 1)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 20);
-
-  const userIds = repeatedUsers.map(([userId]) => userId);
-  const profilesRes = userIds.length
-    ? await supabase.from("profiles").select("id, display_name, username").in("id", userIds)
-    : { data: [] as Array<{ id: string; display_name: string | null; username: string | null }> };
-
-  const nameByUserId = new Map<string, string>();
+  const profileNameById = new Map<string, string>();
+  const emailToNames = new Map<string, string[]>();
   for (const row of profilesRes.data ?? []) {
-    nameByUserId.set(String(row.id), String(row.display_name ?? row.username ?? "Usuário"));
+    const profileId = String(row.id);
+    const name = String(row.display_name ?? row.username ?? "Usuário");
+    profileNameById.set(profileId, name);
+
+    const email = String(row.email ?? "").trim().toLowerCase();
+    if (!email) continue;
+    const list = emailToNames.get(email) ?? [];
+    list.push(name);
+    emailToNames.set(email, list);
   }
 
-  const usersWithMultiplePendingRequests = repeatedUsers.map(([userId, pendingRequests]) => ({
-    userId,
-    name: nameByUserId.get(userId) ?? "Usuário",
-    pendingRequests,
+  const teamNameById = new Map<string, string>();
+  for (const row of teamsRes.data ?? []) {
+    teamNameById.set(String(row.id), String(row.name ?? "Equipe"));
+  }
+
+  const staleJoinRequests48h = (staleJoinRequestsRes.data ?? []).map((row) => ({
+    id: String(row.id),
+    teamId: String(row.team_id),
+    teamName: teamNameById.get(String(row.team_id)) ?? "Equipe",
+    userId: String(row.user_id),
+    userName: profileNameById.get(String(row.user_id)) ?? "Usuário",
+    createdAt: String(row.created_at),
   }));
+
+  const staleMatches72h = (staleMatchesRes.data ?? [])
+    .filter((row) => {
+      const base = row.scheduled_at ? new Date(String(row.scheduled_at)) : new Date(String(row.created_at));
+      if (Number.isNaN(base.getTime())) return false;
+      return base <= before72h;
+    })
+    .map((row) => ({
+      id: String(row.id),
+      eventId: String(row.event_id),
+      scheduledAt: row.scheduled_at ? String(row.scheduled_at) : null,
+      createdAt: String(row.created_at),
+    }));
+
+  const potentialMultiAccounts = Array.from(emailToNames.entries())
+    .filter(([, users]) => users.length > 1)
+    .map(([email, users]) => ({
+      email,
+      count: users.length,
+      users: users.slice(0, 4),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
 
   return {
     lowMemberTeams,
-    upcomingTournaments24h,
-    staleMatches48h,
-    usersWithMultiplePendingRequests,
+    staleJoinRequests48h,
+    staleMatches72h,
+    potentialMultiAccounts,
   };
+}
+
+export async function getAlerts(): Promise<DashboardAlertsPayload> {
+  return getSystemAlerts();
 }
 
 export async function exportData(type: ExportType) {
@@ -387,13 +416,13 @@ export async function exportData(type: ExportType) {
       ["metric", "value"],
       [
         ["total_users", dashboard.stats.totalUsers],
-        ["active_users_30d", dashboard.stats.activeUsers30d],
+        ["new_users_this_month", dashboard.stats.newUsersThisMonth],
         ["total_teams", dashboard.stats.totalTeams],
         ["active_teams", dashboard.stats.activeTeams],
-        ["total_tournaments", dashboard.stats.totalTournaments],
         ["active_tournaments", dashboard.stats.activeTournaments],
         ["matches_today", dashboard.stats.matchesToday],
-        ["total_revenue", dashboard.stats.totalRevenue],
+        ["banned_users", dashboard.stats.bannedUsers],
+        ["pending_join_requests", dashboard.stats.pendingJoinRequests],
       ],
     );
 

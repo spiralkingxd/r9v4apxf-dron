@@ -69,7 +69,7 @@ export function EventDetailAdminActions({ eventId, status }: Props) {
         variant="ghost"
         onClick={() =>
           runAction(() => duplicateEvent(eventId), (id) => {
-            if (id) router.push(`/admin/events/${id}/edit`);
+            if (id) router.push(`/admin/tournaments/${id}/edit`);
           })
         }
         disabled={isPending}
@@ -86,7 +86,7 @@ export function EventDetailAdminActions({ eventId, status }: Props) {
           runAction(
             () => deleteEvent(eventId),
             () => {
-              router.push("/admin/events");
+              router.push("/admin/tournaments");
             },
           );
         }}

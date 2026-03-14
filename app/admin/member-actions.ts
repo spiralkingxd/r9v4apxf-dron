@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
 import { queueOrSendDiscordNotification } from "@/lib/discord-notifications";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type ActionResult = { success?: string; error?: string };
 
@@ -28,6 +29,19 @@ const unbanSchema = z.object({
 
 const deleteUserSchema = z.object({
   userId: z.string().uuid(),
+});
+
+const deleteUserAccountSchema = z.object({
+  userId: z.string().uuid(),
+  adminId: z.string().uuid(),
+  confirmation: z.string().trim().min(1),
+  reason: z.string().trim().max(400).optional(),
+});
+
+const softDeleteUserSchema = z.object({
+  userId: z.string().uuid(),
+  adminId: z.string().uuid(),
+  reason: z.string().trim().max(400).optional(),
 });
 
 const forceLogoutSchema = z.object({
@@ -62,6 +76,8 @@ function revalidateMemberPaths(memberId?: string) {
   revalidatePath("/admin/members");
   revalidatePath("/admin/dashboard");
   revalidatePath("/admin/bans");
+  revalidatePath("/admin/teams");
+  revalidatePath("/teams");
   revalidatePath("/profile/me");
   if (memberId) {
     revalidatePath(`/admin/members/${memberId}`);
@@ -397,6 +413,306 @@ export async function deleteUser(userId: string, _deletedBy?: string): Promise<A
     return { success: "Conta removida (soft delete) com sucesso." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao deletar usu�rio." };
+  }
+}
+
+export async function softDeleteUserAccount(
+  userId: string,
+  adminId: string,
+  reason?: string,
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const parsed = softDeleteUserSchema.safeParse({ userId, adminId, reason });
+  if (!parsed.success) {
+    return { success: false, error: "Dados invalidos." };
+  }
+
+  try {
+    const { supabase, adminId: requesterId, role } = await assertAdminAccess();
+    if (requesterId !== parsed.data.adminId) {
+      return { success: false, error: "Admin invalido para esta acao." };
+    }
+
+    await enforceAdminRateLimit(supabase, requesterId, "soft_delete_user_account");
+
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("id, role, display_name, username, deleted_at")
+      .eq("id", parsed.data.userId)
+      .maybeSingle<{
+        id: string;
+        role: "user" | "admin" | "owner";
+        display_name: string | null;
+        username: string | null;
+        deleted_at: string | null;
+      }>();
+
+    if (!target) return { success: false, error: "Usuario alvo nao encontrado." };
+    if (target.role === "owner") return { success: false, error: "Conta owner nao pode ser deletada." };
+    if (target.role === "admin" && role !== "owner") {
+      return { success: false, error: "Apenas owner pode deletar outro admin." };
+    }
+
+    const stamp = nowIso();
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        deleted_at: stamp,
+        deleted_by: requesterId,
+        is_banned: true,
+        ban_reason: parsed.data.reason || "Conta removida pelo administrador",
+        banned_reason: parsed.data.reason || "Conta removida pelo administrador",
+        banned_at: stamp,
+        banned_by: requesterId,
+        force_logout_after: stamp,
+        updated_at: stamp,
+      })
+      .eq("id", parsed.data.userId);
+
+    if (profileError) {
+      return { success: false, error: "Nao foi possivel aplicar soft delete na conta." };
+    }
+
+    await logAdminTables(supabase, {
+      adminId: requesterId,
+      action: "soft_delete_user_account",
+      entityType: "user",
+      entityId: parsed.data.userId,
+      oldValue: {
+        display_name: target.display_name,
+        username: target.username,
+        role: target.role,
+        deleted_at: target.deleted_at,
+      },
+      newValue: {
+        deleted_at: stamp,
+        reason: parsed.data.reason || null,
+      },
+    });
+
+    revalidateMemberPaths(parsed.data.userId);
+    return { success: true, message: "Conta marcada como deletada com sucesso." };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao executar soft delete." };
+  }
+}
+
+export async function deleteUserAccount(
+  userId: string,
+  adminId: string,
+  confirmation: string,
+  reason?: string,
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  const parsed = deleteUserAccountSchema.safeParse({ userId, adminId, confirmation, reason });
+  if (!parsed.success) {
+    return { success: false, error: "Dados invalidos para delecao de conta." };
+  }
+
+  try {
+    const { supabase, adminId: requesterId, role } = await assertAdminAccess();
+    if (requesterId !== parsed.data.adminId) {
+      return { success: false, error: "Admin invalido para esta acao." };
+    }
+
+    await enforceAdminRateLimit(supabase, requesterId, "delete_user_account");
+
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      return {
+        success: false,
+        error: "SUPABASE_SERVICE_ROLE_KEY nao configurada. Use soft delete ou configure a chave de servico.",
+      };
+    }
+
+    const { data: target } = await supabase
+      .from("profiles")
+      .select("id, display_name, username, discord_id, email, role, created_at")
+      .eq("id", parsed.data.userId)
+      .maybeSingle<{
+        id: string;
+        display_name: string | null;
+        username: string | null;
+        discord_id: string | null;
+        email: string | null;
+        role: "user" | "admin" | "owner";
+        created_at: string;
+      }>();
+
+    if (!target) return { success: false, error: "Usuario alvo nao encontrado." };
+    if (target.role === "owner") return { success: false, error: "Conta owner nao pode ser deletada." };
+    if (target.role === "admin" && role !== "owner") {
+      return { success: false, error: "Apenas owner pode deletar outro admin." };
+    }
+
+    const expectedDeleteToken = "DELETAR";
+    const expectedUsername = (target.username ?? "").trim().toLowerCase();
+    const confirmationValue = parsed.data.confirmation.trim();
+    const confirmationMatches =
+      confirmationValue === expectedDeleteToken ||
+      (expectedUsername.length > 0 && confirmationValue.toLowerCase() === expectedUsername);
+
+    if (!confirmationMatches) {
+      return { success: false, error: "Confirmacao invalida. Digite DELETAR ou o username do usuario." };
+    }
+
+    const stamp = nowIso();
+
+    const { data: memberships } = await supabase
+      .from("team_members")
+      .select("team_id, role")
+      .eq("user_id", parsed.data.userId);
+
+    const memberTeamIds = [...new Set((memberships ?? []).map((row) => String(row.team_id)))];
+
+    const { data: captainTeams } = await supabase
+      .from("teams")
+      .select("id, name, dissolved_at")
+      .eq("captain_id", parsed.data.userId)
+      .is("dissolved_at", null);
+
+    const transferSummary = {
+      transferredCaptain: 0,
+      dissolvedTeams: 0,
+      dissolvedTeamIds: [] as string[],
+    };
+
+    for (const team of captainTeams ?? []) {
+      const teamId = String(team.id);
+      const { data: replacementRows } = await supabase
+        .from("team_members")
+        .select("user_id")
+        .eq("team_id", teamId)
+        .neq("user_id", parsed.data.userId)
+        .limit(1);
+
+      const replacementUserId = replacementRows?.[0]?.user_id ? String(replacementRows[0].user_id) : null;
+
+      if (replacementUserId) {
+        await supabase
+          .from("teams")
+          .update({ captain_id: replacementUserId, updated_at: stamp })
+          .eq("id", teamId);
+
+        await supabase
+          .from("team_members")
+          .update({ role: "captain" })
+          .eq("team_id", teamId)
+          .eq("user_id", replacementUserId);
+
+        transferSummary.transferredCaptain += 1;
+      } else {
+        await supabase
+          .from("teams")
+          .update({
+            dissolved_at: stamp,
+            dissolved_by: requesterId,
+            dissolve_reason: `Conta do capitao removida: ${target.username ?? target.id}`,
+            updated_at: stamp,
+          })
+          .eq("id", teamId);
+
+        transferSummary.dissolvedTeams += 1;
+        transferSummary.dissolvedTeamIds.push(teamId);
+      }
+    }
+
+    if (memberTeamIds.length > 0) {
+      await supabase.from("team_members").delete().eq("user_id", parsed.data.userId);
+    }
+
+    await supabase
+      .from("team_join_requests")
+      .update({ status: "rejected", responded_at: stamp, responded_by: requesterId, updated_at: stamp })
+      .eq("user_id", parsed.data.userId)
+      .eq("status", "pending");
+
+    if (transferSummary.dissolvedTeamIds.length > 0) {
+      await supabase
+        .from("team_join_requests")
+        .update({ status: "rejected", responded_at: stamp, responded_by: requesterId, updated_at: stamp })
+        .in("team_id", transferSummary.dissolvedTeamIds)
+        .eq("status", "pending");
+
+      await supabase
+        .from("registrations")
+        .update({ status: "cancelled", rejection_reason: "Equipe dissolvida por delecao de conta", updated_at: stamp })
+        .in("team_id", transferSummary.dissolvedTeamIds)
+        .in("status", ["pending", "approved"]);
+
+      await supabase
+        .from("matches")
+        .update({ team_a_id: null, updated_at: stamp, updated_by: requesterId })
+        .in("team_a_id", transferSummary.dissolvedTeamIds);
+
+      await supabase
+        .from("matches")
+        .update({ team_b_id: null, updated_at: stamp, updated_by: requesterId })
+        .in("team_b_id", transferSummary.dissolvedTeamIds);
+
+      await supabase
+        .from("matches")
+        .update({ winner_id: null, updated_at: stamp, updated_by: requesterId })
+        .in("winner_id", transferSummary.dissolvedTeamIds);
+    }
+
+    await supabase
+      .from("matches")
+      .update({ updated_by: null, updated_at: stamp })
+      .eq("updated_by", parsed.data.userId);
+
+    await supabase.from("bans").update({ banned_by: requesterId }).eq("banned_by", parsed.data.userId);
+    await supabase.from("admin_action_logs").update({ admin_user_id: requesterId }).eq("admin_user_id", parsed.data.userId);
+    await supabase.from("admin_logs").update({ user_id: requesterId }).eq("user_id", parsed.data.userId);
+
+    const { error: deleteProfileError } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", parsed.data.userId);
+
+    if (deleteProfileError) {
+      return { success: false, error: "Nao foi possivel remover o perfil da conta." };
+    }
+
+    const authDelete = await adminClient.auth.admin.deleteUser(parsed.data.userId);
+    if (authDelete.error) {
+      return {
+        success: false,
+        error: `Perfil removido, mas falhou ao remover auth.users: ${authDelete.error.message}`,
+      };
+    }
+
+    const deletionReason = parsed.data.reason?.trim() || null;
+
+    await logAdminTables(supabase, {
+      adminId: requesterId,
+      action: "user_deleted",
+      entityType: "user",
+      entityId: parsed.data.userId,
+      oldValue: {
+        display_name: target.display_name,
+        username: target.username,
+        discord_id: target.discord_id,
+        email: target.email,
+        role: target.role,
+        created_at: target.created_at,
+      },
+      newValue: {
+        deleted_at: stamp,
+        reason: deletionReason,
+        team_changes: {
+          transferredCaptain: transferSummary.transferredCaptain,
+          dissolvedTeams: transferSummary.dissolvedTeams,
+        },
+      },
+    });
+
+    revalidateMemberPaths(parsed.data.userId);
+    return {
+      success: true,
+      message: `Conta de ${target.display_name ?? target.username ?? "usuario"} deletada com sucesso.`,
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Falha ao deletar conta." };
   }
 }
 

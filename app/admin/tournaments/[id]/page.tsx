@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ComponentType } from "react";
 import { ArrowLeft, CalendarDays, ClipboardList, Flag, ListChecks, Swords, Trophy } from "lucide-react";
 
-import { getAdminEventDetail } from "@/app/admin/events/_data";
+import { getAdminEventDetail } from "@/app/admin/tournaments/_data";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { EventDetailAdminActions } from "@/components/admin/event-detail-admin-actions";
 import {
@@ -26,13 +26,13 @@ function firstValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function AdminEventDetailPage({ params, searchParams }: Props) {
+export default async function AdminTournamentDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
   const query = await searchParams;
   const tabRaw = firstValue(query.tab);
   const tab = (tabRaw === "registrations" || tabRaw === "matches" || tabRaw === "results" || tabRaw === "logs" ? tabRaw : "info") as TabKey;
 
-  const { event, counts, matches, logs } = await getAdminEventDetail(id);
+  const { event, counts, matches, logs } = await getAdminEventDetail(id, "tournament");
 
   const tabs: Array<{ key: TabKey; label: string; icon: ComponentType<{ className?: string }> }> = [
     { key: "info", label: "Informações", icon: Flag },
@@ -45,14 +45,14 @@ export default async function AdminEventDetailPage({ params, searchParams }: Pro
   return (
     <section className="space-y-5">
       <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-        <Link href="/admin/events" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
+        <Link href="/admin/tournaments" className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
           <ArrowLeft className="h-4 w-4" />
-          Voltar para eventos
+          Voltar para torneios
         </Link>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Admin Event Center</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Admin Tournament Center</p>
             <h1 className="mt-1 text-2xl font-bold text-white">{event.title}</h1>
             <div className="mt-2 flex flex-wrap gap-2">
               <AdminBadge tone="info">{formatEventStatus(event.status)}</AdminBadge>
@@ -83,7 +83,7 @@ export default async function AdminEventDetailPage({ params, searchParams }: Pro
           return (
             <Link
               key={item.key}
-              href={`/admin/events/${id}?tab=${item.key}`}
+              href={`/admin/tournaments/${id}?tab=${item.key}`}
               className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition ${
                 active
                   ? "border-cyan-300/40 bg-cyan-300/15 text-cyan-100"
@@ -119,7 +119,7 @@ export default async function AdminEventDetailPage({ params, searchParams }: Pro
         <section className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-white">Inscrições</h2>
-            <Link href={`/admin/events/${id}/registrations`} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10">
+            <Link href={`/admin/tournaments/${id}/registrations`} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10">
               Abrir gerenciamento completo
             </Link>
           </div>

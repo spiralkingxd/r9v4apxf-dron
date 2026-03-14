@@ -140,7 +140,7 @@ export function UserDropdown({
             className="flex items-center gap-2 rounded-xl px-3 py-2 text-slate-100 transition hover:bg-white/10"
           >
             <Gamepad2 className="h-4 w-4" />
-            Minhas Equipes ({teamsCount}/3)
+            Minhas Equipes ({teamsCount}/1)
           </Link>
 
           <Link

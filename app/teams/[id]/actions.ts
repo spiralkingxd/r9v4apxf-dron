@@ -25,8 +25,8 @@ export type SearchCandidate = TeamMemberProfile & {
 function toFriendlyTeamError(message?: string | null): string {
   const msg = (message ?? "").toLowerCase();
 
-  if (msg.includes("3 equipes") || msg.includes("limite máximo")) {
-    return "Você atingiu o limite de 3 equipes";
+  if (msg.includes("1 equipe") || msg.includes("limite máximo")) {
+    return "Você já participa de uma equipe";
   }
   if (msg.includes("10 membros") || msg.includes("equipe atingiu")) {
     return "Esta equipe está cheia (10/10)";
@@ -257,8 +257,8 @@ export async function addTeamMember(input: {
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId);
 
-  if ((targetTeamCount ?? 0) >= 3) {
-    return { error: "Você atingiu o limite de 3 equipes" };
+  if ((targetTeamCount ?? 0) >= 1) {
+    return { error: "Você já participa de uma equipe" };
   }
 
   const { error } = await supabase

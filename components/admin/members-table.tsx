@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Ban, Shield, ShieldCheck, UserCheck, UserCog } from "lucide-react";
 
@@ -9,6 +9,7 @@ import { banUser, bulkManageMembers, unbanUser, updateUserRole } from "@/app/adm
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
 import { AdminTable, type AdminTableColumn } from "@/components/admin/admin-table";
+import { DeleteUserAccountControl } from "@/components/admin/delete-user-account-control";
 import { useAdminToast } from "@/components/admin/admin-toast";
 
 type MemberRow = {
@@ -33,10 +34,19 @@ const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
 });
 
-export function MembersTable({ rows }: { rows: MemberRow[] }) {
+export function MembersTable({
+  rows,
+  currentAdminId,
+  currentAdminRole,
+}: {
+  rows: MemberRow[];
+  currentAdminId: string;
+  currentAdminRole: "admin" | "owner";
+}) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
   const [isPending, startTransition] = useTransition();
+  const [tableRows, setTableRows] = useState<MemberRow[]>(rows);
 
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | MemberRow["role"]>("all");
@@ -45,13 +55,17 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
   const [pageSize, setPageSize] = useState(25);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    setTableRows(rows);
+  }, [rows]);
+
   const selectedIds = useMemo(() => Object.keys(selected).filter((id) => selected[id]), [selected]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
     const query = search.trim().toLowerCase();
 
-    return rows.filter((row) => {
+    return tableRows.filter((row) => {
       if (roleFilter !== "all" && row.role !== roleFilter) return false;
 
       if (statusFilter === "active" && row.is_banned) return false;
@@ -77,7 +91,7 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
 
       return haystack.includes(query);
     });
-  }, [rows, roleFilter, statusFilter, dateFilter, search]);
+  }, [tableRows, roleFilter, statusFilter, dateFilter, search]);
 
   const columns = useMemo<AdminTableColumn<MemberRow>[]>(() => {
     return [
@@ -232,11 +246,35 @@ export function MembersTable({ rows }: { rows: MemberRow[] }) {
                 Desbanir
               </button>
             ) : null}
+            {(currentAdminRole === "admin" || currentAdminRole === "owner") ? (
+              <DeleteUserAccountControl
+                target={{
+                  id: row.id,
+                  avatarUrl: row.avatar_url,
+                  displayName: row.display_name,
+                  username: row.username,
+                  discordId: row.discord_id,
+                  role: row.role,
+                }}
+                currentAdminId={currentAdminId}
+                currentAdminRole={currentAdminRole}
+                compact
+                onDeleted={(deletedUserId) => {
+                  setTableRows((prev) => prev.filter((item) => item.id !== deletedUserId));
+                  setSelected((prev) => {
+                    if (!prev[deletedUserId]) return prev;
+                    const next = { ...prev };
+                    delete next[deletedUserId];
+                    return next;
+                  });
+                }}
+              />
+            ) : null}
           </div>
         ),
       },
     ];
-  }, [pushToast, router, selected, startTransition]);
+  }, [currentAdminId, currentAdminRole, pushToast, router, selected, startTransition]);
 
   async function runBulkAction(action: "promote" | "demote" | "ban") {
     if (selectedIds.length === 0) {

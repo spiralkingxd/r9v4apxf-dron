@@ -30,7 +30,7 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
   const [isLaunching, startTransition] = useTransition();
 
   const teamsCount = teams.length;
-  const reachedLimit = teamsCount >= 3;
+  const reachedLimit = teamsCount >= 1;
 
   const orderedTeams = useMemo(
     () =>
@@ -53,11 +53,11 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
 
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
-            Equipes ({teamsCount}/3)
+            Equipes ({teamsCount}/1)
           </span>
           <button
             type="button"
-            title={reachedLimit ? "Você atingiu o limite de 3 equipes" : "Fundar nova equipe"}
+            title={reachedLimit ? "Você já participa de uma equipe" : "Fundar nova equipe"}
             disabled={reachedLimit || isLaunching}
             onClick={() => {
               startTransition(() => setOpen(true));
@@ -143,7 +143,7 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
         </div>
       )}
 
-      {open ? <CreateTeamModal userId={userId} onClose={() => setOpen(false)} /> : null}
+      {open ? <CreateTeamModal userId={userId} hasReachedTeamLimit={reachedLimit} onClose={() => setOpen(false)} /> : null}
     </section>
   );
 }

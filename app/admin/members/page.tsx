@@ -19,6 +19,17 @@ type MemberRow = {
 
 export default async function AdminMembersPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: adminProfile } = user
+    ? await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", user.id)
+        .maybeSingle<{ id: string; role: "user" | "admin" | "owner" }>()
+    : { data: null as { id: string; role: "user" | "admin" | "owner" } | null };
 
   const { data: profilesRaw } = await supabase
     .from("profiles")
@@ -62,7 +73,11 @@ export default async function AdminMembersPage() {
         <p className="mt-2 text-sm text-slate-400">Administre roles, status e participação em equipes.</p>
       </header>
 
-      <MembersTable rows={rows} />
+      <MembersTable
+        rows={rows}
+        currentAdminId={adminProfile?.id ?? user?.id ?? ""}
+        currentAdminRole={adminProfile?.role === "owner" ? "owner" : "admin"}
+      />
     </section>
   );
 }

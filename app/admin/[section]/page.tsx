@@ -9,8 +9,6 @@ const sectionTitle: Record<string, string> = {
   members: "Membros",
   equipes: "Equipes",
   teams: "Equipes",
-  eventos: "Eventos",
-  events: "Eventos",
   partidas: "Partidas / Matches",
   matches: "Partidas / Matches",
   results: "Resultados",

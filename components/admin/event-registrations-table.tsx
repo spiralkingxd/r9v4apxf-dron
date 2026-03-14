@@ -171,7 +171,7 @@ export function EventRegistrationsTable({
   ];
 
   function exportCsv() {
-    window.open(`/admin/events/${eventId}/registrations/export`, "_blank");
+    window.open(`/admin/tournaments/${eventId}/registrations/export`, "_blank");
   }
 
   function runBulkApprove() {
