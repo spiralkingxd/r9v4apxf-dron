@@ -154,7 +154,7 @@ export function RankingsAdminPanel({
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400 lg:col-span-2">
           Busca
-          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Jogador, Xbox, equipe ou capitão" className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Jogador, Xbox, equipe ou capitão" className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />
         </label>
 
         <div className="flex items-end gap-2">
@@ -170,15 +170,15 @@ export function RankingsAdminPanel({
       <div className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/60 p-4 lg:grid-cols-6">
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400 lg:col-span-2">
           Entity ID (jogador/equipe)
-          <input value={adjustEntityId} onChange={(event) => setAdjustEntityId(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none" />
+          <input value={adjustEntityId} onChange={(event) => setAdjustEntityId(event.target.value)} className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />
         </label>
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400">
           Pontos (+/-)
-          <input type="number" value={adjustPoints} onChange={(event) => setAdjustPoints(Number(event.target.value))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none" />
+          <input type="number" value={adjustPoints} onChange={(event) => setAdjustPoints(Number(event.target.value))} className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />
         </label>
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-400 lg:col-span-2">
           Motivo
-          <input value={adjustReason} onChange={(event) => setAdjustReason(event.target.value)} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none" />
+          <input value={adjustReason} onChange={(event) => setAdjustReason(event.target.value)} className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />
         </label>
         <AdminButton type="button" disabled={isPending || !adjustEntityId || !adjustReason.trim()} onClick={() => runAction(() => adjustRankingPoints(adjustEntityId, adjustPoints, adjustReason))}>
           Ajustar
@@ -195,7 +195,7 @@ export function RankingsAdminPanel({
           value={seasonName}
           onChange={(event) => setSeasonName(event.target.value)}
           placeholder="Temporada (ex: 2026-S1)"
-          className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none"
+          className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-500"
         />
 
         <AdminButton type="button" variant="danger" disabled={isPending || !seasonName.trim()} onClick={() => runAction(() => resetRankings(seasonName))}>
