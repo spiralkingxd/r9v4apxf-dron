@@ -21,13 +21,13 @@ export default async function AdminSettingsPage() {
 
   return (
     <section className="space-y-5">
-      <header className="rounded-2xl border border-white/10 bg-slate-950/60 p-6">
-        <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Admin</p>
+      <header className="rounded-2xl border admin-surface p-6">
+        <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Admin</p>
         <div className="mt-2 flex items-center gap-3">
-          <Settings className="h-6 w-6 text-cyan-300" />
-          <h1 className="text-2xl font-bold text-white">Configurações do Sistema</h1>
+          <Settings className="h-6 w-6 text-[color:var(--accent-cyan)]" />
+          <h1 className="text-2xl font-bold text-[color:var(--text-strong)]">Configurações do Sistema</h1>
         </div>
-        <p className="mt-2 text-sm text-slate-400">
+        <p className="mt-2 text-sm text-[color:var(--text-muted)]">
           Centralize parâmetros globais da plataforma, eventos, ranking e integrações operacionais.
         </p>
       </header>

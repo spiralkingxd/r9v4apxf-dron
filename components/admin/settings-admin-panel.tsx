@@ -75,57 +75,57 @@ export function SettingsAdminPanel({ settings }: Props) {
 
   return (
     <>
-      <form onSubmit={onSubmit} className="space-y-6 rounded-2xl border border-white/10 bg-slate-950/60 p-6">
+      <form onSubmit={onSubmit} className="admin-surface space-y-6 rounded-2xl p-6">
         <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">Geral</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Geral</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>Nome da plataforma</span>
               <input
                 value={form.platform_name}
                 onChange={(e) => setField("platform_name", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               />
             </label>
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>Email de suporte</span>
               <input
                 type="email"
                 value={form.support_email}
                 onChange={(e) => setField("support_email", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               />
             </label>
           </div>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">Eventos e Ranking</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--text-strong)]">Eventos e Ranking</h2>
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>Visibilidade padrão</span>
               <select
                 value={form.default_event_visibility}
                 onChange={(e) => setField("default_event_visibility", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               >
                 <option value="public">Público</option>
                 <option value="private">Privado</option>
               </select>
             </label>
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>Tipo de evento padrão</span>
               <select
                 value={form.default_event_type}
                 onChange={(e) => setField("default_event_type", e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               >
                 <option value="special">Especial</option>
                 <option value="ranked">Rankeado</option>
                 <option value="tournament">Torneio</option>
               </select>
             </label>
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>Tamanho máximo do time</span>
               <input
                 type="number"
@@ -133,10 +133,10 @@ export function SettingsAdminPanel({ settings }: Props) {
                 max={15}
                 value={form.max_team_size}
                 onChange={(e) => setField("max_team_size", Number(e.target.value) || 2)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               />
             </label>
-            <label className="space-y-1 text-sm text-slate-300">
+            <label className="space-y-1 text-sm text-[color:var(--text-strong)]">
               <span>K-Factor global</span>
               <input
                 type="number"
@@ -144,16 +144,16 @@ export function SettingsAdminPanel({ settings }: Props) {
                 max={128}
                 value={form.ranking_k_factor}
                 onChange={(e) => setField("ranking_k_factor", Number(e.target.value) || 32)}
-                className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white outline-none focus:border-sky-400"
+                className="w-full rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)] outline-none focus:border-[color:var(--accent-cyan)]"
               />
             </label>
           </div>
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">Operação</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--text-strong)]">Operação</h2>
           <div className="grid gap-3 md:grid-cols-3">
-            <label className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200">
+            <label className="flex items-center justify-between rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)]">
               <span>Registro habilitado</span>
               <input
                 type="checkbox"
@@ -161,7 +161,7 @@ export function SettingsAdminPanel({ settings }: Props) {
                 onChange={(e) => setField("allow_registration", e.target.checked)}
               />
             </label>
-            <label className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200">
+            <label className="flex items-center justify-between rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)]">
               <span>Notificações Discord</span>
               <input
                 type="checkbox"
@@ -169,7 +169,7 @@ export function SettingsAdminPanel({ settings }: Props) {
                 onChange={(e) => setField("discord_notifications_enabled", e.target.checked)}
               />
             </label>
-            <label className="flex items-center justify-between rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-slate-200">
+            <label className="flex items-center justify-between rounded-xl border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] px-3 py-2 text-sm text-[color:var(--text-strong)]">
               <span>Modo manutenção</span>
               <input
                 type="checkbox"

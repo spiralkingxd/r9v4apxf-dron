@@ -21,6 +21,8 @@ import { AlertBanner } from "@/components/admin/alert-banner";
 import { AdminStatCard } from "@/components/admin/admin-stat-card";
 import { DashboardExportButton } from "@/components/admin/dashboard-export-button";
 
+import { createClient } from "@/lib/supabase/server";
+
 const DashboardCharts = dynamic(
   () => import("@/components/admin/dashboard-charts").then((mod) => mod.DashboardCharts),
   {
@@ -49,6 +51,23 @@ function getGreetingLabel(now: Date) {
 
 export default async function AdminDashboardPage() {
   const now = new Date();
+  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  let displayName = "Admin";
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", user.id)
+      .single();
+    
+    if (profile) {
+      displayName = profile.display_name || profile.username || "Admin";
+    }
+  }
+
   const [statsPayload, weeklyUsers, monthlyTeams, activity, alerts] = await Promise.all([
     getDashboardStats(),
     getWeeklyUsers(),
@@ -113,9 +132,9 @@ export default async function AdminDashboardPage() {
       <header className="admin-surface rounded-2xl p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Painel Admin</p>
-            <h1 className="mt-2 text-3xl font-bold text-white">{getGreetingLabel(now)}, central de comando</h1>
-            <p className="mt-2 text-sm text-slate-400">{dateFmt.format(now)}</p>
+            <p className="text-xs uppercase tracking-[0.22em] text-[color:var(--text-muted)]">Painel Admin</p>
+            <h1 className="mt-2 text-3xl font-bold text-[color:var(--text-strong)]">{getGreetingLabel(now)}, @{displayName}</h1>
+            <p className="mt-2 text-sm text-[color:var(--text-muted)]">{dateFmt.format(now)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <AdminBadge tone={totalAlerts > 0 ? "pending" : "active"}>

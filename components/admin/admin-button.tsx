@@ -16,9 +16,9 @@ export const AdminButton = forwardRef<HTMLButtonElement, Props>(function AdminBu
 ) {
   const variants: Record<Variant, string> = {
     primary: "bg-cyan-400 text-slate-950 hover:bg-cyan-300",
-    danger: "bg-rose-500 text-white hover:bg-rose-400",
+    danger: "bg-rose-500 text-white hover:bg-rose-400 dark:text-white text-[color:var(--foreground)]",
     success: "bg-emerald-400 text-slate-950 hover:bg-emerald-300",
-    ghost: "border border-white/15 bg-white/5 text-slate-100 hover:bg-white/10",
+    ghost: "border border-[color:var(--surface-border)] bg-[color:var(--bg-soft)] text-[color:var(--text-strong)] hover:bg-black/5 dark:hover:bg-white/10",
   };
 
   return (
