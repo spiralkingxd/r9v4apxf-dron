@@ -19,6 +19,14 @@ export const metadata: Metadata = {
   icons: { icon: '/icon.ico' },
   title: "Madness Arena",
   description: "Gerenciamento de torneios competitivos de Sea of Thieves.",
+  openGraph: {
+    title: "Madness Arena",
+    description: "Gerenciamento de torneios competitivos de Sea of Thieves.",
+    url: "https://madnessarena.vercel.app/",
+    siteName: "Madness Arena",
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
