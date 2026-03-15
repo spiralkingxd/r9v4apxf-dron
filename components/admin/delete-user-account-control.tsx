@@ -100,8 +100,8 @@ export function DeleteUserAccountControl({
         disabled={Boolean(deleteDisabledReason) || isPending}
         className={
           compact
-            ? "rounded-lg border border-rose-300/30 bg-rose-300/10 px-2 py-1 text-xs text-rose-100 hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-40"
-            : "inline-flex items-center gap-2 rounded-xl border border-rose-300/30 bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-100 hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-40"
+            ? "rounded-lg border border-rose-300 dark:border-rose-300/30 bg-rose-200 dark:bg-rose-300/10 px-2 py-1 text-xs text-rose-800 dark:text-rose-100 hover:bg-rose-300 dark:hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-40"
+            : "inline-flex items-center gap-2 rounded-xl border border-rose-300 dark:border-rose-300/30 bg-rose-200 dark:bg-rose-300/10 px-4 py-2 text-sm font-semibold text-rose-800 dark:text-rose-100 hover:bg-rose-300 dark:hover:bg-rose-300/20 disabled:cursor-not-allowed disabled:opacity-40"
         }
       >
         {compact ? <Trash2 className="inline h-3 w-3" /> : <UserX className="h-4 w-4" />}
@@ -110,22 +110,22 @@ export function DeleteUserAccountControl({
 
       <AdminModal open={open} title="Deletar Conta de Usuario" onClose={() => (!isPending ? setOpen(false) : null)}>
         <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-3">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 p-3">
             {target.avatarUrl ? (
-              <img src={target.avatarUrl} alt={displayName} className="h-12 w-12 rounded-full border border-white/20 object-cover" />
+              <img src={target.avatarUrl} alt={displayName} className="h-12 w-12 rounded-full border border-slate-300 dark:border-white/20 object-cover" />
             ) : (
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/5 text-slate-300">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-slate-300 dark:border-white/20 bg-slate-200 dark:bg-white/5 text-slate-500 dark:text-slate-300">
                 <UserX className="h-5 w-5" />
               </div>
             )}
             <div className="text-sm">
-              <p className="font-semibold text-slate-100">{displayName}</p>
-              <p className="text-slate-400">@{username}</p>
+              <p className="font-semibold text-slate-800 dark:text-slate-100">{displayName}</p>
+              <p className="text-slate-500 dark:text-slate-400">@{username}</p>
               <p className="text-xs text-slate-500">Discord ID: {target.discordId ?? "-"}</p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-rose-300/35 bg-rose-300/10 p-4 text-rose-100">
+          <div className="rounded-xl border border-rose-300 dark:border-rose-300/35 bg-rose-50 dark:bg-rose-300/10 p-4 text-rose-800 dark:text-rose-100">
             <p className="inline-flex items-center gap-2 text-sm font-semibold">
               <AlertTriangle className="h-4 w-4" />
               Esta acao e IRREVERSIVEL

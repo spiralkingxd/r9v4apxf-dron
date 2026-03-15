@@ -244,14 +244,14 @@ export default async function AdminMemberDetailPage({ params }: Props) {
         </article>
       </div>
 
-      <section className="rounded-2xl border border-rose-300/35 bg-rose-300/10 p-6">
+      <section className="rounded-2xl border border-rose-200 dark:border-rose-300/35 bg-rose-50 dark:bg-rose-300/10 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-rose-100">
+            <h2 className="inline-flex items-center gap-2 text-lg font-semibold text-rose-800 dark:text-rose-100">
               <AlertTriangle className="h-5 w-5" />
               Gerenciamento de Conta
             </h2>
-            <p className="mt-1 text-sm text-rose-50/90">
+            <p className="mt-1 text-sm text-rose-600 dark:text-rose-50/90">
               Esta zona permite deletar permanentemente a conta. A acao e irreversivel.
             </p>
           </div>
