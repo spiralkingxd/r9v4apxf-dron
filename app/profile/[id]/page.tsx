@@ -31,18 +31,18 @@ export default async function PublicProfilePage({ params }: Props) {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-14 text-slate-100">
+    <main className="min-h-screen bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-14 text-slate-900 dark:text-slate-100">
       <div className="mx-auto w-full max-w-3xl space-y-5">
         <Link
           href="/teams"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-slate-200"
+          className="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 transition hover:text-slate-900 dark:hover:text-slate-200"
         >
           ← Voltar para equipes
         </Link>
 
-        <section className="rounded-3xl border border-white/10 bg-slate-900/65 p-8 shadow-2xl shadow-black/35">
+        <section className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/65 p-8 shadow-xl dark:shadow-2xl dark:shadow-black/35">
           <div className="flex flex-wrap items-center gap-5">
-            <span className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/10">
+            <span className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/10">
               {profile.avatar_url ? (
                 <Image
                   src={profile.avatar_url}
@@ -52,17 +52,17 @@ export default async function PublicProfilePage({ params }: Props) {
                   className="object-cover"
                 />
               ) : (
-                <UserRound className="h-7 w-7 text-slate-400" />
+                <UserRound className="h-7 w-7 text-slate-400 dark:text-slate-500" />
               )}
             </span>
 
             <div>
-              <h1 className="text-2xl font-bold text-white">{profile.display_name}</h1>
-              <p className="text-sm text-slate-400">@{profile.username}</p>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{profile.display_name}</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 dark:text-slate-500">@{profile.username}</p>
               {profile.xbox_gamertag ? (
-                <p className="mt-1 text-sm text-cyan-300">Xbox: {profile.xbox_gamertag}</p>
+                <p className="mt-1 text-sm text-cyan-700 dark:text-cyan-300">Xbox: {profile.xbox_gamertag}</p>
               ) : null}
-              <p className="mt-2 inline-flex items-center gap-1 text-xs text-slate-500">
+              <p className="mt-2 inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
                 <Calendar className="h-3.5 w-3.5" />
                 Na arena desde {new Date(profile.created_at).toLocaleDateString("pt-BR")}
               </p>
@@ -73,3 +73,4 @@ export default async function PublicProfilePage({ params }: Props) {
     </main>
   );
 }
+

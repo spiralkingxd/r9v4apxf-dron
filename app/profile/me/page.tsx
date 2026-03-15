@@ -148,9 +148,9 @@ export default async function MyProfilePage() {
   const memberSince = new Date(profile.created_at).toLocaleDateString("pt-BR");
 
   return (
-    <main className="min-h-[calc(100vh-72px)] bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-100">
+    <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 dark:text-slate-100">
       <div className="mx-auto w-full max-w-6xl space-y-6">
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 shadow-2xl shadow-black/40 backdrop-blur-sm">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/70 shadow-xl dark:shadow-2xl dark:shadow-black/40 backdrop-blur-sm">
           {/* Gold accent bar */}
           <div className="h-1.5 w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />
 
@@ -167,14 +167,14 @@ export default async function MyProfilePage() {
                   className="object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-slate-800 text-3xl font-bold text-yellow-400">
+                <div className="flex h-full w-full items-center justify-center bg-slate-200 dark:bg-slate-800 text-3xl font-bold text-yellow-600 dark:text-yellow-400">
                   {profile.display_name.slice(0, 1).toUpperCase()}
                 </div>
               )}
             </div>
 
             {/* Display name */}
-            <h1 className="text-2xl font-bold tracking-wide text-white">
+            <h1 className="text-2xl font-bold tracking-wide text-slate-900 dark:text-white">
               {profile.display_name}
             </h1>
 
@@ -183,15 +183,15 @@ export default async function MyProfilePage() {
           </div>
 
           {/* Divider */}
-          <div className="mx-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <div className="mx-8 h-px bg-gradient-to-r from-transparent via-slate-300 dark:via-white/10 to-transparent" />
 
           {/* Info grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-white/5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:sm:divide-white/5">
             <InfoCard
               icon={<AtSign className="h-4 w-4 text-cyan-400" />}
               label="Username"
             >
-              <span className="text-sm font-semibold text-slate-100">
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 @{profile.username}
               </span>
             </InfoCard>
@@ -200,7 +200,7 @@ export default async function MyProfilePage() {
               icon={<Calendar className="h-4 w-4 text-cyan-400" />}
               label="Membro desde"
             >
-              <span className="text-sm font-semibold text-slate-100">
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                 {memberSince}
               </span>
             </InfoCard>
@@ -230,7 +230,7 @@ function InfoCard({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 px-6 py-6 text-center">
-      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500">
+      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
         {icon}
         <span>{label}</span>
       </div>
