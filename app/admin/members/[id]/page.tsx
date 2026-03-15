@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AlertTriangle, Calendar, Shield, Users } from "lucide-react";
 
 import { AdminBadge } from "@/components/admin/admin-badge";
+import { AdminXboxControl } from "@/components/admin/admin-xbox-control";
 import { DeleteUserAccountControl } from "@/components/admin/delete-user-account-control";
 import { MemberDetailActions } from "@/components/admin/member-detail-actions";
 import { createClient } from "@/lib/supabase/server";
@@ -184,6 +185,9 @@ export default async function AdminMemberDetailPage({ params }: Props) {
             <li>Motivo do ban: {profile.ban_reason ?? profile.banned_reason ?? "-"}</li>
             <li>Banido em: {profile.banned_at ? dateFmt.format(new Date(profile.banned_at)) : "-"}</li>
           </ul>
+          {adminProfile?.role === "owner" && (
+            <AdminXboxControl userId={id} currentGamertag={profile.xbox_gamertag} adminRole={adminProfile.role} />
+          )}
         </article>
 
         <article className="rounded-2xl border border-white/10 bg-slate-950/60 p-5 lg:col-span-2">

@@ -1,9 +1,9 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
+import { assertAdminAccess, assertOwnerAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
 import { queueOrSendDiscordNotification } from "@/lib/discord-notifications";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -128,7 +128,7 @@ export async function updateUserRole(
   _updatedBy?: string,
 ): Promise<ActionResult> {
   const parsed = updateRoleSchema.safeParse({ userId, newRole });
-  if (!parsed.success) return { error: "Dados inv�lidos." };
+  if (!parsed.success) return { error: "Dados invï¿½lidos." };
 
   try {
     const { supabase, adminId, role } = await assertAdminAccess();
@@ -140,11 +140,11 @@ export async function updateUserRole(
       .eq("id", parsed.data.userId)
       .maybeSingle<{ id: string; role: "user" | "admin" | "owner"; is_banned: boolean }>();
 
-    if (!target) return { error: "Usu�rio n�o encontrado." };
+    if (!target) return { error: "Usuï¿½rio nï¿½o encontrado." };
     if (target.role === "owner" && role !== "owner") return { error: "Apenas owner pode alterar outro owner." };
     if (parsed.data.newRole === "owner" && role !== "owner") return { error: "Apenas owner pode promover para owner." };
     if (parsed.data.userId === adminId && role === "admin" && parsed.data.newRole === "user") {
-      return { error: "Voc� n�o pode remover seu pr�prio acesso de admin." };
+      return { error: "Vocï¿½ nï¿½o pode remover seu prï¿½prio acesso de admin." };
     }
 
     const { error } = await supabase
@@ -152,7 +152,7 @@ export async function updateUserRole(
       .update({ role: parsed.data.newRole, updated_at: nowIso() })
       .eq("id", parsed.data.userId);
 
-    if (error) return { error: "N�o foi poss�vel atualizar a role." };
+    if (error) return { error: "Nï¿½o foi possï¿½vel atualizar a role." };
 
     await logAdminTables(supabase, {
       adminId,
@@ -189,7 +189,7 @@ export async function banUser(
     cancelActiveRegistrations: options?.cancelActiveRegistrations ?? false,
     notifyDiscord: options?.notifyDiscord ?? false,
   });
-  if (!parsed.success) return { error: "Dados inv�lidos para banimento." };
+  if (!parsed.success) return { error: "Dados invï¿½lidos para banimento." };
 
   try {
     const { supabase, adminId, role } = await assertAdminAccess();
@@ -201,8 +201,8 @@ export async function banUser(
       .eq("id", parsed.data.userId)
       .maybeSingle<{ id: string; role: "user" | "admin" | "owner"; is_banned: boolean }>();
 
-    if (!target) return { error: "Usu�rio n�o encontrado." };
-    if (target.role === "owner") return { error: "Conta owner n�o pode ser banida." };
+    if (!target) return { error: "Usuï¿½rio nï¿½o encontrado." };
+    if (target.role === "owner") return { error: "Conta owner nï¿½o pode ser banida." };
     if (target.role === "admin" && role !== "owner") return { error: "Apenas owner pode banir outro admin." };
 
     const now = new Date();
@@ -222,7 +222,7 @@ export async function banUser(
       })
       .eq("id", parsed.data.userId);
 
-    if (profileError) return { error: "N�o foi poss�vel banir o usu�rio." };
+    if (profileError) return { error: "Nï¿½o foi possï¿½vel banir o usuï¿½rio." };
 
     await supabase.from("bans").insert({
       user_id: parsed.data.userId,
@@ -276,15 +276,15 @@ export async function banUser(
     }
 
     revalidateMemberPaths(parsed.data.userId);
-    return { success: "Usu�rio banido com sucesso." };
+    return { success: "Usuï¿½rio banido com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao banir usu�rio." };
+    return { error: error instanceof Error ? error.message : "Falha ao banir usuï¿½rio." };
   }
 }
 
 export async function unbanUser(userId: string, _unbannedBy?: string): Promise<ActionResult> {
   const parsed = unbanSchema.safeParse({ userId });
-  if (!parsed.success) return { error: "Dados inv�lidos." };
+  if (!parsed.success) return { error: "Dados invï¿½lidos." };
 
   try {
     const { supabase, adminId } = await assertAdminAccess();
@@ -298,7 +298,7 @@ export async function unbanUser(userId: string, _unbannedBy?: string): Promise<A
       .eq("id", parsed.data.userId)
       .maybeSingle<{ id: string; is_banned: boolean }>();
 
-    if (!target) return { error: "Usu�rio n�o encontrado." };
+    if (!target) return { error: "Usuï¿½rio nï¿½o encontrado." };
 
     await supabase
       .from("profiles")
@@ -328,15 +328,15 @@ export async function unbanUser(userId: string, _unbannedBy?: string): Promise<A
     });
 
     revalidateMemberPaths(parsed.data.userId);
-    return { success: "Usu�rio desbanido com sucesso." };
+    return { success: "Usuï¿½rio desbanido com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao desbanir usu�rio." };
+    return { error: error instanceof Error ? error.message : "Falha ao desbanir usuï¿½rio." };
   }
 }
 
 export async function forceLogout(userId: string): Promise<ActionResult> {
   const parsed = forceLogoutSchema.safeParse({ userId });
-  if (!parsed.success) return { error: "Dados inv�lidos." };
+  if (!parsed.success) return { error: "Dados invï¿½lidos." };
 
   try {
     const { supabase, adminId } = await assertAdminAccess();
@@ -348,7 +348,7 @@ export async function forceLogout(userId: string): Promise<ActionResult> {
       .update({ force_logout_after: stamp, updated_at: stamp })
       .eq("id", parsed.data.userId);
 
-    if (error) return { error: "N�o foi poss�vel for�ar logout." };
+    if (error) return { error: "Nï¿½o foi possï¿½vel forï¿½ar logout." };
 
     await logAdminTables(supabase, {
       adminId,
@@ -359,15 +359,15 @@ export async function forceLogout(userId: string): Promise<ActionResult> {
     });
 
     revalidateMemberPaths(parsed.data.userId);
-    return { success: "Logout for�ado agendado para todas as sess�es." };
+    return { success: "Logout forï¿½ado agendado para todas as sessï¿½es." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao for�ar logout." };
+    return { error: error instanceof Error ? error.message : "Falha ao forï¿½ar logout." };
   }
 }
 
 export async function deleteUser(userId: string, _deletedBy?: string): Promise<ActionResult> {
   const parsed = deleteUserSchema.safeParse({ userId });
-  if (!parsed.success) return { error: "Dados inv�lidos." };
+  if (!parsed.success) return { error: "Dados invï¿½lidos." };
 
   try {
     const { supabase, adminId, role } = await assertAdminAccess();
@@ -379,8 +379,8 @@ export async function deleteUser(userId: string, _deletedBy?: string): Promise<A
       .eq("id", parsed.data.userId)
       .maybeSingle<{ id: string; role: "user" | "admin" | "owner" }>();
 
-    if (!target) return { error: "Usu�rio n�o encontrado." };
-    if (target.role === "owner") return { error: "Conta owner n�o pode ser deletada." };
+    if (!target) return { error: "Usuï¿½rio nï¿½o encontrado." };
+    if (target.role === "owner") return { error: "Conta owner nï¿½o pode ser deletada." };
     if (target.role === "admin" && role !== "owner") return { error: "Apenas owner pode deletar admin." };
 
     const stamp = nowIso();
@@ -399,7 +399,7 @@ export async function deleteUser(userId: string, _deletedBy?: string): Promise<A
       })
       .eq("id", parsed.data.userId);
 
-    if (error) return { error: "N�o foi poss�vel deletar usu�rio." };
+    if (error) return { error: "Nï¿½o foi possï¿½vel deletar usuï¿½rio." };
 
     await logAdminTables(supabase, {
       adminId,
@@ -412,7 +412,7 @@ export async function deleteUser(userId: string, _deletedBy?: string): Promise<A
     revalidateMemberPaths(parsed.data.userId);
     return { success: "Conta removida (soft delete) com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao deletar usu�rio." };
+    return { error: error instanceof Error ? error.message : "Falha ao deletar usuï¿½rio." };
   }
 }
 
@@ -726,7 +726,7 @@ export async function getBans(filters?: {
 }) {
   const parsed = bansFilterSchema.safeParse(filters ?? {});
   if (!parsed.success) {
-    return { error: "Filtros inv�lidos.", data: [] as never[] };
+    return { error: "Filtros invï¿½lidos.", data: [] as never[] };
   }
 
   try {
@@ -756,13 +756,13 @@ export async function getBans(filters?: {
 
     const nameById = new Map<string, string>();
     for (const profile of profiles ?? []) {
-      nameById.set(String(profile.id), String(profile.display_name ?? profile.username ?? "Usu�rio"));
+      nameById.set(String(profile.id), String(profile.display_name ?? profile.username ?? "Usuï¿½rio"));
     }
 
     const normalized = (data ?? []).map((row) => ({
       id: String(row.id),
       userId: String(row.user_id),
-      userName: nameById.get(String(row.user_id)) ?? "Usu�rio",
+      userName: nameById.get(String(row.user_id)) ?? "Usuï¿½rio",
       bannedBy: String(row.banned_by),
       bannedByName: nameById.get(String(row.banned_by)) ?? "Admin",
       reason: String(row.reason),
@@ -780,7 +780,7 @@ export async function getBans(filters?: {
 
 export async function updateBanDuration(banId: string, durationDays: number | null): Promise<ActionResult> {
   const parsed = updateBanDurationSchema.safeParse({ banId, durationDays });
-  if (!parsed.success) return { error: "Dados inválidos." };
+  if (!parsed.success) return { error: "Dados invÃ¡lidos." };
 
   try {
     const { supabase, adminId } = await assertAdminAccess();
@@ -795,14 +795,14 @@ export async function updateBanDuration(banId: string, durationDays: number | nu
       .eq("id", parsed.data.banId)
       .maybeSingle<{ id: string; user_id: string; duration: number | null; expires_at: string | null }>();
 
-    if (!banRow) return { error: "Banimento não encontrado." };
+    if (!banRow) return { error: "Banimento nÃ£o encontrado." };
 
     const { error } = await supabase
       .from("bans")
       .update({ duration: parsed.data.durationDays, expires_at: expiresAt })
       .eq("id", parsed.data.banId);
 
-    if (error) return { error: "Falha ao atualizar duração." };
+    if (error) return { error: "Falha ao atualizar duraÃ§Ã£o." };
 
     await logAdminTables(supabase, {
       adminId,
@@ -814,9 +814,9 @@ export async function updateBanDuration(banId: string, durationDays: number | nu
     });
 
     revalidateMemberPaths(banRow.user_id);
-    return { success: "Duração atualizada com sucesso." };
+    return { success: "DuraÃ§Ã£o atualizada com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao atualizar duração." };
+    return { error: error instanceof Error ? error.message : "Falha ao atualizar duraÃ§Ã£o." };
   }
 }
 
@@ -837,7 +837,7 @@ export async function bulkManageMembers(formData: FormData): Promise<ActionResul
     .filter(Boolean);
 
   const parsed = bulkSchema.safeParse({ action, memberIds, reason: reason || undefined });
-  if (!parsed.success) return { error: "Selecione membros e a��o v�lida." };
+  if (!parsed.success) return { error: "Selecione membros e aï¿½ï¿½o vï¿½lida." };
 
   try {
     if (parsed.data.action === "promote" || parsed.data.action === "demote") {
@@ -846,7 +846,7 @@ export async function bulkManageMembers(formData: FormData): Promise<ActionResul
         const result = await updateUserRole(memberId, nextRole);
         if (result.error) return result;
       }
-      return { success: "A��o em lote executada com sucesso." };
+      return { success: "Aï¿½ï¿½o em lote executada com sucesso." };
     }
 
     if (parsed.data.action === "unban") {
@@ -854,7 +854,7 @@ export async function bulkManageMembers(formData: FormData): Promise<ActionResul
         const result = await unbanUser(memberId);
         if (result.error) return result;
       }
-      return { success: "A��o em lote executada com sucesso." };
+      return { success: "Aï¿½ï¿½o em lote executada com sucesso." };
     }
 
     if (!parsed.data.reason || parsed.data.reason.length < 2) {
@@ -866,8 +866,47 @@ export async function bulkManageMembers(formData: FormData): Promise<ActionResul
       if (result.error) return result;
     }
 
-    return { success: "A��o em lote executada com sucesso." };
+    return { success: "Ação em lote executada com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha na a��o em lote." };
+    return { error: error instanceof Error ? error.message : "Falha na ação em lote." };
   }
 }
+
+const updateXboxGamertagSchema = z.object({
+  userId: z.string().uuid(),
+  gamertag: z.string().max(30).nullable(),
+});
+
+export async function updateXboxGamertag(userId: string, gamertag: string | null): Promise<{ success?: string; error?: string }> {
+  try {
+    const { adminId, supabase } = await assertOwnerAccess();
+    const parsed = updateXboxGamertagSchema.safeParse({ userId, gamertag });
+    if (!parsed.success) return { error: "Dados inválidos." };
+
+    const { data: targetProfile, error: fetchErr } = await supabase.from("profiles").select("role, xbox_gamertag").eq("id", userId).single();
+    if (fetchErr || !targetProfile) return { error: "Usuário não encontrado." };
+
+    await enforceAdminRateLimit(supabase, adminId, "update-xbox");
+
+    const { error: updateErr } = await supabase.from("profiles").update({ xbox_gamertag: gamertag }).eq("id", userId);
+    if (updateErr) return { error: "Falha ao atualizar a conta Xbox." };
+
+    await logAdminTables(supabase, {
+      adminId: adminId,
+      action: "update_xbox",
+      entityType: "user",
+      entityId: userId,
+      oldValue: { xbox_gamertag: targetProfile.xbox_gamertag },
+      newValue: { xbox_gamertag: gamertag },
+      ipAddress: null,
+    });
+
+    revalidateMemberPaths(userId);
+    return { success: `Gamertag Xbox ${gamertag ? 'atualizado' : 'removido'} com sucesso.` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao atualizar Xbox." };
+  }
+}
+
+
+
