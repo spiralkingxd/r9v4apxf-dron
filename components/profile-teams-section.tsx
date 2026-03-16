@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Anchor, Plus, Shield, Swords, Users } from "lucide-react";
@@ -28,6 +28,15 @@ const teamDateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Pa
 export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
   const [open, setOpen] = useState(false);
   const [isLaunching, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get("action") === "new-team") {
+        setOpen(true);
+      }
+    }
+  }, []);
 
   const teamsCount = teams.length;
   const reachedLimit = teamsCount >= 1;
@@ -87,19 +96,7 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
                 className="group rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/4 p-4 transition hover:border-amber-400/50 dark:hover:border-amber-400/30 hover:bg-amber-50 dark:hover:bg-amber-400/6"
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5">
-                    {team.logo_url ? (
-                      <Image
-                        src={team.logo_url}
-                        alt={team.name}
-                        width={44}
-                        height={44}
-                        className="h-11 w-11 object-cover"
-                      />
-                    ) : (
-                      <Anchor className="h-5 w-5 text-amber-400/70" />
-                    )}
-                  </span>
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5"> {team.logo_url ? ( <img src={team.logo_url} alt={team.name} className="h-full w-full object-cover" /> ) : ( <Anchor className="h-5 w-5 text-amber-400/70" /> )} </span>
 
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-slate-800 dark:text-slate-100 group-hover:text-slate-900 dark:group-hover:text-white">
@@ -147,3 +144,4 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
     </section>
   );
 }
+

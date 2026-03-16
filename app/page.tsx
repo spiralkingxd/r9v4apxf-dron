@@ -103,9 +103,7 @@ export default async function Home() {
                 <Flame className="h-4 w-4" />
                 Ver torneios
               </Link>
-              <Link href="/teams" className="action-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition">
-                <Users className="h-4 w-4" />
-                Criar equipe
+              <Link href="/profile/me?action=new-team#teams" className="action-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition"> <Users className="h-4 w-4" /> Criar equipe
               </Link>
             </div>
           </div>
@@ -288,9 +286,7 @@ export default async function Home() {
             Cada partida conta para o ranking.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
-            <Link href="/teams" className="action-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition">
-              <Anchor className="h-4 w-4" />
-              Criar equipe
+            <Link href="/profile/me?action=new-team#teams" className="action-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition"> <Anchor className="h-4 w-4" /> Criar equipe
             </Link>
             <Link href="/ranking" className="action-secondary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold transition">
               <Trophy className="h-4 w-4" />
@@ -327,3 +323,5 @@ function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+
