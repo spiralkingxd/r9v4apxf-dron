@@ -32,10 +32,16 @@ export type DiscordSettingsData = {
   event_map: Record<string, boolean>;
 };
 
+export type AdminNotificationUserOption = {
+  id: string;
+  display_name: string;
+  username: string;
+};
+
 export async function getNotificationsAdminData() {
   const supabase = await createClient();
 
-  const [{ data: templatesRaw }, { data: historyRaw }, { data: settingsRaw }] = await Promise.all([
+  const [{ data: templatesRaw }, { data: historyRaw }, { data: settingsRaw }, { data: usersRaw }] = await Promise.all([
     supabase
       .from("notification_templates")
       .select("type, label, template, enabled, updated_at")
@@ -50,6 +56,12 @@ export async function getNotificationsAdminData() {
       .select("discord")
       .eq("id", 1)
       .maybeSingle<{ discord: Record<string, unknown> | null }>(),
+    supabase
+      .from("profiles")
+      .select("id, display_name, username")
+      .is("deleted_at", null)
+      .order("display_name", { ascending: true })
+      .limit(3000),
   ]);
 
   const discordRaw = (settingsRaw?.discord ?? {}) as Record<string, unknown>;
@@ -67,5 +79,10 @@ export async function getNotificationsAdminData() {
     templates: (templatesRaw ?? []) as NotificationTemplateItem[],
     history: (historyRaw ?? []) as NotificationHistoryItem[],
     settings,
+    users: (usersRaw ?? []).map((row) => ({
+      id: String(row.id),
+      display_name: String(row.display_name ?? row.username ?? "Usuário"),
+      username: String(row.username ?? "usuario"),
+    })) as AdminNotificationUserOption[],
   };
 }

@@ -14,7 +14,7 @@ export default async function AdminNotificationsPage() {
     ? await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle<{ role: "user" | "admin" | "owner" }>()
     : { data: null };
 
-  const { templates, history, settings } = await getNotificationsAdminData();
+  const { templates, history, settings, users } = await getNotificationsAdminData();
 
   return (
     <section className="space-y-5">
@@ -33,6 +33,7 @@ export default async function AdminNotificationsPage() {
         templates={templates}
         history={history}
         settings={settings}
+        users={users}
         isOwner={profile?.role === "owner"}
       />
     </section>

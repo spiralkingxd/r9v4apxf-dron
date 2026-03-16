@@ -1,8 +1,8 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Bell, Check, X, Users, Gift, Info } from "lucide-react";
-import { getNotifications, markAllAsRead, markAsRead, processInviteAction, Notification } from "@/app/actions/notifications";
+import { AlertTriangle, Bell, Check, X, Users, Gift, Info } from "lucide-react";
+import { getNotifications, markAllAsRead, markAsRead, processInviteAction, processJoinRequestAction, Notification } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client"; // Assumindo que você tem isso
 import { cn } from "@/lib/utils";
 import { ActionToast } from "@/components/action-toast";
@@ -128,6 +128,19 @@ export function NotificationsBell() {
     });
   };
 
+  const handleJoinRequestAction = (id: string, action: "approved" | "rejected", requestId: string) => {
+    startTransition(async () => {
+      const res = await processJoinRequestAction(id, action, requestId);
+      if ((res as { error?: string }).error) {
+        setToast({ message: (res as { error?: string }).error || "Erro ao processar solicitação.", tone: "error" });
+      } else {
+        setToast({ message: (res as { success?: string }).success || "Solicitação processada.", tone: "success" });
+      }
+      await fetchNotifications();
+      setTimeout(() => setToast(null), 3000);
+    });
+  };
+
   return (
     <div className="relative" ref={rootRef}>
       {toast && (
@@ -171,6 +184,13 @@ export function NotificationsBell() {
             ) : (
               notifications.map((notif) => {
                 const isInvite = notif.type === "team_invite";
+                const isJoinRequest = notif.type === "team_join_request";
+                const severity = String(notif.data?.severity ?? "").toLowerCase();
+                const isDanger = severity === "danger" || notif.type.includes("danger") || notif.type.includes("alert");
+                const isWarning = severity === "warning" || notif.type.includes("warning");
+                const hasJoinRequestAction = isJoinRequest && !notif.read && Boolean(notif.data?.request_id);
+                const hasInviteAction = isInvite && !notif.read && Boolean(notif.data?.team_id);
+                const isActionable = hasInviteAction || hasJoinRequestAction;
 
                 return (
                   <div
@@ -182,14 +202,22 @@ export function NotificationsBell() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="shrink-0 rounded-full bg-white/5 p-2">
-                         {isInvite ? <Users className="h-4 w-4 text-emerald-400" /> : <Info className="h-4 w-4 text-cyan-400" />}
+                         {isInvite ? (
+                           <Users className="h-4 w-4 text-emerald-400" />
+                         ) : isDanger ? (
+                           <AlertTriangle className="h-4 w-4 text-rose-400" />
+                         ) : isWarning ? (
+                           <AlertTriangle className="h-4 w-4 text-amber-400" />
+                         ) : (
+                           <Info className="h-4 w-4 text-cyan-400" />
+                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-semibold text-slate-200">{notif.title}</p>
                         <p className="mt-0.5 text-xs text-slate-400">{notif.message}</p>
                         
                         {/* Botões de Convite */}
-                        {isInvite && !notif.read && notif.data?.team_id && (
+                        {hasInviteAction && (
                           <div className="mt-3 flex items-center gap-2">
                             <button
                               disabled={isPending}
@@ -208,12 +236,31 @@ export function NotificationsBell() {
                           </div>
                         )}
 
+                        {hasJoinRequestAction && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <button
+                              disabled={isPending}
+                              onClick={() => handleJoinRequestAction(notif.id, "approved", String(notif.data?.request_id))}
+                              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/20 px-2 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30"
+                            >
+                              <Check className="h-3 w-3" /> Aprovar
+                            </button>
+                            <button
+                              disabled={isPending}
+                              onClick={() => handleJoinRequestAction(notif.id, "rejected", String(notif.data?.request_id))}
+                              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/30"
+                            >
+                              <X className="h-3 w-3" /> Recusar
+                            </button>
+                          </div>
+                        )}
+
                         <p className="mt-2 text-[10px] text-slate-500">
                           {new Date(notif.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
                       
-                      {!notif.read && !isInvite && (
+                      {!notif.read && !isActionable && (
                         <button
                           onClick={() => handleMarkRead(notif.id)}
                           className="shrink-0 text-slate-500 opacity-0 transition hover:text-slate-300 group-hover:opacity-100"

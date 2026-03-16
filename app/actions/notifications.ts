@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { respondToJoinRequest } from "@/app/actions/team-requests";
 
 export type Notification = {
   id: string;
@@ -113,4 +114,32 @@ export async function processInviteAction(notificationId: string, action: "accep
   revalidatePath("/profile/me");
   revalidatePath("/teams");
   return { success: "Ação processada com sucesso!" };
+}
+
+export async function processJoinRequestAction(
+  notificationId: string,
+  action: "approved" | "rejected",
+  requestId: string,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Não autenticado" };
+
+  const result = await respondToJoinRequest(requestId, action);
+  if (!result.success) {
+    return { error: result.error ?? "Não foi possível processar a solicitação." };
+  }
+
+  await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", notificationId)
+    .eq("user_id", user.id);
+
+  revalidatePath(`/teams`);
+  revalidatePath(`/profile/me`);
+  return { success: action === "approved" ? "Solicitação aprovada." : "Solicitação recusada." };
 }

@@ -11,6 +11,7 @@ import {
   processScheduledDiscordNotifications,
   queueOrSendDiscordNotification,
 } from "@/lib/discord-notifications";
+import { insertNotifications } from "@/lib/notifications";
 
 type ActionResult<T = undefined> = {
   success?: string;
@@ -47,6 +48,14 @@ const webhookSettingsSchema = z.object({
 
 const testSchema = z.object({
   webhookKind: z.enum(["announcements", "admin_logs"]).default("announcements"),
+});
+
+const inAppNotificationSchema = z.object({
+  title: z.string().trim().min(3).max(150),
+  message: z.string().trim().min(3).max(2000),
+  severity: z.enum(["info", "warning", "danger"]),
+  audience: z.enum(["single", "all"]),
+  userId: z.string().uuid().optional(),
 });
 
 function revalidateNotificationPaths() {
@@ -323,5 +332,103 @@ export async function runScheduledNotifications(): Promise<ActionResult<{ sent: 
     return { success: "Fila processada.", data: summary };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao processar fila." };
+  }
+}
+
+export async function sendCustomInAppNotification(input: {
+  title: string;
+  message: string;
+  severity: "info" | "warning" | "danger";
+  audience: "single" | "all";
+  userId?: string;
+}): Promise<ActionResult<{ sent: number }>> {
+  const parsed = inAppNotificationSchema.safeParse(input);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  if (parsed.data.audience === "single" && !parsed.data.userId) {
+    return { error: "Selecione um usuário para envio individual." };
+  }
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "send_custom_in_app_notification");
+
+    let userIds: string[] = [];
+    if (parsed.data.audience === "single") {
+      userIds = [parsed.data.userId as string];
+    } else {
+      let from = 0;
+      const step = 1000;
+      const collected: string[] = [];
+
+      for (;;) {
+        const { data: rows, error } = await supabase
+          .from("profiles")
+          .select("id")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: true })
+          .range(from, from + step - 1);
+
+        if (error) return { error: "Não foi possível listar usuários para envio." };
+
+        const pageIds = (rows ?? []).map((row) => String(row.id)).filter(Boolean);
+        if (pageIds.length === 0) break;
+        collected.push(...pageIds);
+        if (pageIds.length < step) break;
+        from += step;
+      }
+
+      userIds = collected;
+    }
+
+    const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (uniqueUserIds.length === 0) {
+      return { error: "Nenhum destinatário encontrado." };
+    }
+
+    const typeBySeverity: Record<"info" | "warning" | "danger", string> = {
+      info: "admin_notice_info",
+      warning: "admin_notice_warning",
+      danger: "admin_notice_danger",
+    };
+
+    let sent = 0;
+    const chunkSize = 500;
+    for (let i = 0; i < uniqueUserIds.length; i += chunkSize) {
+      const chunk = uniqueUserIds.slice(i, i + chunkSize);
+      const payload = chunk.map((userId) => ({
+        user_id: userId,
+        type: typeBySeverity[parsed.data.severity],
+        title: parsed.data.title,
+        message: parsed.data.message,
+        data: {
+          severity: parsed.data.severity,
+          audience: parsed.data.audience,
+          sent_by: adminId,
+          source: "admin_dashboard",
+        },
+      }));
+
+      const result = await insertNotifications(supabase, payload);
+      if (!result.success) return { error: result.error ?? "Falha ao enviar notificação personalizada." };
+      sent += chunk.length;
+    }
+
+    await logAdminAction(supabase, {
+      adminId,
+      action: "send_custom_in_app_notification",
+      targetType: "notification",
+      details: {
+        title: parsed.data.title,
+        severity: parsed.data.severity,
+        audience: parsed.data.audience,
+        sent,
+      },
+      severity: parsed.data.severity === "danger" ? "critical" : parsed.data.severity === "warning" ? "warning" : "info",
+    });
+
+    revalidateNotificationPaths();
+    return { success: `Notificação enviada para ${sent} usuário(s).`, data: { sent } };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao enviar notificação personalizada." };
   }
 }
