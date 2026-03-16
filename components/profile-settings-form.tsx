@@ -69,6 +69,19 @@ export function ProfileSettingsForm({
               {/* Profile Edit Section */}
               <form action={formAction} className="space-y-4">
                 <div className="space-y-1.5">
+                  <label htmlFor="avatar_file" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Fazer Upload de Foto (Opcional)
+                  </label>
+                  <input 
+                    type="file"
+                    id="avatar_file" 
+                    name="avatar_file" 
+                    accept="image/*"
+                    className="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-cyan-900/30 dark:file:text-cyan-400 dark:hover:file:bg-cyan-900/50 cursor-pointer border border-slate-200 dark:border-slate-800 rounded-md p-1"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
                   <label htmlFor="custom_status" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     Status Customizado
                   </label>

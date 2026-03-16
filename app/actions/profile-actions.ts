@@ -13,10 +13,30 @@ export async function updateProfileFeatures(prevState: any, formData: FormData) 
 
   const customStatus = formData.get("custom_status");
   const boatRole = formData.get("boat_role");
+  const avatarFile = formData.get("avatar_file") as File | null;
 
   const updates: any = {};
   if (customStatus !== null) updates.custom_status = String(customStatus).trim().substring(0, 50);
   if (boatRole !== null) updates.boat_role = String(boatRole);
+
+  if (avatarFile && avatarFile.size > 0) {
+    const fileExt = avatarFile.name.split('.').pop();
+    const filePath = `${user.id}-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, avatarFile, { upsert: true });
+
+    if (uploadError) {
+      return { error: `Erro no upload da imagem: ${uploadError.message}. Certifique-se que o bucket "avatars" existe no Supabase e é público.` };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    updates.avatar_url = publicUrl;
+  }
 
   const { error } = await supabase
     .from("profiles")
@@ -38,9 +58,6 @@ export async function syncDiscordAvatarAction(prevState: any, formData: FormData
 
   if (!user) return { error: "Sem usuário" };
 
-  // Sync is tricky via simple action unless we have the provider_token/avatar_url handy from the identities table, 
-  // or trigger a sign-in cycle.
-  // Instead, let's just attempt to pull the identity data 
   const { data: identities, error: idError } = await supabase.auth.getUserIdentities();
   
   if (identities && identities.identities.length > 0) {
@@ -51,5 +68,5 @@ export async function syncDiscordAvatarAction(prevState: any, formData: FormData
   }
 
   revalidatePath("/profile/me");
-  return { success: "Sincronizado!" };
+  return { success: "Sincronizado via Discord!" };
 }
