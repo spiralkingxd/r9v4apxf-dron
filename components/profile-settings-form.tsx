@@ -1,8 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useCallback } from "react";
 import { updateProfileFeatures, syncDiscordAvatarAction } from "@/app/actions/profile-actions";
-import { RefreshCcw, Settings, X, CheckCircle2 } from "lucide-react";
+import { RefreshCcw, Settings, X, CheckCircle2, ImagePlus } from "lucide-react";
+import Cropper, { Area } from "react-easy-crop";
+import { getCroppedImg } from "@/lib/crop-image";
+import Image from "next/image";
 
 export function ProfileSettingsForm({ 
   initialStatus, 
@@ -12,10 +15,42 @@ export function ProfileSettingsForm({
   initialRole: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  
+  // Cropper states
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [croppedBase64, setCroppedBase64] = useState<string | null>(null);
+
   const [state, formAction, isPending] = useActionState(updateProfileFeatures, null);
   const [syncState, syncAction, isSyncing] = useActionState(syncDiscordAvatarAction, null);
 
   const inputClass = "w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition-colors";
+
+  // Handle file select
+  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const imageDataUrl = URL.createObjectURL(file);
+      setImageSrc(imageDataUrl);
+    }
+  };
+
+  const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const showCroppedImage = useCallback(async () => {
+    try {
+      if (!imageSrc || !croppedAreaPixels) return;
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
+      setCroppedBase64(croppedImage);
+      setImageSrc(null); // Close cropper view
+    } catch (e) {
+      console.error(e);
+    }
+  }, [imageSrc, croppedAreaPixels]);
 
   return (
     <div className="flex justify-center pb-8 transition-all">
@@ -28,7 +63,9 @@ export function ProfileSettingsForm({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          
+          {/* Main Modal */}
           <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl animate-in fade-in zoom-in-95">
             
             <button
@@ -45,40 +82,71 @@ export function ProfileSettingsForm({
             </div>
 
             <div className="space-y-6 text-left">
-              {/* Sync Photo Section */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
-                <div>
-                  <span className="block text-sm font-medium text-slate-900 dark:text-slate-200">Foto de Perfil</span>
-                  <span className="block text-xs text-slate-500 dark:text-slate-400 mt-0.5">Usar mesma foto do Discord</span>
-                </div>
-                <form action={syncAction} className="w-full sm:w-auto">
+              
+              {/* Sync Discord Photo */}
+              <div className="flex flex-col gap-2">
+                <form action={syncAction} className="flex justify-end">
                   <button 
                     type="submit"
                     disabled={isSyncing}
-                    className="w-full sm:w-auto inline-flex justify-center items-center gap-2 rounded-md bg-[#5865F2] hover:bg-[#4752C4] px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50"
+                    className="w-full inline-flex justify-center items-center gap-2 rounded-md bg-[#5865F2]/10 hover:bg-[#5865F2]/20 text-[#5865F2] border border-[#5865F2]/30 px-4 py-2 text-sm font-medium transition disabled:opacity-50"
                   >
                     <RefreshCcw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-                    {isSyncing ? "Sincronizando..." : "Sincronizar"}
+                    {isSyncing ? "Sincronizando..." : "Usar foto do Discord"}
                   </button>
                 </form>
+                {syncState?.error && <p className="text-xs text-rose-500">{syncState.error}</p>}
+                {syncState?.success && <p className="text-xs text-emerald-500">{syncState.success}</p>}
               </div>
-              
-              {syncState?.error && <p className="text-xs text-rose-500 -mt-2">{syncState.error}</p>}
-              {syncState?.success && <p className="text-xs text-emerald-500 -mt-2">{syncState.success}</p>}
+
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-medium uppercase">OU UPLOAD MANUAL</span>
+                <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+              </div>
 
               {/* Profile Edit Section */}
-              <form action={formAction} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="avatar_file" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    Fazer Upload de Foto (Opcional)
+              <form action={formAction} className="space-y-5">
+                
+                {/* Upload Imagem CROP */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    Sua nova foto (opcional)
                   </label>
-                  <input 
-                    type="file"
-                    id="avatar_file" 
-                    name="avatar_file" 
-                    accept="image/*"
-                    className="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 dark:file:bg-cyan-900/30 dark:file:text-cyan-400 dark:hover:file:bg-cyan-900/50 cursor-pointer border border-slate-200 dark:border-slate-800 rounded-md p-1"
-                  />
+                  
+                  {croppedBase64 ? (
+                    <div className="flex items-center gap-4">
+                       <div className="relative h-16 w-16 overflow-hidden rounded-full ring-2 ring-cyan-500">
+                         <Image src={croppedBase64} alt="Cropped preview" fill className="object-cover" />
+                       </div>
+                       <button
+                         type="button"
+                         onClick={() => setCroppedBase64(null)}
+                         className="text-xs text-rose-500 font-medium hover:underline"
+                       >
+                         Remover
+                       </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input 
+                        type="file"
+                        id="avatar_overlay" 
+                        accept="image/*"
+                        onChange={onFileChange}
+                        className="hidden"
+                      />
+                      <label 
+                        htmlFor="avatar_overlay"
+                        className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 px-4 py-8 text-sm text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        <ImagePlus className="h-5 w-5 text-slate-400" />
+                        <span>Clique para escolher uma imagem...</span>
+                      </label>
+                    </div>
+                  )}
+                  {/* HIDDEN INPUT FOR BASE64 */}
+                  <input type="hidden" name="avatar_base64" value={croppedBase64 || ""} />
                 </div>
 
                 <div className="space-y-1.5">
@@ -137,6 +205,39 @@ export function ProfileSettingsForm({
                 </div>
               </form>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CROP OVERLAY (Shows when user picks an image) */}
+      {imageSrc && (
+        <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 p-4">
+          <div className="relative w-full max-w-md h-[400px] sm:h-[500px] bg-black">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+          <div className="mt-8 flex gap-4">
+            <button
+              onClick={() => setImageSrc(null)}
+              className="px-6 py-2 rounded-full border border-slate-700 bg-slate-800 text-white text-sm font-medium hover:bg-slate-700"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={showCroppedImage}
+              className="px-6 py-2 rounded-full bg-cyan-500 text-white text-sm font-bold hover:bg-cyan-400"
+            >
+              Recortar Foto
+            </button>
           </div>
         </div>
       )}

@@ -13,29 +13,40 @@ export async function updateProfileFeatures(prevState: any, formData: FormData) 
 
   const customStatus = formData.get("custom_status");
   const boatRole = formData.get("boat_role");
-  const avatarFile = formData.get("avatar_file") as File | null;
+  const avatarBase64 = formData.get("avatar_base64") as string | null;
 
   const updates: any = {};
   if (customStatus !== null) updates.custom_status = String(customStatus).trim().substring(0, 50);
   if (boatRole !== null) updates.boat_role = String(boatRole);
 
-  if (avatarFile && avatarFile.size > 0) {
-    const fileExt = avatarFile.name.split('.').pop();
-    const filePath = `${user.id}-${Date.now()}.${fileExt}`;
+  if (avatarBase64 && avatarBase64.startsWith('data:image')) {
+    try {
+      // Create a buffer from the base64 string
+      const base64Data = avatarBase64.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+      const fileExt = avatarBase64.split(';')[0].split('/')[1] || 'jpeg';
+      const filePath = `${user.id}-${Date.now()}.${fileExt}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, avatarFile, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, buffer, { 
+          upsert: true,
+          contentType: `image/${fileExt}` 
+        });
 
-    if (uploadError) {
-      return { error: `Erro no upload da imagem: ${uploadError.message}. Certifique-se que o bucket "avatars" existe no Supabase e é público.` };
+      if (uploadError) {
+        return { error: `Erro no upload da imagem: ${uploadError.message}. Verifique o bucket "avatars" no Supabase.` };
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      updates.avatar_url = publicUrl;
+    } catch (e) {
+      console.error(e);
+      return { error: "Falha ao processar a imagem." }
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    updates.avatar_url = publicUrl;
   }
 
   const { error } = await supabase
