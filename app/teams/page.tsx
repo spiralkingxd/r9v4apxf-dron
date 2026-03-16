@@ -127,7 +127,7 @@ export default async function TeamsPage() {
             <p className="mt-2 text-sm text-slate-400">
               {teams.length > 0
                 ? `${teams.length} equipe${teams.length !== 1 ? "s" : ""} registrada${teams.length !== 1 ? "s" : ""}`
-                : "{dict.teams.empty}"}
+                : dict.teams.empty}
             </p>
           </div>
         </div>
@@ -164,17 +164,17 @@ export default async function TeamsPage() {
                       </p>
                       <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                         <Crown className="h-3 w-3" />
-                        {dict.teams.captain}: {team.captain?.display_name ?? "Unknown"}
+                        {dict.teams.captain}: {team.captain?.display_name ?? dict.teams.unknownCaptain}
                       </p>
                       <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                         <Calendar className="h-3 w-3" />
-                        Criada em {dateFmt.format(new Date(team.created_at))}
+                        {dict.teams.createdAt} {dateFmt.format(new Date(team.created_at))}
                       </p>
 
                       <div className="mt-3 flex items-center gap-2">
                         {team.is_user_member ? (
                           <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-200">
-                            Your team
+                            {dict.teams.yourTeam}
                           </span>
                         ) : null}
                         <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300">

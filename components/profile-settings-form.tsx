@@ -71,10 +71,10 @@ export function ProfileSettingsForm({
       </button>
 
       {mounted && isOpen ? createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 p-4 md:items-center backdrop-blur-sm">
           
           {/* Main Modal */}
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xl animate-in fade-in zoom-in-95 h-[min(92vh,760px)] flex flex-col overflow-hidden">
+          <div className="relative my-4 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xl animate-in fade-in zoom-in-95 h-[min(92vh,760px)] flex flex-col overflow-hidden md:my-0">
             
             <button
               type="button"

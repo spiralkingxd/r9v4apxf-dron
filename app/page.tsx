@@ -79,8 +79,8 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 via-slate-50/80 to-slate-50 dark:from-[#050b12]/50 dark:via-[#050b12]/80 dark:to-[#050b12]" />
         <div className="relative mx-auto flex flex-col items-center text-center max-w-5xl gap-8 px-4 sm:px-6 py-20 sm:py-28 lg:px-10 lg:py-32">     
           <div className="space-y-6 flex flex-col items-center">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-300/30 dark:border-cyan-300/25 bg-slate-50 dark:bg-white/50 dark:bg-[#050b12]/50 backdrop-blur-md px-3.5 py-1.5 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-[0.22em] text-blue-700 dark:text-cyan-200/90 shadow-xl shadow-blue-900/10 dark:shadow-cyan-900/20">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 animate-pulse" />
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/40 dark:border-cyan-300/50 bg-cyan-50/90 dark:bg-cyan-500/15 backdrop-blur-md px-3.5 py-1.5 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-[0.22em] text-cyan-700 dark:text-cyan-100 shadow-xl shadow-cyan-900/10 dark:shadow-cyan-900/20">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-500 dark:bg-cyan-200 animate-pulse" />
               <span className="truncate whitespace-normal">{dict.home.heroSubtitle}</span>
             </div>
 

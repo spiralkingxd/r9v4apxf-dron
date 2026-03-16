@@ -57,12 +57,12 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900 dark:text-white">
           <Shield className="h-5 w-5 text-amber-400" />
-          Minhas Equipes
+          {dict?.teams?.myTeamsTitle || "Minhas Equipes"}
         </h2>
 
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Equipes ({teamsCount}/1)
+            {(dict?.teams?.teamsCountLabel || "Equipes")} ({teamsCount}/1)
           </span>
           <button
             type="button"
@@ -117,7 +117,7 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span className="inline-flex items-center gap-1">
                     <Swords className="h-3.5 w-3.5" />
-                    Entrada: {teamDateFmt.format(new Date(team.joined_at))}
+                    {(dict?.teams?.joinedAtLabel || "Entrada")}: {teamDateFmt.format(new Date(team.joined_at))}
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Users className="h-3.5 w-3.5" />
@@ -132,10 +132,10 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
         <div className="mt-5 rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50 dark:bg-white/2 px-5 py-10 text-center">
           <Shield className="mx-auto h-8 w-8 text-slate-500" />
           <p className="mt-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-            Você não participa de nenhuma equipe ainda
+            {dict?.teams?.profileEmptyTitle || "Você não participa de nenhuma equipe ainda"}
           </p>
           <p className="mt-1 text-sm text-slate-500">
-            Funde sua própria tripulação ou junte-se a uma equipe existente para competir.
+            {dict?.teams?.profileEmptyDesc || "Funde sua própria tripulação ou junte-se a uma equipe existente para competir."}
           </p>
         </div>
       )}
@@ -147,7 +147,7 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
 
 export function ProfileTeamsSection(props: Props) {
   return (
-    <Suspense fallback={<div className="h-40 rounded-3xl md:col-span-2 xl:col-span-3 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-6 flex items-center justify-center">Carregando equipes...</div>}>
+    <Suspense fallback={<div className="h-40 rounded-3xl md:col-span-2 xl:col-span-3 border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/60 p-6 flex items-center justify-center">{props.dict?.teams?.loadingTeams || "Carregando equipes..."}</div>}>
       <ProfileTeamsContent {...props} />
     </Suspense>
   );
