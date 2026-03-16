@@ -4,8 +4,8 @@ import { Loader2, Plus, Trash2, ShieldAlert, Star } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/admin/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AdminButton as Button } from "@/components/admin/admin-button";
+
 
 export const metadata = {
   title: "Streamers | Admin | Madness Arena",
@@ -95,11 +95,11 @@ export default async function AdminStreamersPage() {
       <div className="mt-8 max-w-2xl bg-white/5 border border-white/10 rounded-xl p-6">
         <h3 className="text-lg font-semibold mb-4">Adicionar Novo Streamer</h3>
         <form action={addStreamer} className="flex gap-2">
-          <Input 
+          <input 
             name="username" 
             placeholder="Username da Twitch (ex: gaules, hwmalk)" 
             required
-            className="flex-1 bg-black/20"
+            className="flex flex-1 items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder-slate-500 focus-within:border-cyan-500/50"
           />
           <Button type="submit" variant="primary">
             <Plus className="h-4 w-4 mr-2" />
