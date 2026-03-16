@@ -97,7 +97,7 @@ export default async function AdminStreamersPage() {
         <form action={addStreamer} className="flex gap-2">
           <input 
             name="username" 
-            placeholder="Username da Twitch (ex: gaules, hwmalk)" 
+            placeholder="Username da Twitch (ex: hwmalk)" 
             required
             className="flex flex-1 items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm text-white placeholder-slate-500 focus-within:border-cyan-500/50" />
 
