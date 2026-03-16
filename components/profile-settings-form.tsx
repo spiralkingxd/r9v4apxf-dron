@@ -68,7 +68,7 @@ export function ProfileSettingsForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           
           {/* Main Modal */}
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[rgb(11,20,33)] p-6 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xl animate-in fade-in zoom-in-95 max-h-[95vh] flex flex-col">
             
             <button
               type="button"
@@ -189,8 +189,8 @@ export function ProfileSettingsForm({
                   <label htmlFor="boat_role" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     Função no Barco <span className="text-xs text-slate-500 font-normal ml-1">(Sea of Thieves)</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
-                      {["Timoneiro", "Reparo", "Ponteiro", "Suporte", "Canhoneiro", "Flex"].map((role) => {
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                      {["Timoneiro", "Reparo", "Suporte", "Canhoneiro"].map((role) => {
                         const currentRoles = (initialRole || "").split(",").map(r => r.trim());
                         const isChecked = currentRoles.includes(role);
                         return (
