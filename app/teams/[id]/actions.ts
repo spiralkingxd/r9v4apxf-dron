@@ -430,5 +430,5 @@ export async function dissolveTeam(input: {
   revalidatePath("/teams");
   revalidatePath("/profile/me");
 
-  return { success: "Equipe dissolvida com sucesso." };
+  return { success: "Equipe apagada com sucesso." };
 }

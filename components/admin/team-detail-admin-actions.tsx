@@ -133,19 +133,22 @@ export function TeamDetailAdminActions({
             variant="danger"
             disabled={isPending}
             onClick={() => {
-              const confirmName = window.prompt(`Digite o nome da equipe para confirmar: ${teamName}`)?.trim();
+              const confirmName = window.prompt(`Digite o nome da equipe para apagar: ${teamName}`)?.trim();
               if (!confirmName) return;
-              const reason = window.prompt("Motivo da dissolução:", "Equipe dissolvida por decisão administrativa")?.trim() ?? "";
+              const reason = window.prompt("Motivo para apagar a equipe:", "Equipe apagada por decisão administrativa")?.trim() ?? "";
               if (!reason) return;
 
               startTransition(async () => {
                 const result = await dissolveTeam(teamId, undefined, reason, { confirmName, notifyDiscord: true });
                 pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                if (result.success) {
+                  router.push("/admin/teams");
+                }
                 router.refresh();
               });
             }}
           >
-            Dissolver equipe
+            Apagar equipe
           </AdminButton>
         </>
       ) : (

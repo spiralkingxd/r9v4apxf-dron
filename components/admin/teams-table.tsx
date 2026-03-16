@@ -190,7 +190,7 @@ export function TeamsTable({ rows }: { rows: TeamRow[] }) {
               disabled={isPending}
             >
               <ShieldAlert className="mr-1 inline h-3 w-3" />
-              Dissolver
+              Apagar
             </button>
           ) : (
             <button

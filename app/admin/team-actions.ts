@@ -753,7 +753,7 @@ export async function addTeamMember(teamId: string, userId: string, _adminId?: s
 export async function dissolveTeam(
   teamId: string,
   _adminId?: string,
-  reason = "Equipe dissolvida por administracao.",
+  reason = "Equipe apagada por administracao.",
   options?: { confirmName?: string; notifyDiscord?: boolean },
 ): Promise<ActionResult> {
   const parsed = dissolveSchema.safeParse({
@@ -775,7 +775,6 @@ export async function dissolveTeam(
       .maybeSingle<{ id: string; name: string; dissolved_at: string | null }>();
 
     if (!team) return { error: "Equipe nao encontrada." };
-    if (team.dissolved_at) return { error: "Equipe ja esta dissolvida." };
     if (parsed.data.confirmName && parsed.data.confirmName !== team.name) {
       return { error: "Confirmacao invalida. Digite o nome exato da equipe." };
     }
@@ -787,7 +786,7 @@ export async function dissolveTeam(
       .in("status", ["pending", "in_progress"]);
 
     if ((inProgressCount ?? 0) > 0) {
-      return { error: "Nao e possivel dissolver com partidas pendentes/em andamento." };
+      return { error: "Nao e possivel apagar com partidas pendentes/em andamento." };
     }
 
     const stamp = nowIso();
@@ -796,7 +795,7 @@ export async function dissolveTeam(
 
     await supabase
       .from("registrations")
-      .update({ status: "cancelled", rejection_reason: "Equipe dissolvida", updated_at: stamp })
+      .update({ status: "cancelled", rejection_reason: "Equipe apagada", updated_at: stamp })
       .eq("team_id", team.id)
       .in("status", ["pending", "approved"])
       .in(
@@ -813,15 +812,10 @@ export async function dissolveTeam(
 
     const { error: patchError } = await supabase
       .from("teams")
-      .update({
-        dissolved_at: stamp,
-        dissolved_by: adminId,
-        dissolve_reason: parsed.data.reason,
-        updated_at: stamp,
-      })
+      .delete()
       .eq("id", team.id);
 
-    if (patchError) return { error: "Nao foi possivel dissolver equipe." };
+    if (patchError) return { error: "Nao foi possivel apagar equipe." };
 
     await logAdminTables(supabase, {
       adminId,
@@ -847,9 +841,9 @@ export async function dissolveTeam(
 
     revalidateTeamPaths(team.id);
     revalidatePath("/profile/me");
-    return { success: "Equipe dissolvida com sucesso." };
+    return { success: "Equipe apagada com sucesso." };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Falha ao dissolver equipe." };
+    return { error: error instanceof Error ? error.message : "Falha ao apagar equipe." };
   }
 }
 

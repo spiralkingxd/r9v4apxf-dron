@@ -608,7 +608,7 @@ export function ManageTeamModal({
                   className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-400"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  Dissolver equipe
+                  Apagar equipe
                 </button>
               </div>
             </div>
@@ -664,7 +664,7 @@ export function ManageTeamModal({
                   onClick={submitDissolve}
                   className="rounded-lg bg-rose-500 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  Dissolver
+                  Apagar
                 </button>
               </div>
             </div>
