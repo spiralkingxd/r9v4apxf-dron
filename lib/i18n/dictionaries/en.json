@@ -76,7 +76,11 @@
     "members": "members",
     "captain": "Captain",
     "search": "Search team by name or tag...",
-    "noResults": "No teams found with this search."
+    "noResults": "No teams found with this search.",
+    "requestJoin": "Request Join",
+    "viewTeam": "View Team",
+    "createTeam": "Create New Team",
+    "teamLimitReached": "You are already in a team"
   },
   "streams": {
     "badge": "Live",

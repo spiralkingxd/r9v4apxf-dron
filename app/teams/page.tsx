@@ -178,7 +178,7 @@ export default async function TeamsPage() {
                           </span>
                         ) : null}
                         <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-300">
-                          {userId && !team.is_user_member ? "Request Join" : "View Team"}
+                          {userId && !team.is_user_member ? dict.teams.requestJoin : dict.teams.viewTeam}
                         </span>
                       </div>
                     </div>

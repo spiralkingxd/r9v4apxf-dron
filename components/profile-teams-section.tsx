@@ -18,7 +18,7 @@ type UserTeamCard = {
   max_members: number;
 };
 
-type Props = {
+type Props = { dict?: any;
   userId: string;
   userXboxGamertag: string | null;
   teams: UserTeamCard[];
@@ -27,7 +27,7 @@ type Props = {
 
 const teamDateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "medium" });
 
-function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, systemMaxMembers = 10 }: Props) {
+function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, systemMaxMembers = 10, dict }: Props) {
   const [open, setOpen] = useState(false);
   const [isLaunching, startTransition] = useTransition();
   const searchParams = useSearchParams();
@@ -66,7 +66,7 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
           </span>
           <button
             type="button"
-            title={reachedLimit ? "Você já participa de uma equipe" : "Fundar nova equipe"}
+            title={reachedLimit ? (dict?.teams?.teamLimitReached || "Você já participa de uma equipe") : (dict?.teams?.createTeam || "Fundar nova equipe")}
             disabled={reachedLimit || isLaunching}
             onClick={() => {
               startTransition(() => setOpen(true));
@@ -74,7 +74,7 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
             className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
-            {isLaunching ? "Abrindo..." : "Fundar nova equipe"}
+            {isLaunching ? "..." : (dict?.teams?.createTeam || "Fundar nova equipe")}
           </button>
         </div>
       </div>
@@ -140,7 +140,7 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
         </div>
       )}
 
-      {open ? <CreateTeamModal userId={userId} userXboxGamertag={userXboxGamertag} hasReachedTeamLimit={reachedLimit} onClose={() => setOpen(false)} systemMaxMembers={systemMaxMembers} /> : null}
+      {open ? <CreateTeamModal dict={dict} userId={userId} userXboxGamertag={userXboxGamertag} hasReachedTeamLimit={reachedLimit} onClose={() => setOpen(false)} systemMaxMembers={systemMaxMembers} /> : null}
     </section>
   );
 }

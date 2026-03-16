@@ -111,8 +111,8 @@ function Avatar({
 // Modal principal
 // ---------------------------------------------------------------------------
 
-interface CreateTeamModalProps { userId: string; userXboxGamertag: string | null; hasReachedTeamLimit?: boolean; onClose?: () => void; systemMaxMembers: number; }
-export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit = false, onClose, systemMaxMembers }: CreateTeamModalProps) {
+interface CreateTeamModalProps { dict?: any; userId: string; userXboxGamertag: string | null; hasReachedTeamLimit?: boolean; onClose?: () => void; systemMaxMembers: number; }
+export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit = false, onClose, systemMaxMembers, dict }: CreateTeamModalProps) {
   const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);

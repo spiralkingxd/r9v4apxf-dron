@@ -76,7 +76,11 @@
     "members": "membros",
     "captain": "Capitão",
     "search": "Buscar equipe por nome ou tag...",
-    "noResults": "Nenhuma equipe encontrada com essa busca."
+    "noResults": "Nenhuma equipe encontrada com essa busca.",
+    "requestJoin": "Solicitar Entrada",
+    "viewTeam": "Ver Equipe",
+    "createTeam": "Fundar Nova Equipe",
+    "teamLimitReached": "Você já participa de uma equipe"
   },
   "streams": {
     "badge": "Ao Vivo",

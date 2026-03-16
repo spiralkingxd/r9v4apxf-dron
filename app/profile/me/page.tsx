@@ -209,10 +209,14 @@ export default async function MyProfilePage() {
             <div className="flex gap-4 items-center">
               <XboxStatusTag gamertag={profile.xbox_gamertag} />
               {profile.boat_role && profile.boat_role !== "nenhuma" && (
-                <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold capitalize">
-                  {profile.boat_role}
-                </span>
-              )}
+                  <div className="flex flex-wrap gap-2">
+                    {profile.boat_role.split(',').map((r) => r.trim()).map((role) => (
+                      <span key={role} className="px-3 py-1 rounded-full bg-blue-100 dark:bg-[#1a2b4b] text-blue-800 dark:text-blue-300 text-xs font-semibold capitalize border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 
@@ -236,7 +240,7 @@ export default async function MyProfilePage() {
             </InfoCard>
           </div>
 
-          {/* Info grid - Stats Row */}1
+          {/* Info grid - Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:sm:divide-white/5">
             <InfoCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints}>
               <span className="text-xl font-bold text-slate-800 dark:text-slate-100">{profile.rankings?.[0]?.points || 0}</span>
@@ -248,7 +252,7 @@ export default async function MyProfilePage() {
           </div>
         </div>
 
-        <ProfileTeamsSection systemMaxMembers={maxTeamSize}
+        <ProfileTeamsSection dict={dict} systemMaxMembers={maxTeamSize}
           userId={user.id}
           userXboxGamertag={profile.xbox_gamertag}
           teams={userTeams}

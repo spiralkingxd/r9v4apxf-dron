@@ -100,10 +100,14 @@ export default async function PublicProfilePage({ params }: Props) {
             <div className="flex gap-4 items-center">
               <XboxStatusTag gamertag={profile.xbox_gamertag} />
               {profile.boat_role && profile.boat_role !== "nenhuma" && (
-                <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold capitalize">
-                  {profile.boat_role}
-                </span>
-              )}
+                  <div className="flex flex-wrap gap-2">
+                    {profile.boat_role.split(',').map((r) => r.trim()).map((role) => (
+                      <span key={role} className="px-3 py-1 rounded-full bg-blue-100 dark:bg-[#1a2b4b] text-blue-800 dark:text-blue-300 text-xs font-semibold capitalize border border-blue-200 dark:border-blue-800/50 shadow-sm">
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 

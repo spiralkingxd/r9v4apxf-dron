@@ -74,17 +74,17 @@ export default async function Home() {
   return (
     <main className="page-shell">
 
-      <section className="hero-shell relative overflow-hidden border-b border-white/10 bg-[#050b12] group">
+      <section className="hero-shell relative overflow-hidden border-b border-slate-200/50 dark:border-white/10 bg-slate-50 dark:bg-[#050b12] group">
         <div aria-hidden className="absolute inset-0 bg-[url('https://compass-ssl.xbox.com/assets/40/ce/40ce6b4c-a111-477c-a4f6-86dbf861e695.jpg?n=Sea-of-Thieves_GLP-Page-Hero-1084_1920x1080.jpg')] bg-cover bg-center bg-no-repeat opacity-30 transition-opacity duration-700 group-hover:opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#050b12]/50 via-[#050b12]/80 to-[#050b12]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 via-slate-50/80 to-slate-50 dark:from-[#050b12]/50 dark:via-[#050b12]/80 dark:to-[#050b12]" />
         <div className="relative mx-auto flex flex-col items-center text-center max-w-5xl gap-8 px-4 sm:px-6 py-20 sm:py-28 lg:px-10 lg:py-32">     
           <div className="space-y-6 flex flex-col items-center">
-            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/25 bg-[#050b12]/50 backdrop-blur-md px-3.5 py-1.5 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-[0.22em] text-cyan-200/90 shadow-xl shadow-cyan-900/20">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-300/30 dark:border-cyan-300/25 bg-slate-50 dark:bg-white/50 dark:bg-[#050b12]/50 backdrop-blur-md px-3.5 py-1.5 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-[0.22em] text-blue-700 dark:text-cyan-200/90 shadow-xl shadow-blue-900/10 dark:shadow-cyan-900/20">
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 animate-pulse" />
               <span className="truncate whitespace-normal">{dict.home.heroSubtitle}</span>
             </div>
 
-            <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.04] tracking-tight text-white sm:text-7xl lg:text-8xl drop-shadow-2xl">
+            <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.04] tracking-tight text-slate-900 dark:text-white sm:text-7xl lg:text-8xl drop-shadow-2xl">
               {dict.home.heroTitle1}
               <br className="hidden sm:block" />
               <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent ml-0 sm:ml-4">
@@ -92,7 +92,7 @@ export default async function Home() {
               </span>
             </h1>
 
-            <p className="max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg lg:text-xl drop-shadow-md">
+            <p className="max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-300 sm:text-lg lg:text-xl drop-shadow-md">
               {dict.home.heroDesc}
             </p>
 
@@ -101,7 +101,7 @@ export default async function Home() {
                 <Flame className="h-5 w-5" />
                 {dict.home.heroBtnEvents}
               </Link>
-              <Link href="/profile/me?action=new-team#teams" className="action-secondary inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 backdrop-blur-md px-6 sm:px-8 py-3 sm:py-4 text-base font-semibold text-white transition hover:bg-white/20">
+              <Link href="/profile/me?action=new-team#teams" className="action-secondary inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-white/20 bg-slate-200/50 dark:bg-white/10 backdrop-blur-md px-6 sm:px-8 py-3 sm:py-4 text-base font-semibold text-slate-800 dark:text-white transition hover:bg-slate-300/50 dark:hover:bg-white/20">
                 <Users className="h-5 w-5 text-cyan-300" />
                 {dict.home.heroBtnTeam}
               </Link>
@@ -183,7 +183,7 @@ export default async function Home() {
                       <p className="mt-1.5 max-w-[220px] text-sm font-extrabold text-amber-200">{featuredEvent.prize_description}</p>
                     </div>
                   )}
-                  <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300">
+                  <span className="rounded-full border border-slate-200/50 dark:border-white/10 px-3 py-1 text-xs text-slate-300">
                     {formatTeamSize(featuredEvent.team_size)}
                   </span>
                   <Link
@@ -198,13 +198,13 @@ export default async function Home() {
             </article>
           </section>
         ) : (
-          <section className="rounded-[2rem] border border-dashed border-white/10 px-8 py-16 text-center">
+          <section className="rounded-[2rem] border border-dashed border-slate-200/50 dark:border-white/10 px-8 py-16 text-center">
             <Trophy className="mx-auto h-12 w-12 text-slate-600" />
             <h2 className="mt-4 text-xl font-bold text-slate-300">{dict.home.noActiveTornament}</h2>
             <p className="mt-2 text-sm text-slate-500">{dict.home.noActiveTornamentDesc}</p>
             <Link
               href="/events"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm text-slate-300 transition hover:bg-white/8"
+              className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/5 px-5 py-2.5 text-sm text-slate-300 transition hover:bg-white/8"
             >
               {dict.home.eventHistory}
             </Link>
@@ -255,7 +255,7 @@ export default async function Home() {
               ))}
             </div>
           ) : (
-            <div className="mt-6 rounded-2xl border border-dashed border-white/10 px-6 py-14 text-center">
+            <div className="mt-6 rounded-2xl border border-dashed border-slate-200/50 dark:border-white/10 px-6 py-14 text-center">
               <p className="text-sm text-slate-500">{dict.home.noFinishedTourney}</p>
             </div>
           )}
