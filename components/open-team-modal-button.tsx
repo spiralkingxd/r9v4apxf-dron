@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 
 import { CreateTeamModal } from "@/components/create-team-modal";
 
-export function OpenTeamModalButton({ userId }: { userId: string }) {
+export function OpenTeamModalButton({ userId, userXboxGamertag }: { userId: string, userXboxGamertag: string | null }){
   const [open, setOpen] = useState(false);
 
   return (
@@ -20,8 +20,9 @@ export function OpenTeamModalButton({ userId }: { userId: string }) {
       </button>
 
       {open && (
-        <CreateTeamModal userId={userId} onClose={() => setOpen(false)} />
+        <CreateTeamModal userId={userId} userXboxGamertag={userXboxGamertag} onClose={() => setOpen(false)} />
       )}
     </>
   );
 }
+

@@ -74,7 +74,11 @@ export default async function TeamDetailPage({ params }: Props) {
   } = await supabase.auth.getUser();
 
   let currentUserTeamCount = 0;
+  let userXboxGamertag: string | null = null;
   if (user?.id) {
+    const { data: currentProfile } = await supabase.from("profiles").select("xbox_gamertag").eq("id", user.id).single();
+    userXboxGamertag = currentProfile?.xbox_gamertag ?? null;
+
     const { count } = await supabase
       .from("team_members")
       .select("*", { count: "exact", head: true })
@@ -390,7 +394,7 @@ export default async function TeamDetailPage({ params }: Props) {
                 teamId={team.id}
                 teamCaptainId={team.captain_id}
                 currentMemberCount={memberList.length}
-                userId={user?.id ?? null}
+                userId={user?.id ?? null} userXboxGamertag={userXboxGamertag}
                 isMember={isMember}
                 hasPendingRequest={hasPendingRequest}
                 pendingRequestId={pendingRequestId}
@@ -520,3 +524,5 @@ function RegistrationBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+

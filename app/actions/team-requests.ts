@@ -112,7 +112,7 @@ export async function isTeamCaptain(teamId: string, userId: string): Promise<boo
 // Actions
 // ---------------------------------------------------------------------------
 
-export async function createJoinRequest(teamId: string): Promise<ActionResult<JoinRequestRow>> {
+export async function createJoinRequest(teamId: string, providedXbox?: string): Promise<ActionResult<JoinRequestRow>> {
   const parsed = createJoinRequestSchema.safeParse({ teamId });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -332,3 +332,5 @@ export async function cancelJoinRequest(requestId: string): Promise<ActionResult
     return { success: false, error: "Não foi possível cancelar a solicitação." };
   }
 }
+
+

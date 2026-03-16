@@ -7,15 +7,17 @@ import Cropper, { Area } from "react-easy-crop";
 import { getCroppedImg } from "@/lib/crop-image";
 import Image from "next/image";
 
-export function ProfileSettingsForm({ 
-  initialStatus, 
-  initialRole 
-}: { 
-  initialStatus: string | null; 
+export function ProfileSettingsForm({
+  initialStatus,
+  initialRole,
+  initialXboxGamertag
+}: {
+  initialStatus: string | null;
   initialRole: string | null;
+  initialXboxGamertag: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Cropper states
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -153,15 +155,17 @@ export function ProfileSettingsForm({
                   <label htmlFor="custom_status" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                     Status Customizado
                   </label>
-                  <input 
-                    id="custom_status" 
-                    name="custom_status" 
-                    placeholder="Ex: Jogando arena..." 
-                    defaultValue={initialStatus || ""} 
+                  <input
+                    id="custom_status"
+                    name="custom_status"
+                    placeholder="Ex: Jogando arena..."
+                    defaultValue={initialStatus || ""}
                     maxLength={50}
                     className={inputClass}
                   />
                 </div>
+
+                
 
                 <div className="space-y-1.5">
                   <label htmlFor="boat_role" className="text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -244,3 +248,4 @@ export function ProfileSettingsForm({
     </div>
   );
 }
+

@@ -15,6 +15,7 @@ type Props = {
   teamCaptainId: string;
   currentMemberCount: number;
   userId: string | null;
+  userXboxGamertag: string | null;
   isMember: boolean;
   hasPendingRequest: boolean;
   pendingRequestId: string | null;
@@ -27,6 +28,7 @@ export function JoinRequestButton({
   teamCaptainId,
   currentMemberCount,
   userId,
+  userXboxGamertag,
   isMember,
   hasPendingRequest,
   pendingRequestId,
@@ -62,15 +64,7 @@ export function JoinRequestButton({
 
   if (state === "captain") return null;
 
-  async function onRequest() {
-    if (state !== "ready") return;
-
-    const confirmed = window.confirm("Deseja enviar solicitaÃ§Ã£o de entrada para esta equipe?");
-    if (!confirmed) return;
-
-    startTransition(async () => {
-      setActionType("request");
-      const result = await createJoinRequest(teamId);
+  async function onRequest() { if (state !== "ready") return; let xboxInput = ""; if (!userXboxGamertag) { const val = window.prompt("Por favor, digite sua Xbox Gamertag para continuar. Isso é necessário para entrar em equipes (só pode ser digitado 1 vez):"); if (!val || !val.trim()) { window.alert("Xbox Gamertag é obrigatória."); return; } xboxInput = val.trim(); } const confirmed = window.confirm("Deseja enviar solicitação de entrada para esta equipe?"); if (!confirmed) return; startTransition(async () => { setActionType("request"); const result = await createJoinRequest(teamId, xboxInput);
       setActionType(null);
 
       if (!result.success) {
@@ -243,3 +237,5 @@ export function JoinRequestButton({
     </div>
   );
 }
+
+

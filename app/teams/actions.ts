@@ -160,7 +160,7 @@ export async function createTeam(
     return { error: "VocÃª precisa estar logado para criar uma equipe." };
   }
 
-  // Verifica limite de 1 equipe por conta.
+  const { data: profile } = await supabase.from("profiles").select("xbox_gamertag").eq("id", user.id).single(); let finalXbox = profile?.xbox_gamertag; const providedXbox = formData.get("xbox_gamertag") as string | null; if (!finalXbox && providedXbox?.trim()) { await supabase.from("profiles").update({ xbox_gamertag: providedXbox.trim() }).eq("id", user.id); finalXbox = providedXbox.trim(); } if (!finalXbox) { return { error: "Você precisa informar sua Xbox Gamertag para criar uma equipe." }; } // Verifica limite de 1 equipe por conta.
   const { count } = await supabase
     .from("team_members")
     .select("*", { count: "exact", head: true })
@@ -250,3 +250,4 @@ export async function createTeam(
     teamId: team.id,
   };
 }
+

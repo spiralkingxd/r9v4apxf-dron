@@ -19,13 +19,14 @@ type UserTeamCard = {
 
 type Props = {
   userId: string;
+  userXboxGamertag: string | null;
   teams: UserTeamCard[];
   teamsError?: string | null;
 };
 
 const teamDateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "medium" });
 
-export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
+export function ProfileTeamsSection({ userId, userXboxGamertag, teams, teamsError }: Props) {
   const [open, setOpen] = useState(false);
   const [isLaunching, startTransition] = useTransition();
 
@@ -140,7 +141,7 @@ export function ProfileTeamsSection({ userId, teams, teamsError }: Props) {
         </div>
       )}
 
-      {open ? <CreateTeamModal userId={userId} hasReachedTeamLimit={reachedLimit} onClose={() => setOpen(false)} /> : null}
+      {open ? <CreateTeamModal userId={userId} userXboxGamertag={userXboxGamertag} hasReachedTeamLimit={reachedLimit} onClose={() => setOpen(false)} /> : null}
     </section>
   );
 }

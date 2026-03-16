@@ -237,15 +237,17 @@ export default async function MyProfilePage() {
           </div>
 
           <div className="pt-6">
-            <ProfileSettingsForm 
-              initialStatus={profile.custom_status} 
-              initialRole={profile.boat_role} 
+            <ProfileSettingsForm
+              initialStatus={profile.custom_status}
+              initialRole={profile.boat_role}
+              initialXboxGamertag={profile.xbox_gamertag}
             />
           </div>
         </div>
 
         <ProfileTeamsSection
           userId={user.id}
+          userXboxGamertag={profile.xbox_gamertag}
           teams={userTeams}
           teamsError={teamsError}
         />
