@@ -140,7 +140,7 @@ export default async function TeamsPage() {
                   className="glass-card soft-ring group rounded-2xl p-5 transition hover:border-amber-400/30 hover:bg-amber-400/5"
                 >
                   <div className="flex items-start gap-4">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
+                    <span className="flex h-12 w-12 shrink-0 overflow-hidden items-center justify-center rounded-xl border border-white/10 bg-white/5 text-xl">
                       {team.logo_url ? (
                         <Image
                           src={team.logo_url}

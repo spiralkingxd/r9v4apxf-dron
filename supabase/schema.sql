@@ -61,6 +61,8 @@ create table if not exists public.profiles (
   email text,
   xbox_gamertag text,
   avatar_url text,
+  custom_status text,
+  boat_role text,
   role text not null default 'user',
   is_banned boolean not null default false,
   ban_reason text,
@@ -77,6 +79,8 @@ alter table public.profiles add column if not exists username text;
 alter table public.profiles add column if not exists email text;
 alter table public.profiles add column if not exists xbox_gamertag text;
 alter table public.profiles add column if not exists avatar_url text;
+  alter table public.profiles add column if not exists custom_status text;
+  alter table public.profiles add column if not exists boat_role text;
 alter table public.profiles add column if not exists role text;
 alter table public.profiles add column if not exists is_banned boolean;
 alter table public.profiles add column if not exists ban_reason text;

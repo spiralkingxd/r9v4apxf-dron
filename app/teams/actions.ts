@@ -170,9 +170,22 @@ export async function createTeam(
     return { error: "Você já participa de uma equipe" };
   }
 
+  // Puxar configurações de sistema para o tamanho máximo da equipe
+  const { data: sysSettings } = await supabase
+    .from("system_settings")
+    .select("tournament")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const maxTeamSize = Number((sysSettings?.tournament as any)?.max_team_size ?? 5);
+
   const rawMemberIds: string[] = [];
   for (const val of formData.getAll("member_id")) {
     if (typeof val === "string" && val) rawMemberIds.push(val);
+  }
+
+  if (rawMemberIds.length > maxTeamSize - 1) {
+    return { error: `Você pode adicionar no máximo ${maxTeamSize - 1} membros nesta equipe (total: ${maxTeamSize}).` };
   }
 
   const parsed = createTeamSchema.safeParse({
@@ -195,6 +208,7 @@ export async function createTeam(
       name,
       logo_url: logo_url || null,
       captain_id: user.id,
+      max_members: maxTeamSize,
     })
     .select("id")
     .single();

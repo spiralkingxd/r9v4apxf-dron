@@ -13,6 +13,8 @@ type PublicProfile = {
   username: string;
   avatar_url: string | null;
   xbox_gamertag: string | null;
+  custom_status: string | null;
+  boat_role: string | null;
   created_at: string;
   updated_at: string;
   rankings?: {
@@ -29,7 +31,7 @@ export default async function PublicProfilePage({ params }: Props) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, display_name, username, avatar_url, xbox_gamertag, created_at, updated_at, rankings(wins, points)")
+    .select("id, display_name, username, avatar_url, xbox_gamertag, custom_status, boat_role, created_at, updated_at, rankings(wins, points)")
     .eq("id", id)
     .maybeSingle<PublicProfile>();
 
@@ -73,12 +75,25 @@ export default async function PublicProfilePage({ params }: Props) {
             </div>
 
             {/* Display name */}
-            <h1 className="text-2xl font-bold tracking-wide text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-wide text-slate-900 dark:text-white flex flex-col items-center">
               {profile.display_name}
+              {profile.custom_status && (
+                <span className="text-sm font-normal text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  {profile.custom_status}
+                </span>
+              )}
             </h1>
 
-            {/* Xbox status */}
-            <XboxStatusTag gamertag={profile.xbox_gamertag} />
+            {/* Xbox status and Boat Role */}
+            <div className="flex gap-4 items-center">
+              <XboxStatusTag gamertag={profile.xbox_gamertag} />
+              {profile.boat_role && profile.boat_role !== "nenhuma" && (
+                <span className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-semibold capitalize">
+                  {profile.boat_role}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Divider */}
