@@ -801,6 +801,15 @@ export async function dissolveTeam(
 
     const stamp = nowIso();
 
+    const { data: membersBeforeDelete } = await supabase
+      .from("team_members")
+      .select("user_id")
+      .eq("team_id", team.id);
+
+    const memberIds = Array.from(
+      new Set((membersBeforeDelete ?? []).map((row) => String(row.user_id)).filter(Boolean)),
+    );
+
     await supabase.from("team_members").delete().eq("team_id", team.id);
 
     await supabase
@@ -826,6 +835,18 @@ export async function dissolveTeam(
       .eq("id", team.id);
 
     if (patchError) return { error: "Nao foi possivel apagar equipe." };
+
+    if (memberIds.length > 0) {
+      await supabase.from("notifications").insert(
+        memberIds.map((userId) => ({
+          user_id: userId,
+          type: "team_dissolved_admin",
+          title: "Equipe dissolvida",
+          message: `Um administrador dissolveu a equipe ${team.name}.`,
+          data: { team_id: team.id, reason: parsed.data.reason },
+        })),
+      );
+    }
 
     await logAdminTables(supabase, {
       adminId,

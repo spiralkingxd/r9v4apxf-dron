@@ -437,6 +437,15 @@ export async function dissolveTeam(input: {
   const guard = await requireCaptain(teamId);
   if (guard.error || !guard.team) return { error: guard.error };
 
+  const { data: membersBeforeDelete } = await guard.supabase
+    .from("team_members")
+    .select("user_id")
+    .eq("team_id", teamId);
+
+  const memberIds = Array.from(
+    new Set((membersBeforeDelete ?? []).map((row) => String(row.user_id)).filter(Boolean)),
+  );
+
   const currentName = (guard.team.name as string).trim();
   if (currentName !== confirmName.trim()) {
     return { error: "Confirmação inválida. Digite exatamente o nome da equipe." };
@@ -459,6 +468,18 @@ export async function dissolveTeam(input: {
 
   if (teamDeleteError) {
     return { error: toFriendlyTeamError(teamDeleteError.message) };
+  }
+
+  if (memberIds.length > 0) {
+    await guard.supabase.from("notifications").insert(
+      memberIds.map((userId) => ({
+        user_id: userId,
+        type: "team_dissolved",
+        title: "Equipe dissolvida",
+        message: `A equipe ${guard.team?.name ?? ""} foi dissolvida pelo capitão.`,
+        data: { team_id: teamId },
+      })),
+    );
   }
 
   revalidatePath(`/teams/${teamId}`);

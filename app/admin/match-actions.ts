@@ -577,6 +577,58 @@ export async function setMatchWinner(matchId: string, winnerId: string | "draw",
     ]);
     const winnerName = winner ? (winner === match.team_a_id ? teamA?.name : teamB?.name) : "Empate";
 
+    if (winner && (previous.status !== "finished" || previous.winner_id !== winner)) {
+      const { data: winnerTeam } = await supabase
+        .from("teams")
+        .select("id, name, captain_id")
+        .eq("id", winner)
+        .maybeSingle<{ id: string; name: string; captain_id: string }>();
+
+      if (winnerTeam) {
+        const { data: winnerMembers } = await supabase
+          .from("team_members")
+          .select("user_id")
+          .eq("team_id", winnerTeam.id);
+
+        const winnerUserIds = Array.from(
+          new Set([
+            winnerTeam.captain_id,
+            ...(winnerMembers ?? []).map((row) => String(row.user_id)),
+          ].filter(Boolean)),
+        );
+
+        if (winnerUserIds.length > 0) {
+          await supabase.from("notifications").insert(
+            winnerUserIds.map((userId) => ({
+              user_id: userId,
+              type: "team_match_win",
+              title: "Vitória da equipe",
+              message: `Sua equipe ${winnerTeam.name} venceu uma partida em ${event.title}.`,
+              data: { event_id: event.id, match_id: match.id, team_id: winnerTeam.id },
+            })),
+          );
+        }
+
+        const { count: unfinishedCount } = await supabase
+          .from("matches")
+          .select("*", { count: "exact", head: true })
+          .eq("event_id", event.id)
+          .in("status", ["pending", "in_progress"]);
+
+        if ((unfinishedCount ?? 0) === 0 && winnerUserIds.length > 0) {
+          await supabase.from("notifications").insert(
+            winnerUserIds.map((userId) => ({
+              user_id: userId,
+              type: "team_tournament_win",
+              title: "Campeões do torneio",
+              message: `Parabéns! Sua equipe ${winnerTeam.name} venceu o torneio ${event.title}.`,
+              data: { event_id: event.id, team_id: winnerTeam.id },
+            })),
+          );
+        }
+      }
+    }
+
     await queueOrSendDiscordNotification({
       supabase,
       createdBy: adminId,
