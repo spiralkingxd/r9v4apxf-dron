@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
+import { insertNotifications } from "@/lib/notifications";
 import { teamRequestMessages, translateTeamRequestError } from "@/lib/team-request-messages";
 
 export type ActionResult<T = unknown> = {
@@ -164,6 +165,30 @@ export async function createJoinRequest(teamId: string, providedXbox?: string): 
       return { success: false, error: translateTeamRequestError(error.message) };
     }
 
+    const [{ data: teamMeta }, { data: requesterProfile }] = await Promise.all([
+      supabase
+        .from("teams")
+        .select("id, name, captain_id")
+        .eq("id", validTeamId)
+        .maybeSingle<{ id: string; name: string; captain_id: string }>(),
+      supabase
+        .from("profiles")
+        .select("display_name, username")
+        .eq("id", user.id)
+        .maybeSingle<{ display_name: string | null; username: string | null }>(),
+    ]);
+
+    if (teamMeta?.captain_id && teamMeta.captain_id !== user.id) {
+      const requesterName = requesterProfile?.display_name || requesterProfile?.username || "Um jogador";
+      await insertNotifications(supabase, {
+        user_id: teamMeta.captain_id,
+        type: "team_join_request",
+        title: "Nova solicitação de entrada",
+        message: `${requesterName} solicitou entrada na equipe ${teamMeta.name}.`,
+        data: { team_id: teamMeta.id, request_id: data.id, requester_id: user.id },
+      });
+    }
+
     revalidatePath(`/teams/${validTeamId}`);
     revalidatePath("/teams");
     revalidatePath("/profile/me");
@@ -261,6 +286,23 @@ export async function respondToJoinRequest(
       console.error("[respondToJoinRequest] update request error:", updateError);
       return { success: false, error: translateTeamRequestError(updateError.message) };
     }
+
+    const { data: teamMeta } = await supabase
+      .from("teams")
+      .select("id, name")
+      .eq("id", request.team_id)
+      .maybeSingle<{ id: string; name: string }>();
+
+    await insertNotifications(supabase, {
+      user_id: request.user_id,
+      type: status === "approved" ? "team_join_approved" : "team_join_rejected",
+      title: status === "approved" ? "Solicitação aprovada" : "Solicitação recusada",
+      message:
+        status === "approved"
+          ? `Sua solicitação para entrar na equipe ${teamMeta?.name ?? "selecionada"} foi aprovada.`
+          : `Sua solicitação para entrar na equipe ${teamMeta?.name ?? "selecionada"} foi recusada.`,
+      data: { team_id: request.team_id, request_id: request.id },
+    });
 
     revalidatePath(`/teams/${request.team_id}`);
     revalidatePath("/teams");

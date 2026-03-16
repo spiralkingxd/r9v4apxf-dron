@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Bell, Check, X, Users, Gift, Info } from "lucide-react";
 import { getNotifications, markAllAsRead, markAsRead, processInviteAction, Notification } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client"; // Assumindo que você tem isso
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ActionToast } from "@/components/action-toast";
 
 export function NotificationsBell() {
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -74,6 +75,31 @@ export function NotificationsBell() {
 
   const handleToggle = () => setOpen(!open);
 
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && rootRef.current && !rootRef.current.contains(target)) {
+        setOpen(false);
+      }
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [open]);
+
   const handleMarkAllRead = () => {
     startTransition(async () => {
       await markAllAsRead();
@@ -103,7 +129,7 @@ export function NotificationsBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={rootRef}>
       {toast && (
         <div className="fixed bottom-4 right-4 z-[999] bg-[#0b141e] rounded-xl pr-2 flex items-center shadow-xl">
            <ActionToast message={toast.message} tone={toast.tone} />
@@ -125,87 +151,84 @@ export function NotificationsBell() {
       </button>
 
       {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-[120%] z-50 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0b141e]/95 p-4 shadow-xl shadow-black/50 backdrop-blur-xl">
-            <div className="flex items-center justify-between border-b border-white/5 pb-3">
-              <h3 className="text-sm font-bold text-white">Notificações</h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllRead}
-                  disabled={isPending}
-                  className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition"
-                >
-                  Marcar todas como lidas
-                </button>
-              )}
-            </div>
-
-            <div className="mt-2 flex max-h-80 flex-col gap-2 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <p className="py-6 text-center text-xs text-slate-500">Nenhuma notificação.</p>
-              ) : (
-                notifications.map((notif) => {
-                  const isInvite = notif.type === "team_invite";
-
-                  return (
-                    <div
-                      key={notif.id}
-                      className={cn(
-                        "group relative flex flex-col gap-2 rounded-xl p-3 text-left transition",
-                        notif.read ? "opacity-70 hover:opacity-100" : "bg-white/5"
-                      )}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="shrink-0 rounded-full bg-white/5 p-2">
-                           {isInvite ? <Users className="h-4 w-4 text-emerald-400" /> : <Info className="h-4 w-4 text-cyan-400" />}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold text-slate-200">{notif.title}</p>
-                          <p className="mt-0.5 text-xs text-slate-400">{notif.message}</p>
-                          
-                          {/* Botões de Convite */}
-                          {isInvite && !notif.read && notif.data?.team_id && (
-                            <div className="mt-3 flex items-center gap-2">
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleInviteAction(notif.id, "accept", notif.data.team_id)}
-                                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/20 px-2 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30"
-                              >
-                                <Check className="h-3 w-3" /> Aceitar
-                              </button>
-                              <button
-                                disabled={isPending}
-                                onClick={() => handleInviteAction(notif.id, "decline", notif.data.team_id)}
-                                className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/30"
-                              >
-                                <X className="h-3 w-3" /> Recusar
-                              </button>
-                            </div>
-                          )}
-
-                          <p className="mt-2 text-[10px] text-slate-500">
-                            {new Date(notif.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                        
-                        {!notif.read && !isInvite && (
-                          <button
-                            onClick={() => handleMarkRead(notif.id)}
-                            className="shrink-0 text-slate-500 opacity-0 transition hover:text-slate-300 group-hover:opacity-100"
-                            title="Marcar como lida"
-                          >
-                            <Check className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
+        <div className="absolute right-0 top-[120%] z-50 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0b141e]/95 p-4 shadow-xl shadow-black/50 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+            <h3 className="text-sm font-bold text-white">Notificações</h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllRead}
+                disabled={isPending}
+                className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition"
+              >
+                Marcar todas como lidas
+              </button>
+            )}
           </div>
-        </>
+
+          <div className="mt-2 flex max-h-80 flex-col gap-2 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-500">Nenhuma notificação.</p>
+            ) : (
+              notifications.map((notif) => {
+                const isInvite = notif.type === "team_invite";
+
+                return (
+                  <div
+                    key={notif.id}
+                    className={cn(
+                      "group relative flex flex-col gap-2 rounded-xl p-3 text-left transition",
+                      notif.read ? "opacity-70 hover:opacity-100" : "bg-white/5"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 rounded-full bg-white/5 p-2">
+                         {isInvite ? <Users className="h-4 w-4 text-emerald-400" /> : <Info className="h-4 w-4 text-cyan-400" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-200">{notif.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-400">{notif.message}</p>
+                        
+                        {/* Botões de Convite */}
+                        {isInvite && !notif.read && notif.data?.team_id && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <button
+                              disabled={isPending}
+                              onClick={() => handleInviteAction(notif.id, "accept", notif.data.team_id)}
+                              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-emerald-500/20 px-2 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/30"
+                            >
+                              <Check className="h-3 w-3" /> Aceitar
+                            </button>
+                            <button
+                              disabled={isPending}
+                              onClick={() => handleInviteAction(notif.id, "decline", notif.data.team_id)}
+                              className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/30"
+                            >
+                              <X className="h-3 w-3" /> Recusar
+                            </button>
+                          </div>
+                        )}
+
+                        <p className="mt-2 text-[10px] text-slate-500">
+                          {new Date(notif.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      
+                      {!notif.read && !isInvite && (
+                        <button
+                          onClick={() => handleMarkRead(notif.id)}
+                          className="shrink-0 text-slate-500 opacity-0 transition hover:text-slate-300 group-hover:opacity-100"
+                          title="Marcar como lida"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
