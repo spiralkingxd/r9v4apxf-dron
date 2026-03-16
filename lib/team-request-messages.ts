@@ -3,7 +3,7 @@ export const teamRequestMessages = {
   PENDING_REQUEST: "Você já solicitou entrada nesta equipe",
   WAIT_CAPTAIN: "Aguarde a resposta do capitão",
   TEAM_FULL: "Esta equipe está cheia (10/10)",
-  TEAM_LIMIT: "Você já participa de uma equipe",
+  TEAM_LIMIT: "Esse usuário já está em uma equipe",
   NOT_CAPTAIN: "Apenas o capitão pode realizar esta ação",
   REQUEST_NOT_FOUND: "Solicitação não encontrada",
   REQUEST_CREATED: "Solicitação criada com sucesso",

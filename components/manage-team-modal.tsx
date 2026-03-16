@@ -350,10 +350,7 @@ export function ManageTeamModal({
                 {pendingCount}
               </span>
             </TabButton>
-            <TabButton active={tab === "add"} onClick={() => setTab("add")}>
-              <UserRoundPlus className="h-4 w-4" />
-              Adicionar
-            </TabButton>
+
             <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>
               <Shield className="h-4 w-4" />
               Configurações
@@ -460,106 +457,7 @@ export function ManageTeamModal({
             </div>
           ) : null}
 
-          {tab === "add" ? (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <div className="flex flex-1 items-center rounded-xl border border-white/10 bg-black/20 px-3 py-2.5">
-                  {searching ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                  ) : (
-                    <Search className="h-4 w-4 text-slate-400" />
-                  )}
-                  <input
-                    value={candidateQuery}
-                    onChange={(e) => setCandidateQuery(e.target.value)}
-                    placeholder="Buscar por nome ou @username"
-                    className="ml-2 w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500"
-                  />
-                </div>
-              </div>
 
-              {fullTeam ? (
-                <p className="rounded-xl border border-rose-300/30 bg-rose-300/10 px-4 py-3 text-sm text-rose-200">
-                  A equipe já atingiu o limite de {team.max_members} membros.
-                </p>
-              ) : null}
-
-              <div className="space-y-2">
-                {candidateResults.map((candidate) => (
-                  <div
-                    key={candidate.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/4 p-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Avatar src={candidate.avatar_url} name={candidate.display_name} />
-                      <div>
-                        <p className="text-sm font-medium text-slate-100">{candidate.display_name}</p>
-                        <p className="text-xs text-slate-400">@{candidate.username}</p>
-                        {candidate.xbox_gamertag ? (
-                          <p className="text-xs text-cyan-300">Xbox: {candidate.xbox_gamertag}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      title={
-                        candidate.team_count >= 1
-                          ? "Usuário já participa de uma equipe"
-                          : "Adicionar membro"
-                      }
-                      onClick={() => queueCandidate(candidate)}
-                      disabled={
-                        isBusy ||
-                        candidate.team_count >= 1 ||
-                        memberCount + pendingAdds.length >= team.max_members
-                      }
-                      className="inline-flex items-center gap-1 rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-2.5 py-1.5 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-300/20 disabled:opacity-50"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Adicionar
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Pendentes para adicionar ({pendingAdds.length})
-                </p>
-                {pendingAdds.length > 0 ? (
-                  <div className="space-y-2">
-                    {pendingAdds.map((candidate) => (
-                      <div
-                        key={candidate.id}
-                        className="flex items-center justify-between rounded-lg border border-white/10 bg-white/4 px-3 py-2"
-                      >
-                        <span className="text-sm text-slate-200">{candidate.display_name}</span>
-                        <button
-                          type="button"
-                          onClick={() => unqueueCandidate(candidate.id)}
-                          className="text-xs text-rose-300 hover:text-rose-200"
-                        >
-                          remover
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-slate-500">Nenhum membro pendente.</p>
-                )}
-
-                <button
-                  type="button"
-                  onClick={addPendingMembers}
-                  disabled={isBusy || pendingAdds.length === 0}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300 disabled:opacity-50"
-                >
-                  {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Anchor className="h-4 w-4" />}
-                  Confirmar adições
-                </button>
-              </div>
-            </div>
-          ) : null}
 
           {tab === "settings" ? (
             <div className="space-y-6">
