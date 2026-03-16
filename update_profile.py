@@ -1,4 +1,8 @@
-import type { ReactNode } from "react";
+import re
+
+filepath = r'C:\Users\Administrator\Downloads\Madness Arena - Site\app\profile\[id]\page.tsx'
+
+new_content = '''import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -138,3 +142,8 @@ function InfoCard({
     </div>
   );
 }
+'''
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(new_content)
+print("Rewrite done!")
