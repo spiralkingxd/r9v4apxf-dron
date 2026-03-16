@@ -231,7 +231,7 @@ export default async function MyProfilePage() {
             </InfoCard>
           </div>
 
-          <div className="pb-8">
+          <div className="pt-6">
             <ProfileSettingsForm 
               initialStatus={profile.custom_status} 
               initialRole={profile.boat_role} 
