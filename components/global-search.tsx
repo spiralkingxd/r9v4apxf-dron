@@ -7,7 +7,7 @@ import { globalSearchAction, SearchResult } from "@/app/actions/search-actions";
 
 type SearchFilter = "all" | "user" | "tournament" | "team";
 
-export function GlobalSearch() {
+export function GlobalSearch({ dict }: { dict?: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -107,7 +107,13 @@ export function GlobalSearch() {
           <input
             ref={inputRef}
             type="text"
-            placeholder={filter === "all" ? (isOpen ? "Buscar... (ex: user:)" : "Buscar...") : ""}
+            placeholder={
+              filter === "all"
+                ? (isOpen
+                    ? (dict?.search?.placeholderOpen ?? "Buscar... (ex: user:)")
+                    : (dict?.search?.placeholder ?? "Buscar..."))
+                : ""
+            }
             className="flex-1 bg-transparent border-none outline-none text-sm text-slate-900 dark:text-white placeholder:text-slate-400 px-2 w-full min-w-0"
             value={query}
             onChange={(e) => parseQueryForFilter(e.target.value)}

@@ -120,7 +120,7 @@ export async function Navbar() {
         <NavLinks dict={dict} />
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <GlobalSearch /> <LanguageSwitcher /> <ThemeToggle />
+          <GlobalSearch dict={dict} /> <LanguageSwitcher /> <ThemeToggle />
           
           {!isConfigured ? (
             <Link

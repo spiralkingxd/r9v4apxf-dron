@@ -141,5 +141,9 @@
     "rules": "Rules",
     "ranking": "Ranking",
     "streams": "Streams"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "placeholderOpen": "Search... (e.g. user:)"
   }
 }
