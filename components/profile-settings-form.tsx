@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState, useCallback } from "react";
+import { useActionState, useState, useCallback, useEffect } from "react";
 import { updateProfileFeatures, syncDiscordAvatarAction } from "@/app/actions/profile-actions";
 import { RefreshCcw, Settings, X, CheckCircle2, ImagePlus } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import { getCroppedImg } from "@/lib/crop-image";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 
 export function ProfileSettingsForm({
   initialStatus,
@@ -17,6 +18,11 @@ export function ProfileSettingsForm({
   initialXboxGamertag: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Cropper states
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -64,11 +70,11 @@ export function ProfileSettingsForm({
         <span className="hidden md:inline">Configurar Perfil</span>
       </button>
 
-      {isOpen && (
+      {mounted && isOpen ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           
           {/* Main Modal */}
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xl animate-in fade-in zoom-in-95 max-h-[95vh] flex flex-col">
+          <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a] shadow-2xl animate-in fade-in zoom-in-95 h-[min(92vh,760px)] flex flex-col overflow-hidden">
             
             <button
               type="button"
@@ -78,12 +84,12 @@ export function ProfileSettingsForm({
               <X className="h-5 w-5" />
             </button>
 
-            <div className="mb-6 text-left">
+            <div className="shrink-0 border-b border-slate-200/80 dark:border-slate-700/60 p-6 pb-4 text-left">
               <h2 className="text-xl font-bold text-slate-900 dark:text-white">Configurações do Perfil</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Personalize como você aparece para outros piratas</p>
             </div>
 
-            <div className="space-y-6 text-left">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6 text-left space-y-6">
               
               {/* Sync Discord Photo */}
               <div className="flex flex-col gap-2">
@@ -252,10 +258,10 @@ export function ProfileSettingsForm({
             </div>
           </div>
         </div>
-      )}
+      , document.body) : null}
 
       {/* CROP OVERLAY (Shows when user picks an image) */}
-      {imageSrc && (
+      {mounted && imageSrc ? createPortal(
         <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/90 p-4">
           <div className="relative w-full max-w-md h-[400px] sm:h-[500px] bg-black">
             <Cropper
@@ -285,7 +291,7 @@ export function ProfileSettingsForm({
             </button>
           </div>
         </div>
-      )}
+      , document.body) : null}
     </div>
   );
 }

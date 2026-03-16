@@ -69,14 +69,14 @@ type TabKey = "members" | "requests" | "add" | "settings";
 const createSettingsSchema = (maxAvailable: number) => z.object({
   name: z
     .string()
-    .min(3, "MÝÂ­nimo 3 caracteres.")
-    .max(30, "MÝÂ¡ximo 30 caracteres.")
+    .min(3, "Mínimo 3 caracteres.")
+    .max(30, "Máximo 30 caracteres.")
     .trim(),
-  max_members: z.number().min(1, "MÝnimo 1 membro.").max(10, "MÝximo 10 membros."), logo_url: z
+  max_members: z.number().min(1, "Mínimo 1 membro.").max(10, "Máximo 10 membros."), logo_url: z
     .string()
     .refine(
       (v) => v === "" || (() => { try { new URL(v); return true; } catch { return false; } })(),
-      { message: "URL invÝÂ¡lida." },
+      { message: "URL inválida." },
     ),
 });
 
@@ -180,12 +180,12 @@ export function ManageTeamModal({
 
   function queueCandidate(candidate: SearchCandidate) {
     if (candidate.team_count >= 1) {
-      setFeedback({ type: "error", msg: "UsuÝÂ¡rio jÝÂ¡ participa de uma equipe" });
+      setFeedback({ type: "error", msg: "Usuário já participa de uma equipe" });
       return;
     }
 
     if (memberCount + pendingAdds.length >= team.max_members) {
-      setFeedback({ type: "error", msg: "A equipe jÝÂ¡ atingiu o limite mÝÂ¡ximo de membros." });
+      setFeedback({ type: "error", msg: "A equipe já atingiu o limite máximo de membros." });
       return;
     }
     setPendingAdds((prev) => [...prev, candidate]);
@@ -275,7 +275,7 @@ export function ManageTeamModal({
         return;
       }
 
-      setFeedback({ type: "success", msg: "LideranÝÂ§a transferida com sucesso." });
+      setFeedback({ type: "success", msg: "Liderança transferida com sucesso." });
       router.refresh();
     });
   }
@@ -293,7 +293,7 @@ export function ManageTeamModal({
         return;
       }
 
-      setFeedback({ type: "success", msg: "ConfiguraÝÂ§ÝÂµes salvas com sucesso." });
+      setFeedback({ type: "success", msg: "Configurações salvas com sucesso." });
       router.refresh();
     });
   }
@@ -321,7 +321,7 @@ export function ManageTeamModal({
           <div>
             <h2 className="text-lg font-bold text-white">Gerenciar Equipe</h2>
             <p className="text-sm text-slate-400">
-              {team.name} Ý¢ÂÂ¢ {memberCount}/{team.max_members} membros
+              {team.name} • {memberCount}/{team.max_members} membros
             </p>
           </div>
           <button
@@ -342,7 +342,7 @@ export function ManageTeamModal({
             </TabButton>
             <TabButton active={tab === "requests"} onClick={() => setTab("requests")}>
               <Inbox className="h-4 w-4" />
-              SolicitaÝÂ§ÝÂµes
+              Solicitações
               <span className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 pendingCount > 0
                   ? "bg-amber-300/20 text-amber-100"
@@ -354,7 +354,7 @@ export function ManageTeamModal({
 
             <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>
               <Shield className="h-4 w-4" />
-              ConfiguraÝÂ§ÝÂµes
+              Configurações
             </TabButton>
           </div>
         </div>
@@ -419,7 +419,7 @@ export function ManageTeamModal({
                             : "border-slate-300/20 bg-slate-300/10 text-slate-300"
                         }`}
                       >
-                        {isCaptain ? "CapitÝÂ£o" : "Membro"}
+                        {isCaptain ? "Capitão" : "Membro"}
                       </span>
                       <span className="text-xs text-slate-500">
                         Entrada: {new Date(member.joined_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
@@ -448,10 +448,10 @@ export function ManageTeamModal({
                         </>
                       ) : (
                         <span
-                          title="VocÝÂª nÝÂ£o pode se remover sendo capitÝÂ£o"
+                          title="Você não pode se remover sendo capitão"
                           className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400"
                         >
-                          Sem aÝÂ§ÝÂµes
+                          Sem ações
                         </span>
                       )}
                     </div>
@@ -495,14 +495,14 @@ export function ManageTeamModal({
                   className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:opacity-50"
                 >
                   {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                  Salvar alteraÝÂ§ÝÂµes
+                  Salvar alterações
                 </button>
               </form>
 
               <div className="rounded-2xl border border-rose-300/30 bg-rose-300/10 p-4">
                 <p className="text-sm font-semibold text-rose-200">Zona de Perigo</p>
                 <p className="mt-1 text-sm text-rose-100/90">
-                  Esta aÝÂ§ÝÂ£o remove todos os membros e exclui a equipe permanentemente.
+                  Esta ação remove todos os membros e exclui a equipe permanentemente.
                 </p>
                 <button
                   type="button"
@@ -519,8 +519,8 @@ export function ManageTeamModal({
 
         {confirmTransfer ? (
           <ConfirmPanel
-            title="Transferir lideranÝÂ§a"
-            message={`Transferir lideranÝÂ§a para ${confirmTransfer.display_name}?`}
+            title="Transferir liderança"
+            message={`Transferir liderança para ${confirmTransfer.display_name}?`}
             confirmLabel="Transferir"
             tone="warn"
             onCancel={() => setConfirmTransfer(null)}
@@ -542,7 +542,7 @@ export function ManageTeamModal({
         {confirmDissolveOpen ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4">
             <div className="w-full max-w-md rounded-2xl border border-rose-300/30 bg-[#1a2332] p-4">
-              <h3 className="text-lg font-bold text-white">Confirmar dissoluÝÂ§ÝÂ£o</h3>
+              <h3 className="text-lg font-bold text-white">Confirmar dissolução</h3>
               <p className="mt-2 text-sm text-slate-300">
                 Digite o nome da equipe para confirmar: <span className="font-semibold text-rose-200">{team.name}</span>
               </p>

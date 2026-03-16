@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Bell, Check, X, Users, Gift, Info } from "lucide-react";
 import { getNotifications, markAllAsRead, markAsRead, processInviteAction, Notification } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client"; // Assumindo que você tem isso
@@ -14,36 +14,63 @@ export function NotificationsBell() {
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
 
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   // Buscar inicial
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const { data } = await getNotifications();
     if (data) {
       setNotifications(data);
       setUnreadCount(data.filter((n) => !n.read).length);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchNotifications();
+    let isMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    // Inscrever para atualizações real-time se existir a tabela e a pessoa tiver sessão
-    const channel = supabase
-      .channel("custom-all-channel")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
-        (payload) => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
+    const bootstrap = async () => {
+      await fetchNotifications();
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!isMounted || !user) return;
+
+      // Inscreve apenas nas notificações do usuário logado
+      channel = supabase
+        .channel(`notifications-${user.id}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchNotifications();
+          }
+        )
+        .subscribe();
+    };
+
+    void bootstrap();
+
+    // Fallback para ambientes sem realtime configurado
+    const intervalId = window.setInterval(() => {
+      fetchNotifications();
+    }, 15000);
+
+    const handleFocus = () => fetchNotifications();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchNotifications();
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      supabase.removeChannel(channel);
+      isMounted = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchNotifications, supabase]);
 
   const handleToggle = () => setOpen(!open);
 

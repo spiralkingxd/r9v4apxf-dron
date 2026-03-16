@@ -25,54 +25,54 @@ export type SearchCandidate = TeamMemberProfile & {
 function toFriendlyTeamError(message?: string | null): string {
   const msg = (message ?? "").toLowerCase();
 
-  if (msg.includes("1 equipe") || msg.includes("limite mÝ¡ximo")) {
-    return "VocÝª jÝ¡ participa de uma equipe";
+  if (msg.includes("1 equipe") || msg.includes("limite máximo")) {
+    return "Você já participa de uma equipe";
   }
   if (msg.includes("10 membros") || msg.includes("equipe atingiu")) {
-    return "Esta equipe está¡ cheia (10/10)";
+    return "Esta equipe está cheia (10/10)";
   }
-  if (msg.includes("jÝ¡ existe") || msg.includes("duplicate")) {
-    return "Este nome de equipe jÝ¡ está¡ em uso";
+  if (msg.includes("já existe") || msg.includes("duplicate")) {
+    return "Este nome de equipe já está em uso";
   }
-  if (msg.includes("apenas o capitÝ£o") || msg.includes("captain")) {
-    return "Apenas o capitÝ£o pode gerenciar a equipe";
+  if (msg.includes("apenas o capitão") || msg.includes("captain")) {
+    return "Apenas o capitão pode gerenciar a equipe";
   }
 
-  return "NÝ£o foi possÝ­vel concluir a aÝ§Ý£o. Tente novamente.";
+  return "Não foi possível concluir a ação. Tente novamente.";
 }
 
 const updateSettingsSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
+  teamId: z.string().uuid("Equipe inválida."),
   name: z
     .string()
     .min(3, "O nome deve ter pelo menos 3 caracteres.")
-    .max(30, "O nome pode ter no mÝ¡ximo 30 caracteres.")
+    .max(30, "O nome pode ter no máximo 30 caracteres.")
     .trim(),
-  max_members: z.number().min(1).max(50).optional(), logo_url: z.string().url("URL do logo invÝ¡lida.").or(z.literal("")),
+  max_members: z.number().min(1).max(50).optional(), logo_url: z.string().url("URL do logo inválida.").or(z.literal("")),
 });
 
 const transferLeadershipSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
-  targetUserId: z.string().uuid("Membro invÝ¡lido."),
+  teamId: z.string().uuid("Equipe inválida."),
+  targetUserId: z.string().uuid("Membro inválido."),
 });
 
 const removeMemberSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
-  targetUserId: z.string().uuid("Membro invÝ¡lido."),
+  teamId: z.string().uuid("Equipe inválida."),
+  targetUserId: z.string().uuid("Membro inválido."),
 });
 
 const addMemberSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
-  userId: z.string().uuid("UsuÝ¡rio invÝ¡lido."),
+  teamId: z.string().uuid("Equipe inválida."),
+  userId: z.string().uuid("Usuário inválido."),
 });
 
 const dissolveSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
+  teamId: z.string().uuid("Equipe inválida."),
   confirmName: z.string().min(1, "Digite o nome da equipe para confirmar."),
 });
 
 const leaveTeamSchema = z.object({
-  teamId: z.string().uuid("Equipe invÝ¡lida."),
+  teamId: z.string().uuid("Equipe inválida."),
 });
 
 async function requireCaptain(teamId: string) {
@@ -83,7 +83,7 @@ async function requireCaptain(teamId: string) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { supabase, error: "VocÝª precisa estar logado.", user: null, team: null };
+    return { supabase, error: "Você precisa estar logado.", user: null, team: null };
   }
 
   const { data: team } = await supabase
@@ -93,13 +93,13 @@ async function requireCaptain(teamId: string) {
     .maybeSingle();
 
   if (!team) {
-    return { supabase, error: "Equipe nÝ£o encontrada.", user, team: null };
+    return { supabase, error: "Equipe não encontrada.", user, team: null };
   }
 
   if ((team.captain_id as string) !== user.id) {
     return {
       supabase,
-      error: "Apenas o capitÝ£o pode gerenciar a equipe",
+      error: "Apenas o capitão pode gerenciar a equipe",
       user,
       team,
     };
@@ -117,7 +117,7 @@ function revalidateTeamPaths(teamId: string) {
 export async function leaveTeam(input: { teamId: string }): Promise<ActionResult> {
   const parsed = leaveTeamSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados invÝ¡lidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
   const { teamId } = parsed.data;
@@ -128,7 +128,7 @@ export async function leaveTeam(input: { teamId: string }): Promise<ActionResult
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "VocÝª precisa estar logado." };
+    return { error: "Você precisa estar logado." };
   }
 
   const { data: team } = await supabase
@@ -138,12 +138,12 @@ export async function leaveTeam(input: { teamId: string }): Promise<ActionResult
     .maybeSingle();
 
   if (!team) {
-    return { error: "Equipe nÝ£o encontrada." };
+    return { error: "Equipe não encontrada." };
   }
 
   if ((team.captain_id as string) === user.id) {
     return {
-      error: "CapitÝ£o nÝ£o pode sair da equipe. Transfira a lideranÝ§a ou dissolva a equipe.",
+      error: "Capitão não pode sair da equipe. Transfira a liderança ou dissolva a equipe.",
     };
   }
 
@@ -155,7 +155,7 @@ export async function leaveTeam(input: { teamId: string }): Promise<ActionResult
     .maybeSingle();
 
   if (!membership) {
-    return { error: "VocÝª nÝ£o faz parte desta equipe." };
+    return { error: "Você não faz parte desta equipe." };
   }
 
   const { error } = await supabase
@@ -170,7 +170,7 @@ export async function leaveTeam(input: { teamId: string }): Promise<ActionResult
   }
 
   revalidateTeamPaths(teamId);
-  return { success: "VocÝª saiu da equipe com sucesso." };
+  return { success: "Você saiu da equipe com sucesso." };
 }
 
 export async function searchTeamCandidates(
@@ -307,7 +307,7 @@ export async function removeTeamMember(input: {
 }): Promise<ActionResult> {
   const parsed = removeMemberSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados invÝ¡lidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
   const { teamId, targetUserId } = parsed.data;
@@ -315,7 +315,7 @@ export async function removeTeamMember(input: {
   if (guard.error || !guard.team || !guard.user) return { error: guard.error };
 
   if (targetUserId === guard.user.id) {
-    return { error: "VocÝª nÝ£o pode se remover sendo capitÝ£o." };
+    return { error: "Você não pode se remover sendo capitão." };
   }
 
   const { error } = await guard.supabase
@@ -329,6 +329,16 @@ export async function removeTeamMember(input: {
     return { error: toFriendlyTeamError(error.message) };
   }
 
+  await guard.supabase
+    .from("notifications")
+    .insert({
+      user_id: targetUserId,
+      type: "team_removed",
+      title: "Removido da equipe",
+      message: `Você foi removido da equipe ${guard.team.name}.`,
+      data: { team_id: teamId },
+    });
+
   revalidateTeamPaths(teamId);
   return { success: "Membro removido com sucesso." };
 }
@@ -339,7 +349,7 @@ export async function transferLeadership(input: {
 }): Promise<ActionResult> {
   const parsed = transferLeadershipSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados invÝ¡lidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
   const { teamId, targetUserId } = parsed.data;
@@ -347,7 +357,7 @@ export async function transferLeadership(input: {
   if (guard.error || !guard.team || !guard.user) return { error: guard.error };
 
   if (targetUserId === guard.user.id) {
-    return { error: "Selecione outro membro para transferir a lideranÝ§a." };
+    return { error: "Selecione outro membro para transferir a liderança." };
   }
 
   const { data: member } = await guard.supabase
@@ -358,7 +368,7 @@ export async function transferLeadership(input: {
     .maybeSingle();
 
   if (!member) {
-    return { error: "O usuÝ¡rio selecionado nÝ£o faz parte da equipe." };
+    return { error: "O usuário selecionado não faz parte da equipe." };
   }
 
   const { error } = await guard.supabase
@@ -372,7 +382,7 @@ export async function transferLeadership(input: {
   }
 
   revalidateTeamPaths(teamId);
-  return { success: "LideranÝ§a transferida com sucesso." };
+  return { success: "Liderança transferida com sucesso." };
 }
 
 export async function updateTeamSettings(input: {
@@ -382,7 +392,7 @@ export async function updateTeamSettings(input: {
 }): Promise<ActionResult> {
   const parsed = updateSettingsSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados invÝ¡lidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
   const { teamId, name, logo_url, max_members } = parsed.data;
@@ -397,7 +407,7 @@ export async function updateTeamSettings(input: {
     .maybeSingle();
 
   if (duplicate) {
-    return { error: "Este nome de equipe jÝ¡ está¡ em uso" };
+    return { error: "Este nome de equipe já está em uso" };
   }
 
   const { error } = await guard.supabase
@@ -411,7 +421,7 @@ export async function updateTeamSettings(input: {
   }
 
   revalidateTeamPaths(teamId);
-  return { success: "ConfiguraÝ§Ýµes da equipe atualizadas." };
+  return { success: "Configurações da equipe atualizadas." };
 }
 
 export async function dissolveTeam(input: {
@@ -420,7 +430,7 @@ export async function dissolveTeam(input: {
 }): Promise<ActionResult> {
   const parsed = dissolveSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados invÝ¡lidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
 
   const { teamId, confirmName } = parsed.data;
@@ -429,7 +439,7 @@ export async function dissolveTeam(input: {
 
   const currentName = (guard.team.name as string).trim();
   if (currentName !== confirmName.trim()) {
-    return { error: "ConfirmaÝ§Ý£o invÝ¡lida. Digite exatamente o nome da equipe." };
+    return { error: "Confirmação inválida. Digite exatamente o nome da equipe." };
   }
 
   const { error } = await guard.supabase

@@ -695,6 +695,16 @@ export async function removeTeamMember(teamId: string, userId: string, _adminId?
       severity: "warning",
     });
 
+    await supabase
+      .from("notifications")
+      .insert({
+        user_id: parsed.data.userId,
+        type: "team_removed_admin",
+        title: "Removido da equipe",
+        message: "Um administrador removeu você da equipe.",
+        data: { team_id: parsed.data.teamId },
+      });
+
     revalidateTeamPaths(parsed.data.teamId);
     revalidatePath(`/admin/members/${parsed.data.userId}`);
     return { success: "Membro removido com sucesso." };
