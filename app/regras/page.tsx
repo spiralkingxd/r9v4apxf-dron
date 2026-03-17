@@ -87,8 +87,8 @@ export default async function RegrasPage() {
   const singleDocument = orderedRules.length === 1 && orderedRules[0]?.title.trim().toLowerCase() === "regras";
 
   return (
-    <main className="page-shell px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-4xl space-y-8">
+    <main className="page-shell px-3 py-10 sm:px-4 md:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-5xl space-y-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300/80">{dict.rules.badge}</p>
           <h1 className="mt-1 text-3xl font-bold text-white flex items-center gap-2">
