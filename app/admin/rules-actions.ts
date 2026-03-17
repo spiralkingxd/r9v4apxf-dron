@@ -77,11 +77,14 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
       content: rule.content.trim(),
     }));
 
-    const { error: clearError } = await writeClient.from("rules_content").delete().gte("order", 1);
-    if (clearError) {
-      return {
-        error: withDbHint("Não foi possível limpar regras antigas.", clearError.message),
-      };
+    const existingIds = (beforeRows ?? []).map((row) => String(row.id)).filter(Boolean);
+    if (existingIds.length > 0) {
+      const { error: clearError } = await writeClient.from("rules_content").delete().in("id", existingIds);
+      if (clearError) {
+        return {
+          error: withDbHint("Não foi possível limpar regras antigas.", clearError.message),
+        };
+      }
     }
 
     const { error: insertError } = await writeClient.from("rules_content").insert(normalizedRows);
