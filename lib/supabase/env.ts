@@ -1,5 +1,8 @@
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const ownerDiscordIdRaw = process.env.OWNER_DISCORD_ID;
+const ownerDiscordId2Raw = process.env.OWNER_DISCORD_ID2;
+const adminDiscordIdsRaw = process.env.ADMIN_DISCORD_IDS;
 const DISCORD_SNOWFLAKE_REGEX = /^[0-9]{15,22}$/;
 
 let ownerEnvWarningPrinted = false;
@@ -26,30 +29,26 @@ export function isDiscordSnowflake(value: string) {
   return DISCORD_SNOWFLAKE_REGEX.test(value.trim());
 }
 
-function normalizeOwnerIdToken(rawToken: string) {
-  const token = rawToken.trim().replace(/^['\"]|['\"]$/g, "");
-  const mentionMatch = token.match(/^<@!?(\d{15,22})>$/);
-  if (mentionMatch?.[1]) {
-    return mentionMatch[1];
+export function getOwnerDiscordIds(): string[] {
+  const normalized = ownerDiscordIdRaw?.trim();
+  const normalized2 = ownerDiscordId2Raw?.trim();
+  let owners: string[] = [];
+
+  if (normalized) {
+    if (normalized.includes(',')) {
+       owners = [...owners, ...normalized.split(',').map(id => id.trim())];     
+    } else {
+       owners.push(normalized);
+    }
   }
 
-  const inlineMatch = token.match(/\b(\d{15,22})\b/);
-  return inlineMatch?.[1] ?? token;
-}
-
-function splitOwnerRaw(raw: string | undefined) {
-  if (!raw) return [];
-
-  return raw
-    .split(/[\n,;\s]+/)
-    .map((id) => normalizeOwnerIdToken(id))
-    .filter((id) => id.length > 0);
-}
-
-export function getOwnerDiscordIds(): string[] {
-  const ownerDiscordIdRaw = process.env.OWNER_DISCORD_ID ?? process.env.OWNER_DISCORD_IDS ?? process.env.NEXT_PUBLIC_OWNER_DISCORD_ID;
-  const ownerDiscordId2Raw = process.env.OWNER_DISCORD_ID2;
-  const owners = [...splitOwnerRaw(ownerDiscordIdRaw), ...splitOwnerRaw(ownerDiscordId2Raw)];
+  if (normalized2) {
+    if (normalized2.includes(',')) {
+       owners = [...owners, ...normalized2.split(',').map(id => id.trim())];    
+    } else {
+       owners.push(normalized2);
+    }
+  }
 
   const uniqueOwners = Array.from(new Set(owners));
   const validOwners = uniqueOwners.filter(isDiscordSnowflake);
@@ -69,7 +68,6 @@ export function getOwnerDiscordId() {
 }
 
 export function getAdminDiscordIds() {
-  const adminDiscordIdsRaw = process.env.ADMIN_DISCORD_IDS;
   const raw = adminDiscordIdsRaw?.trim();
   if (!raw) return [];
 

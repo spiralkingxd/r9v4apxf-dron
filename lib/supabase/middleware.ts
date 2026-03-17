@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { resolveDiscordIdFromAuthUser } from "@/lib/auth/discord-id";
-import { getOwnerDiscordIds, getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/env";
+import { getOwnerDiscordId, getSupabaseEnv, isSupabaseConfigured } from "@/lib/supabase/env";
 
 const PRIVATE_PATH_PREFIXES = ["/profile/me"];
 const ADMIN_PATH_PREFIX = "/admin";
@@ -44,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   try {
-    const response = NextResponse.next({ request });
+    let response = NextResponse.next({ request });
 
     const { supabaseAnonKey, supabaseUrl } = getSupabaseEnv();
 
@@ -76,8 +76,8 @@ export async function updateSession(request: NextRequest) {
     if (user) {
       const nowIso = new Date().toISOString();
       const resolvedDiscordId = resolveDiscordIdFromAuthUser(user) ?? user.id;
-      const ownerDiscordIds = getOwnerDiscordIds();
-      const shouldBeOwner = Boolean(resolvedDiscordId && ownerDiscordIds.includes(resolvedDiscordId));
+      const ownerDiscordId = getOwnerDiscordId();
+      const shouldBeOwner = Boolean(ownerDiscordId && resolvedDiscordId === ownerDiscordId);
 
       const { data: existingProfile } = await supabase
         .from("profiles")

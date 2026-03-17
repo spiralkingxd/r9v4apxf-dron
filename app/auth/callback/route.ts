@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { resolveDiscordIdFromAuthUser } from "@/lib/auth/discord-id";
-import { getOwnerDiscordIds } from "@/lib/supabase/env";
+import { getOwnerDiscordId } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 function resolveUsername(metadata: Record<string, unknown>, fallback: string) {
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   const user = session?.user;
   if (user) {
     const nowIso = new Date().toISOString();
-    const ownerDiscordIds = getOwnerDiscordIds();
+    const ownerDiscordId = getOwnerDiscordId();
     const discordId = resolveDiscordIdFromAuthUser(user) ?? user.id;
     const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
     const displayName =
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const avatarUrl =
       typeof metadata.avatar_url === "string" ? metadata.avatar_url : null;
 
-    const shouldBeOwner = Boolean(discordId && ownerDiscordIds.includes(discordId));
+    const shouldBeOwner = Boolean(ownerDiscordId && discordId === ownerDiscordId);
 
     console.log(`[auth/callback] Usuario autenticado: ${user.id}`);
     console.log("[auth/callback] Sincronizando profile...");
