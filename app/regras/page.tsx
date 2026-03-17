@@ -83,24 +83,22 @@ export default async function RegrasPage() {
           <p className="mt-2 text-sm text-slate-400">{dict.rules.desc}</p>
         </div>
 
-        <section className="admin-surface rounded-2xl border p-5 md:p-6">
-          <div className="mt-4 rounded-2xl border border-[color:var(--surface-border)] bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_45%)] p-5">
-            {singleDocument ? (
-              <MarkdownRenderer className="text-sm text-slate-300" content={orderedRules[0].content} />
-            ) : (
-              <div className="space-y-4">
-                {orderedRules.map((rule, index) => (
-                  <article key={rule.id}>
-                    <h3 className="text-base font-bold text-white">{index + 1}. {rule.title}</h3>
-                    <MarkdownRenderer className="mt-2 text-sm text-slate-300" content={rule.content} />
-                  </article>
-                ))}
-              </div>
-            )}
+        <section className="space-y-6">
+          {singleDocument ? (
+            <MarkdownRenderer className="text-sm text-slate-300" content={orderedRules[0].content} />
+          ) : (
+            <div className="space-y-6">
+              {orderedRules.map((rule, index) => (
+                <article key={rule.id}>
+                  <h3 className="text-base font-bold text-white">{index + 1}. {rule.title}</h3>
+                  <MarkdownRenderer className="mt-3 text-sm text-slate-300" content={rule.content} />
+                </article>
+              ))}
+            </div>
+          )}
 
-            <hr className="my-5 border-white/10" />
-            <MarkdownRenderer className="text-sm text-slate-400" content={footer} />
-          </div>
+          <hr className="border-white/10" />
+          <MarkdownRenderer className="text-sm text-slate-400" content={footer} />
         </section>
       </div>
     </main>
