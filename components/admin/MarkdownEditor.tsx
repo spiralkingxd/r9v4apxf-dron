@@ -46,11 +46,12 @@ export function MarkdownEditor({
   value,
   onChange,
   placeholder = "Escreva em Markdown...",
-  minHeight = 320,
+  minHeight = 560,
   helperText = "Use Markdown para estruturar titulos, listas, links, tabelas e blocos de codigo.",
   previewLabel = "Preview em tempo real",
 }: Props) {
   const [colorMode, setColorMode] = useState("dark");
+  const [editorHeight, setEditorHeight] = useState(minHeight);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -66,6 +67,23 @@ export function MarkdownEditor({
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const syncEditorHeight = () => {
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+
+      const baseByViewport = viewportWidth < 640 ? 400 : viewportWidth < 1024 ? 520 : 640;
+      const maxFit = Math.max(380, viewportHeight - (viewportWidth < 640 ? 260 : 300));
+
+      setEditorHeight(Math.max(baseByViewport, Math.min(maxFit, Math.max(minHeight, 760))));
+    };
+
+    syncEditorHeight();
+    window.addEventListener("resize", syncEditorHeight);
+
+    return () => window.removeEventListener("resize", syncEditorHeight);
+  }, [minHeight]);
+
   return (
     <div className="space-y-3">
       <div className="space-y-1">
@@ -73,12 +91,12 @@ export function MarkdownEditor({
         <p className="text-xs text-[color:var(--text-muted)]">{helperText}</p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
-        <div className="overflow-hidden rounded-2xl border border-[color:var(--surface-border)] bg-[color:var(--topbar-bg)]">
+      <div className="grid w-full items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.85fr)]">
+        <div className="w-full overflow-hidden rounded-2xl border border-[color:var(--surface-border)] bg-[color:var(--topbar-bg)]">
           <div className="border-b border-[color:var(--surface-border)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
             Markdown
           </div>
-          <div className="markdown-editor-shell" data-color-mode={colorMode}>
+          <div className="markdown-editor-shell w-full" data-color-mode={colorMode}>
             <MDEditor
               value={value}
               onChange={(nextValue) => onChange(nextValue ?? "")}
@@ -86,7 +104,7 @@ export function MarkdownEditor({
               commands={toolbarCommands}
               extraCommands={[]}
               visibleDragbar={false}
-              height={minHeight}
+              height={editorHeight}
               textareaProps={{
                 placeholder,
                 "aria-label": label,
@@ -95,11 +113,11 @@ export function MarkdownEditor({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-2xl border border-[color:var(--surface-border)] bg-[color:var(--topbar-bg)]">
+        <div className="w-full overflow-hidden rounded-2xl border border-[color:var(--surface-border)] bg-[color:var(--topbar-bg)]">
           <div className="border-b border-[color:var(--surface-border)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
             {previewLabel}
           </div>
-          <div className="p-4">
+          <div className="max-h-[72vh] overflow-y-auto p-4">
             {value.trim() ? (
               <MarkdownRenderer content={value} />
             ) : (

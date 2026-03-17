@@ -515,12 +515,17 @@ body::selection {
 .markdown-editor-shell .w-md-editor-text,
 .markdown-editor-shell .w-md-editor-text-pre,
 .markdown-editor-shell .w-md-editor-text-input {
+  width: 100% !important;
   background: transparent !important;
 }
 
 .markdown-editor-shell .w-md-editor {
   box-shadow: none !important;
   color: var(--text-base) !important;
+}
+
+.markdown-editor-shell .w-md-editor-content {
+  overflow: hidden !important;
 }
 
 .markdown-editor-shell .w-md-editor-toolbar {
@@ -550,6 +555,7 @@ body::selection {
   line-height: 1.7 !important;
   color: var(--text-base) !important;
   padding: 1rem 1rem 1.2rem !important;
+  overflow-y: auto !important;
 }
 
 .markdown-editor-shell .w-md-editor-text-input::placeholder {
@@ -562,7 +568,7 @@ body::selection {
 }
 
 .markdown-editor-shell .w-md-editor-text {
-  min-height: 320px;
+  min-height: clamp(400px, 60vh, 760px);
 }
 
 .markdown-editor-shell [data-color-mode="light"] .w-md-editor-toolbar {

@@ -98,7 +98,7 @@ export function RulesAdminPanel({ initialRules, initialFooter }: Props) {
         label="Regras em Markdown"
         value={rulesDocument}
         onChange={setRulesDocument}
-        minHeight={520}
+        minHeight={640}
         placeholder="## Conduta e Fair Play\n\nDescreva aqui as regras completas em Markdown..."
         helperText="Uma única área de edição com preview automático. Use headings, listas, checkboxes, links, tabelas e blocos de código quando precisar."
         previewLabel="Preview automático"
