@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type ActionResult = {
   success?: string;
@@ -30,6 +31,7 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
   try {
     const { supabase, adminId } = await assertAdminAccess();
     await enforceAdminRateLimit(supabase, adminId, "save_rules_content");
+    const writeClient = createAdminClient() ?? supabase;
 
     const { data: beforeRows } = await supabase
       .from("rules_content")
@@ -56,13 +58,13 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
       content: rule.content.trim(),
     }));
 
-    const { error: clearError } = await supabase.from("rules_content").delete().gte("order", 1);
+    const { error: clearError } = await writeClient.from("rules_content").delete().gte("order", 1);
     if (clearError) return { error: "Não foi possível limpar regras antigas." };
 
-    const { error: insertError } = await supabase.from("rules_content").insert(normalizedRows);
+    const { error: insertError } = await writeClient.from("rules_content").insert(normalizedRows);
     if (insertError) return { error: "Não foi possível salvar as regras." };
 
-    const { error: settingsError } = await supabase
+    const { error: settingsError } = await writeClient
       .from("system_settings")
       .update({ general_rules: parsed.data.footer.trim() || null })
       .eq("id", 1);
