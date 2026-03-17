@@ -118,7 +118,12 @@ export function JoinRequestButton({
 
       setOptimisticIsMember(false);
       setToast({ type: "success", message: result.success ?? "Você saiu da equipe." });
-      router.refresh();
+      // Se estiver na página de listagem de equipes, forçar reload completo para garantir atualização do cache
+      if (window.location.pathname === "/teams") {
+        window.location.reload();
+      } else {
+        router.refresh();
+      }
     });
   }
 
