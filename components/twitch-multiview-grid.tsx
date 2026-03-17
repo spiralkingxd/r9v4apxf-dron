@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 declare global {
   interface Window {
@@ -69,6 +70,24 @@ export function TwitchMultiviewGrid({ streamers }: { streamers: Streamer[] }) {
       router.refresh();
     }, 60_000);
     return () => clearInterval(timer);
+  }, [router]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("streamers-multiview-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "streamers" },
+        () => {
+          router.refresh();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [router]);
 
   useEffect(() => {

@@ -138,71 +138,96 @@ export default async function AdminStreamersPage() {
             <p className="text-slate-500 dark:text-slate-400">Nenhum streamer cadastrado.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {streamers.map((s) => (
-              <div key={s.id} className="flex items-center justify-between p-4 bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{s.username}</span>
-                    {s.is_official && (
-                      <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded-full">
-                        <Star className="h-3 w-3" fill="currentColor" /> Oficial
-                      </span>
-                    )}
-                    {(s.is_active ?? s.selected_for_multiview ?? true) ? (
-                      <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-cyan-300 bg-cyan-400/10 px-2 py-0.5 rounded-full border border-cyan-400/30">
-                        <MonitorUp className="h-3 w-3" /> Multiview
-                      </span>
-                    ) : null}
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {streamers.map((s) => {
+              const isOrganizer = s.username.toLowerCase() === "hwmalk";
+              const isMultiviewEnabled = s.is_active ?? s.selected_for_multiview ?? true;
+
+              return (
+                <div
+                  key={s.id}
+                  className="rounded-2xl border border-slate-200 bg-white/5 p-4 shadow-sm transition hover:border-cyan-400/30 dark:border-white/10"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-base font-bold text-slate-900 dark:text-white">{s.username}</span>
+
+                        {isOrganizer ? (
+                          <span className="flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300">
+                            <Star className="h-3 w-3" fill="currentColor" /> Organizador
+                          </span>
+                        ) : null}
+
+                        {s.is_official && !isOrganizer ? (
+                          <span className="flex items-center gap-1 rounded-full bg-yellow-400/10 px-2 py-0.5 text-[10px] font-bold uppercase text-yellow-400">
+                            <Star className="h-3 w-3" fill="currentColor" /> Oficial
+                          </span>
+                        ) : null}
+
+                        {isMultiviewEnabled ? (
+                          <span className="flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold uppercase text-cyan-300">
+                            <MonitorUp className="h-3 w-3" /> Multiview
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-slate-400/30 bg-slate-400/10 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-400">
+                            Oculto na Multiview
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                        Adicionado em: {new Date(s.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Adicionado em: {new Date(s.created_at).toLocaleDateString()}</span>
+
+                  <div className="mt-4 flex items-center gap-2">
+                    <form action={toggleOfficial}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="username" value={s.username} />
+                      <input type="hidden" name="isOfficial" value={s.is_official.toString()} />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        disabled={isOrganizer}
+                        title={s.is_official ? "Remover cargo oficial" : "Tornar oficial"}
+                        className="h-10 w-10 rounded-xl p-0"
+                      >
+                        <Star className={`h-4 w-4 ${s.is_official ? "text-yellow-400" : "text-slate-500"}`} />
+                      </Button>
+                    </form>
+
+                    <form action={toggleMultiview}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="isActive" value={String(isMultiviewEnabled)} />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        title={isMultiviewEnabled ? "Ocultar da Multiview" : "Mostrar na Multiview"}
+                        className={`h-10 w-10 rounded-xl p-0 ${isMultiviewEnabled ? "text-cyan-300 hover:bg-cyan-400/10" : "text-slate-400"}`}
+                      >
+                        <MonitorUp className="h-4 w-4" />
+                      </Button>
+                    </form>
+
+                    <form action={removeStreamer} className="ml-auto">
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="username" value={s.username} />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        className="h-10 w-10 rounded-xl border border-red-500/30 p-0 text-red-400 hover:bg-red-400/10 hover:text-red-300"
+                        disabled={isOrganizer}
+                        title={isOrganizer ? "Organizador não pode ser removido" : "Remover streamer"}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </form>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <form action={toggleOfficial}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <input type="hidden" name="username" value={s.username} />
-                    <input type="hidden" name="isOfficial" value={s.is_official.toString()} />
-                    <Button 
-                      type="submit" 
-                      variant="ghost" 
-
-                      disabled={s.username.toLowerCase() === "hwmalk"}
-                      title={s.is_official ? "Remover cargo oficial" : "Tornar oficial"}
-                    >
-                      <Star className={`h-4 w-4 ${s.is_official ? "text-yellow-400" : "text-slate-500"}`} />
-                    </Button>
-                  </form>
-
-                  <form action={toggleMultiview}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <input type="hidden" name="isActive" value={String(s.is_active ?? s.selected_for_multiview ?? true)} />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      title={(s.is_active ?? s.selected_for_multiview ?? true) ? "Remover da Multiview" : "Mostrar na Multiview"}
-                      className={(s.is_active ?? s.selected_for_multiview ?? true) ? "text-cyan-300 hover:bg-cyan-400/10" : "text-slate-400"}
-                    >
-                      <MonitorUp className="h-4 w-4" />
-                    </Button>
-                  </form>
-
-                  <form action={removeStreamer}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <input type="hidden" name="username" value={s.username} />
-                    <Button 
-                      type="submit" 
-                      variant="ghost" 
-
-                      className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                      disabled={s.username.toLowerCase() === "hwmalk"}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
