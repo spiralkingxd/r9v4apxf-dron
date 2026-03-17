@@ -5,8 +5,7 @@ import { Trophy, Anchor } from "lucide-react";
 
 import { RankingLiveSync } from "@/components/ranking-live-sync";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { unstable_cache } from "next/cache";
 import { cn } from "@/lib/utils";
 import { getDictionary } from "@/lib/i18n";
@@ -34,8 +33,7 @@ type ProfileRow = {
 
 const getCachedRanking = unstable_cache(
   async () => {
-    const supabase = createAdminClient();
-    if (!supabase) return [];
+    const supabase = createPublicServerClient();
 
     const { data: rankings } = await supabase
       .from("rankings")

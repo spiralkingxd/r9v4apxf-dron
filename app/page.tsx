@@ -3,9 +3,8 @@ import { unstable_cache } from "next/cache";
 import { Anchor, Calendar, Coins, Flame, Trophy, Users } from "lucide-react";   
 
 import { formatTeamSize } from "@/lib/events";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { cn } from "@/lib/utils";
 import { getDictionary, getLocale } from "@/lib/i18n";
 
@@ -29,10 +28,7 @@ type FinishedEventRow = {
 
 const getCachedHomeData = unstable_cache(
   async () => {
-    const supabase = createAdminClient();
-    if (!supabase) {
-      return { featuredEvent: null, finishedEvents: [] as FinishedEventRow[] }; 
-    }
+    const supabase = createPublicServerClient();
 
     const [{ data: activeEvents }, { data: finishedEvents }] = await Promise.all([
       supabase

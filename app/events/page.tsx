@@ -7,7 +7,7 @@ import { Calendar, Coins, Search, Trophy } from "lucide-react";
 import { EventStatusFilter } from "@/components/event-status-filter";
 import { formatTeamSize } from "@/lib/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { cn } from "@/lib/utils";
 import { getDictionary } from "@/lib/i18n";
 
@@ -40,8 +40,7 @@ const fmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", da
 
 const getCachedAllEvents = unstable_cache(
   async () => {
-    const supabase = createAdminClient();
-    if (!supabase) return [];
+    const supabase = createPublicServerClient();
     const { data } = await supabase.from('events').select('id, title, description, status, start_date, end_date, prize_description, team_size').in('status', ['published', 'active', 'paused', 'finished']).order('start_date', { ascending: false });
     return (data ?? []) as EventRow[];
   },

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Loader2, Plus, Trash2, ShieldAlert, Star, MonitorUp } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { assertAdminAccess } from "@/app/admin/_lib";
 
 import { AdminButton as Button } from "@/components/admin/admin-button";
 
@@ -35,6 +36,8 @@ export default async function AdminStreamersPage() {
 
   async function addStreamer(formData: FormData) {
     "use server";
+    await assertAdminAccess();
+
     const username = formData.get("username")?.toString();
     if (!username) return;
 
@@ -49,6 +52,8 @@ export default async function AdminStreamersPage() {
 
   async function removeStreamer(formData: FormData) {
     "use server";
+    await assertAdminAccess();
+
     const id = formData.get("id")?.toString();
     const username = formData.get("username")?.toString();
     if (!id || username?.toLowerCase() === "hwmalk") return; // Nao pode remover o HWmalk
@@ -61,10 +66,12 @@ export default async function AdminStreamersPage() {
 
   async function toggleOfficial(formData: FormData) {
     "use server";
+    await assertAdminAccess();
+
     const id = formData.get("id")?.toString();
     const isOfficial = formData.get("isOfficial") === "true";
     const username = formData.get("username")?.toString();
-    if (!id || username?.toLowerCase() === "hwmalk") return; // HWmalk is always official
+    if (!id || username?.toLowerCase() === "hwmalk") return; 
 
     const supabase = await createClient();
     await supabase.from("streamers").update({ is_official: !isOfficial }).eq("id", id);
@@ -74,6 +81,8 @@ export default async function AdminStreamersPage() {
 
   async function toggleMultiview(formData: FormData) {
     "use server";
+    await assertAdminAccess();
+
     const id = formData.get("id")?.toString();
     if (!id) return;
 

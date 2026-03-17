@@ -525,9 +525,16 @@ export async function exportData(type: ExportType) {
 }
 export async function getBotCredentials() {
   await assertAdminAccess(); // Seguranca cibernetica: Somente admins/owners reais chegam aqui
+  const username = process.env.BOT_PANEL_USER?.trim();
+  const password = process.env.BOT_PANEL_PASS?.trim();
+
+  if (!username || !password) {
+    throw new Error("Credenciais do painel de bot não configuradas. Defina BOT_PANEL_USER e BOT_PANEL_PASS no ambiente.");
+  }
+
   return {
     url: "https://madnessarena-bots.up.railway.app/login?next=/",
-    username: process.env.BOT_PANEL_USER || "madness_admin",
-    password: process.env.BOT_PANEL_PASS || "madnessarena26.sotbot",
+    username,
+    password,
   };
 }

@@ -32,9 +32,7 @@ export function isDiscordSnowflake(value: string) {
 export function getOwnerDiscordIds(): string[] {
   const normalized = ownerDiscordIdRaw?.trim();
   const normalized2 = ownerDiscordId2Raw?.trim();
-  const additionalOwner = "717425697005502534"; // ID hardcoded por segurança
-
-  let owners: string[] = [additionalOwner];
+  let owners: string[] = [];
 
   if (normalized) {
     if (normalized.includes(',')) {

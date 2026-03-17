@@ -5,7 +5,7 @@ import { Anchor, Calendar, Crown, Users } from "lucide-react";
 
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { unstable_cache } from "next/cache";
 import { getDictionary } from "@/lib/i18n";
 
@@ -29,8 +29,7 @@ const dateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo"
 
 const getCachedTeams = unstable_cache(
   async () => {
-    const supabaseAction = createAdminClient();
-    if (!supabaseAction) return [];
+    const supabaseAction = createPublicServerClient();
 
     const { data: teamsRaw } = await supabaseAction
       .from("teams")
