@@ -3,15 +3,12 @@ import { Suspense } from "react";
 import { Loader2, Radio, Video, Star, ExternalLink, ShieldAlert, MonitorUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
 import { createClient } from "@/lib/supabase/server";
 import { getTwitchStreams, getTwitchUsers } from "@/lib/twitch";
-import { getDictionary } from "@/lib/i18n";
-
 
 export const metadata = {
-  title: "Streams",
-  description: "Watch live broadcasts of tournaments and our community.",
+  title: "Transmissões",
+  description: "Acompanhe as transmissoes ao vivo dos campeonatos e da nossa comunidade.",
 };
 
 async function getStreamersData() {
@@ -38,15 +35,15 @@ async function getStreamersData() {
   return { error: false, streamers: sortedStreamers };
 }
 
-async function StreamList({ dict }: { dict: any }) {
+async function StreamList() {
   const { error, streamers } = await getStreamersData();
 
   if (error) {
     return (
       <div className="mt-12 rounded-xl border border-red-500/20 bg-red-500/10 p-6 text-center text-red-500 max-w-lg mx-auto">
         <ShieldAlert className="mx-auto h-8 w-8 mb-2" />
-        <p className="font-semibold">{dict.streams.errorTitle ?? "Failed to load streamers list."}</p>
-        <p className="text-sm mt-1">{dict.streams.errorDesc ?? "The streamers database may not be configured."}</p>
+        <p className="font-semibold">Erro ao carregar a lista de streamers.</p>
+        <p className="text-sm mt-1">O banco de dados de streamers pode nao estar configurado.</p>
       </div>
     );
   }
@@ -55,8 +52,8 @@ async function StreamList({ dict }: { dict: any }) {
     return (
       <div className="mt-12 text-center py-24 bg-white/5 border border-white/10 rounded-2xl">
         <Video className="mx-auto h-12 w-12 text-slate-500 mb-4 opacity-50" />
-        <h3 className="text-xl font-bold text-white mb-2">{dict.streams.noStreams}</h3>
-        <p className="text-slate-400 max-w-md mx-auto">{dict.streams.noStreamsDesc ?? "No streams registered yet. Check back soon!"}</p>
+        <h3 className="text-xl font-bold text-white mb-2">Nenhum streamer cadastrado</h3>
+        <p className="text-slate-400 max-w-md mx-auto">Ainda nao temos transmissÝµes registradas. Volte em breve!</p>
       </div>
     );
   }
@@ -138,7 +135,7 @@ async function StreamList({ dict }: { dict: any }) {
                   </div>
                   {isOnline && (
                     <span className="absolute -bottom-2 -translate-x-1/2 left-1/2 rounded border border-red-600 bg-red-500 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-sm">
-                      {dict.streams.badge}
+                      AO VIVO
                     </span>
                   )}
                 </div>
@@ -151,11 +148,11 @@ async function StreamList({ dict }: { dict: any }) {
                     
                     {isHwmalk ? (
                       <span className="shrink-0 flex items-center gap-1 rounded bg-gradient-to-r from-yellow-500 to-amber-600 px-2 py-0.5 text-xs font-bold text-black shadow-sm">
-                        <Star className="h-3 w-3" fill="currentColor" /> {dict.streams.organizer ?? "Organizer"}
+                        <Star className="h-3 w-3" fill="currentColor" /> Organizador
                       </span>
                     ) : streamer.is_official ? (
                       <span className="shrink-0 flex items-center gap-1 rounded bg-blue-500/20 px-2 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/30">
-                        {dict.streams.official ?? "Official"}
+                        Oficial
                       </span>
                     ) : null}
                   </div>
@@ -166,11 +163,11 @@ async function StreamList({ dict }: { dict: any }) {
                       <span className="hidden md:inline text-slate-600">&bull;</span>
                       <p className="flex shrink-0 items-center gap-1 text-red-400 font-semibold">
                         <Radio className="h-3.5 w-3.5" />
-                        {streamer.streamInfo?.viewer_count.toLocaleString()} {dict.streams.viewers ?? "Viewers"}
+                        {streamer.streamInfo?.viewer_count.toLocaleString("pt-BR")} Espectadores
                       </p>
                     </div>
                   ) : (
-                    <p className="mt-1 text-sm text-slate-500">{dict.streams.offlineNow ?? "Offline now"}</p>
+                    <p className="mt-1 text-sm text-slate-500">Offline no momento</p>
                   )}
                 </div>
               </div>
@@ -182,7 +179,7 @@ async function StreamList({ dict }: { dict: any }) {
                   rel="noreferrer"
                   className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition ${isOnline ? "bg-[#9146FF] text-white hover:bg-[#7c39e6]" : "bg-white/10 text-white hover:bg-white/20"}`}
                 >
-                  {dict.streams.goToTwitch ?? "Go to Twitch"}
+                  Ir para a Twitch
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </div>
@@ -211,27 +208,20 @@ async function StreamList({ dict }: { dict: any }) {
   );
 }
 
-export default async function StreamsPage() {
-  const dict = await getDictionary();
+export default function StreamsPage() {
   return (
     <main className="container mx-auto px-4 py-10 md:max-w-[1100px]">
       <div className="mb-10 overflow-hidden rounded-3xl border border-cyan-400/20 bg-gradient-to-b from-cyan-950/25 via-slate-950/40 to-slate-950/10 p-6 text-center md:p-10">
         <span className="mb-4 inline-flex items-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan-200">
-          {dict.streams.badge}
+          Transmissões Ao Vivo
         </span>
 
         <h1 className="text-4xl font-black uppercase tracking-tight text-white md:text-6xl">
-          {dict.streams.title.split(/(\s+)/).map((word: string, i: number) =>
-            word.toLowerCase().includes("oes") ? (
-              <span key={i} className="text-cyan-400">{word}</span>
-            ) : (
-              <span key={i}>{word}</span>
-            )
-          )}
+          Transmiss<span className="text-cyan-400">oes</span>
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-base text-slate-300 md:text-lg">
-          {dict.streams.desc}
+          Acompanhe nossos campeonatos oficiais e a comunidade ao vivo na Twitch.
         </p>
 
         <div className="mt-7 flex justify-center">
@@ -240,7 +230,7 @@ export default async function StreamsPage() {
             className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/45 bg-gradient-to-r from-cyan-500/20 via-sky-500/20 to-purple-500/30 px-6 py-3 text-base font-extrabold text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.25)] transition hover:scale-[1.02] hover:from-cyan-500/30 hover:to-purple-500/40"
           >
             <MonitorUp className="h-5 w-5" />
-            {dict.streams.openMultiview ?? "Open Multiview"}
+            Abrir Multiview
           </Link>
         </div>
       </div>
@@ -250,8 +240,7 @@ export default async function StreamsPage() {
           <Loader2 className="h-10 w-10 animate-spin" />
         </div>
       }>
-        {/* @ts-expect-error Async Server Component */}
-        <StreamList dict={dict} />
+        <StreamList />
       </Suspense>
     </main>
   );

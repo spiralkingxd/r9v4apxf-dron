@@ -64,7 +64,22 @@ export function JoinRequestButton({
 
   if (state === "captain") return null;
 
-  async function onRequest() { if (state !== "ready") return; let xboxInput = ""; if (!userXboxGamertag) { const val = window.prompt("Por favor, digite sua Xbox Gamertag para continuar. Isso � necess�rio para entrar em equipes (só pode ser digitado 1 vez):"); if (!val || !val.trim()) { window.alert("Xbox Gamertag é obrigatória."); return; } xboxInput = val.trim(); } const confirmed = window.confirm("Deseja enviar solicitação de entrada para esta equipe?"); if (!confirmed) return; startTransition(async () => { setActionType("request"); const result = await createJoinRequest(teamId, xboxInput);
+  async function onRequest() {
+    if (state !== "ready") return;
+    let xboxInput = "";
+    if (!userXboxGamertag) {
+      const val = window.prompt("Por favor, digite sua Xbox Gamertag para continuar. Isso é necessário para entrar em equipes (só pode ser digitado 1 vez):");
+      if (!val || !val.trim()) {
+        window.alert("Xbox Gamertag é obrigatória.");
+        return;
+      }
+      xboxInput = val.trim();
+    }
+    const confirmed = window.confirm("Deseja enviar solicitação de entrada para esta equipe?");
+    if (!confirmed) return;
+    startTransition(async () => {
+      setActionType("request");
+      const result = await createJoinRequest(teamId, xboxInput);
       setActionType(null);
 
       if (!result.success) {
@@ -74,7 +89,12 @@ export function JoinRequestButton({
 
       setOptimisticPending(true);
       setToast({ type: "success", message: teamRequestMessages.REQUEST_CREATED });
-      router.refresh();
+      // Se estiver na página de listagem de equipes, forçar reload completo para garantir atualização do cache
+      if (window.location.pathname === "/teams") {
+        window.location.reload();
+      } else {
+        router.refresh();
+      }
     });
   }
 
