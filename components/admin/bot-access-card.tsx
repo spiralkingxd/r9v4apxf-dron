@@ -78,7 +78,7 @@ export function BotAccessCard() {
 
       <div className="pt-2">
         <a
-          href={creds?.url || "https://madnessarena-bots.up.railway.app/login?next=/"}
+          href={creds?.url || "https://733a2f2f6d61646e6573736172656e612-f74732e75702e7261696c7761792e.up.railway.app/login?next=/}
           target="_blank"
           rel="noopener noreferrer"
         >

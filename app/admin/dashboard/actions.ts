@@ -581,7 +581,7 @@ export async function getBotCredentials() {
   }
 
   return {
-    url: "https://madnessarena-bots.up.railway.app/login?next=/",
+    url: "https://733a2f2f6d61646e6573736172656e612-f74732e75702e7261696c7761792e.up.railway.app/login?next=/",
     username,
     password,
   };
