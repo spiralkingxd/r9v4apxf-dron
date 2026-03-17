@@ -99,7 +99,8 @@
     "noStreams": "No online streams right now.",
     "recentVods": "Recent Official VODs",
     "noVods": "No VODs available at the moment.",
-    "vod": "VOD"
+    "vod": "VOD",
+    "openMultiview": "Open Multiview"
   },
   "rules": {
     "badge": "Official Documentation",
