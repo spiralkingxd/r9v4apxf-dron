@@ -67,7 +67,7 @@ export default async function AdminRulesPage() {
           <h1 className="text-2xl font-bold text-[color:var(--text-strong)]">Editor de Regras</h1>
         </div>
         <p className="mt-2 text-sm text-[color:var(--text-muted)]">
-          Edite, reordene e publique as diretrizes da página pública de Regras e Conduta.
+          Edite e publique um único documento Markdown para a página pública de Regras e Conduta.
         </p>
       </header>
 

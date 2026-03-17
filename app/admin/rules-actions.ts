@@ -34,7 +34,7 @@ function withDbHint(prefix: string, errorMessage: string) {
 const ruleSchema = z.object({
   id: z.string().uuid().optional().nullable(),
   title: z.string().trim().min(1, "O título da regra é obrigatório.").max(180, "Título muito longo."),
-  content: z.string().trim().min(1, "O conteúdo da regra é obrigatório.").max(6000, "Conteúdo muito longo."),
+  content: z.string().trim().min(1, "O conteúdo da regra é obrigatório.").max(40000, "Conteúdo muito longo."),
 });
 
 const saveRulesSchema = z.object({

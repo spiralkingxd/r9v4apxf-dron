@@ -69,6 +69,7 @@ export default async function RegrasPage() {
 
   const orderedRules = rules.length > 0 ? rules : FALLBACK_RULES;
   const footer = settingsRaw?.general_rules?.trim() || FALLBACK_FOOTER;
+  const singleDocument = orderedRules.length === 1 && orderedRules[0]?.title.trim().toLowerCase() === "regras";
 
   return (
     <main className="page-shell px-6 py-10 lg:px-10">
@@ -84,14 +85,18 @@ export default async function RegrasPage() {
 
         <section className="admin-surface rounded-2xl border p-5 md:p-6">
           <div className="mt-4 rounded-2xl border border-[color:var(--surface-border)] bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_45%)] p-5">
-            <div className="space-y-4">
-              {orderedRules.map((rule, index) => (
-                <article key={rule.id}>
-                  <h3 className="text-base font-bold text-white">{index + 1}. {rule.title}</h3>
-                  <MarkdownRenderer className="mt-2 text-sm text-slate-300" content={rule.content} />
-                </article>
-              ))}
-            </div>
+            {singleDocument ? (
+              <MarkdownRenderer className="text-sm text-slate-300" content={orderedRules[0].content} />
+            ) : (
+              <div className="space-y-4">
+                {orderedRules.map((rule, index) => (
+                  <article key={rule.id}>
+                    <h3 className="text-base font-bold text-white">{index + 1}. {rule.title}</h3>
+                    <MarkdownRenderer className="mt-2 text-sm text-slate-300" content={rule.content} />
+                  </article>
+                ))}
+              </div>
+            )}
 
             <hr className="my-5 border-white/10" />
             <MarkdownRenderer className="text-sm text-slate-400" content={footer} />
