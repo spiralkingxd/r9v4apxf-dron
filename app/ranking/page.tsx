@@ -8,11 +8,14 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { unstable_cache } from "next/cache";
 import { cn } from "@/lib/utils";
-import { getDictionary } from "@/lib/i18n";
+import { getDictionary, getLocale } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "Ranking",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return {
+    title: locale === "en" ? "Ranking" : "Ranking",
+  };
+}
 
 type RankingRow = {
   id: string;

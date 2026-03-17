@@ -46,6 +46,7 @@
     "badge": "Ranking Geral",
     "title": "Classificação dos Piratas",
     "desc": "Ordenado por pontos e vitórias em cada categoria.",
+    "loading": "Carregando ranking...",
     "tabs": {
       "all": "Geral",
       "sloop": "Sloop (Duo)",
@@ -74,6 +75,7 @@
     "teamsCountLabel": "Equipes",
     "joinedAtLabel": "Entrada",
     "loadingTeams": "Carregando equipes...",
+    "loadingTeamData": "Carregando dados da equipe...",
     "profileEmptyTitle": "Você não participa de nenhuma equipe ainda",
     "profileEmptyDesc": "Funde sua própria tripulação ou junte-se a uma equipe existente para competir.",
     "createBtn": "Criar Equipe",

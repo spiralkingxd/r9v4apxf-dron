@@ -46,6 +46,7 @@
     "badge": "Global Ranking",
     "title": "Pirates Leaderboard",
     "desc": "Ordered by points and wins in each category.",
+    "loading": "Loading ranking...",
     "tabs": {
       "all": "Overall",
       "sloop": "Sloop (Duo)",
@@ -74,6 +75,7 @@
     "teamsCountLabel": "Teams",
     "joinedAtLabel": "Joined",
     "loadingTeams": "Loading teams...",
+    "loadingTeamData": "Loading team data...",
     "profileEmptyTitle": "You are not in any team yet",
     "profileEmptyDesc": "Create your own crew or join an existing team to compete.",
     "createBtn": "Create Team",

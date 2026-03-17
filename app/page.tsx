@@ -70,13 +70,17 @@ export default async function Home() {
   return (
     <main className="page-shell">
 
-      <section className="hero-shell relative overflow-hidden border-b border-slate-200/50 dark:border-white/10 bg-slate-50 dark:bg-[#050b12]">
+      <section className="hero-shell relative overflow-hidden border-b border-slate-200/60 dark:border-white/10 bg-[#ecf4fa] dark:bg-[#050b12]">
         <div
           aria-hidden
-          className="absolute inset-0 bg-[radial-gradient(circle_at_15%_15%,rgba(34,211,238,0.16),transparent_45%),radial-gradient(circle_at_85%_5%,rgba(14,116,144,0.2),transparent_42%),radial-gradient(circle_at_50%_85%,rgba(56,189,248,0.08),transparent_45%),linear-gradient(180deg,rgba(2,6,23,0.72)_0%,rgba(2,10,28,0.92)_55%,rgba(2,6,23,1)_100%)]"
+          className="absolute inset-0 dark:hidden bg-[radial-gradient(circle_at_12%_18%,rgba(56,189,248,0.32),transparent_42%),radial-gradient(circle_at_88%_12%,rgba(14,165,233,0.2),transparent_42%),radial-gradient(circle_at_50%_100%,rgba(14,116,144,0.14),transparent_48%),radial-gradient(circle_at_92%_85%,rgba(251,191,36,0.16),transparent_30%),linear-gradient(180deg,rgba(226,244,255,0.95)_0%,rgba(210,230,245,0.88)_52%,rgba(235,246,255,0.94)_100%)]"
         />
-        <div aria-hidden className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(rgba(148,163,184,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.35)_1px,transparent_1px)] [background-size:52px_52px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/10 via-slate-50/40 to-slate-50 dark:from-[#050b12]/20 dark:via-[#050b12]/45 dark:to-[#050b12]" />
+        <div
+          aria-hidden
+          className="absolute inset-0 hidden dark:block bg-[radial-gradient(circle_at_10%_15%,rgba(34,211,238,0.22),transparent_40%),radial-gradient(circle_at_86%_12%,rgba(245,158,11,0.16),transparent_35%),radial-gradient(circle_at_55%_100%,rgba(56,189,248,0.12),transparent_52%),linear-gradient(180deg,rgba(4,16,35,0.92)_0%,rgba(3,11,26,0.96)_55%,rgba(2,8,20,1)_100%)]"
+        />
+        <div aria-hidden className="absolute inset-0 opacity-[0.08] dark:opacity-[0.05] [background-image:linear-gradient(rgba(148,163,184,0.35)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.35)_1px,transparent_1px)] [background-size:56px_56px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/35 via-white/20 to-transparent dark:from-black/10 dark:via-black/5 dark:to-transparent" />
         <div className="relative mx-auto flex flex-col items-center text-center max-w-5xl gap-8 px-4 sm:px-6 py-20 sm:py-28 lg:px-10 lg:py-32">     
           <div className="space-y-6 flex flex-col items-center">
             <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/40 dark:border-cyan-300/50 bg-cyan-50/90 dark:bg-cyan-500/15 backdrop-blur-md px-3.5 py-1.5 text-[9px] sm:text-[11px] font-semibold uppercase tracking-wider sm:tracking-[0.22em] text-cyan-700 dark:text-cyan-100 shadow-xl shadow-cyan-900/10 dark:shadow-cyan-900/20">

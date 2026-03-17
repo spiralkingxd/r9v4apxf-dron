@@ -7,11 +7,14 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { unstable_cache } from "next/cache";
-import { getDictionary } from "@/lib/i18n";
+import { getDictionary, getLocale } from "@/lib/i18n";
 
-export const metadata: Metadata = {
-  title: "Equipes",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return {
+    title: locale === "en" ? "Teams" : "Equipes",
+  };
+}
 
 type TeamListRow = {
   id: string;
@@ -24,8 +27,6 @@ type TeamListRow = {
   max_members: number;
   is_user_member: boolean;
 };
-
-const dateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "medium" });
 
 const getCachedTeams = unstable_cache(
   async () => {
@@ -114,8 +115,16 @@ async function getData() {
 }
 
 export default async function TeamsPage() {
-  const dict = await getDictionary();
+  const [dict, locale] = await Promise.all([getDictionary(), getLocale()]);
+  const dateFmt = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "medium" });
   const { teams, userId } = await getData();
+
+  const teamCountText =
+    teams.length > 0
+      ? locale === "en"
+        ? `${teams.length} team${teams.length !== 1 ? "s" : ""} registered`
+        : `${teams.length} equipe${teams.length !== 1 ? "s" : ""} registrada${teams.length !== 1 ? "s" : ""}`
+      : dict.teams.empty;
 
   return (
     <main className="page-shell">
@@ -128,11 +137,7 @@ export default async function TeamsPage() {
               {dict.teams.badge}
             </p>
             <h1 className="mt-1 text-3xl font-bold text-white">{dict.teams.title}</h1>
-            <p className="mt-2 text-sm text-slate-400">
-              {teams.length > 0
-                ? `${teams.length} equipe${teams.length !== 1 ? "s" : ""} registrada${teams.length !== 1 ? "s" : ""}`
-                : dict.teams.empty}
-            </p>
+            <p className="mt-2 text-sm text-slate-400">{teamCountText}</p>
           </div>
         </div>
 
