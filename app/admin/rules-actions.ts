@@ -3,13 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
+import { assertAdminAccess, logAdminAction } from "@/app/admin/_lib";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type ActionResult = {
   success?: string;
   error?: string;
 };
+
+function withDbHint(prefix: string, errorMessage: string) {
+  const lower = errorMessage.toLowerCase();
+  const permissionError =
+    lower.includes("permission denied") ||
+    lower.includes("row-level security") ||
+    lower.includes("42501");
+  const missingTable =
+    lower.includes("relation") && lower.includes("rules_content") && lower.includes("does not exist");
+
+  if (missingTable) {
+    return `${prefix} ${errorMessage} (A tabela rules_content não existe no banco. Aplique o SQL do editor de regras.)`;
+  }
+
+  if (permissionError) {
+    return `${prefix} ${errorMessage} (Sem permissão no banco. Configure SUPABASE_SERVICE_ROLE_KEY no ambiente do servidor.)`;
+  }
+
+  return `${prefix} ${errorMessage}`;
+}
 
 const ruleSchema = z.object({
   id: z.string().uuid().optional().nullable(),
@@ -30,7 +50,6 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
 
   try {
     const { supabase, adminId } = await assertAdminAccess();
-    await enforceAdminRateLimit(supabase, adminId, "save_rules_content");
     const writeClient = createAdminClient() ?? supabase;
 
     const { data: beforeRows } = await supabase
@@ -59,16 +78,31 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
     }));
 
     const { error: clearError } = await writeClient.from("rules_content").delete().gte("order", 1);
-    if (clearError) return { error: "Não foi possível limpar regras antigas." };
+    if (clearError) {
+      return {
+        error: withDbHint("Não foi possível limpar regras antigas.", clearError.message),
+      };
+    }
 
     const { error: insertError } = await writeClient.from("rules_content").insert(normalizedRows);
-    if (insertError) return { error: "Não foi possível salvar as regras." };
+    if (insertError) {
+      return {
+        error: withDbHint("Não foi possível salvar as regras.", insertError.message),
+      };
+    }
 
     const { error: settingsError } = await writeClient
       .from("system_settings")
       .update({ general_rules: parsed.data.footer.trim() || null })
       .eq("id", 1);
-    if (settingsError) return { error: "As regras foram salvas, mas o rodapé não pôde ser atualizado." };
+    if (settingsError) {
+      return {
+        error: withDbHint(
+          "As regras foram salvas, mas o rodapé não pôde ser atualizado.",
+          settingsError.message,
+        ),
+      };
+    }
 
     await logAdminAction(supabase, {
       adminId,
