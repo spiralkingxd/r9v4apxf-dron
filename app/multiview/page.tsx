@@ -34,13 +34,12 @@ async function getOnlineSelectedStreamers() {
   const live = await getTwitchStreams(usernames);
   const liveSet = new Set(live.map((item: { user_login: string }) => item.user_login.toLowerCase()));
 
-  const onlineSelected = selected.filter((s) => liveSet.has(s.username.toLowerCase()));
-
-  return onlineSelected.map((s) => ({
+  return selected.map((s) => ({
     id: String(s.id),
     username: String(s.username),
     isOfficial: Boolean(s.is_official),
     isOrganizer: s.username.toLowerCase() === "hwmalk",
+    isLive: liveSet.has(s.username.toLowerCase()),
   }));
 }
 
