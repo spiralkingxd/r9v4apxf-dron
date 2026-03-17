@@ -99,7 +99,8 @@
     "noStreams": "Nenhuma transmissão online no momento.",
     "recentVods": "Últimos VODs Oficiais",
     "noVods": "Nenhum VOD disponível no momento.",
-    "vod": "VOD"
+    "vod": "VOD",
+    "openMultiview": "Abrir Multiview"
   },
   "rules": {
     "badge": "Documentação Oficial",
