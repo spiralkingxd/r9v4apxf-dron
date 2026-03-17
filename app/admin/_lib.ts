@@ -1,14 +1,25 @@
 "use server";
 
+import { headers } from "next/headers";
+
 import { createClient } from "@/lib/supabase/server";
+import { getRequestContext, writeSecurityAlert } from "@/lib/security/alerts";
 
 export async function assertAdminAccess() {
   const supabase = await createClient();
+  const headerStore = await headers();
+  const requestContext = getRequestContext(headerStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
+    await writeSecurityAlert({
+      action: "auth_401_admin_area",
+      targetType: "admin",
+      riskLevel: "high",
+      context: requestContext,
+    });
     throw new Error("Não autorizado");
   }
 
@@ -23,10 +34,33 @@ export async function assertAdminAccess() {
     }>();
 
   if (!profile || profile.is_banned) {
+    await writeSecurityAlert({
+      adminUserId: user.id,
+      action: "auth_403_admin_area",
+      targetType: "admin",
+      targetId: user.id,
+      riskLevel: "high",
+      context: {
+        ...requestContext,
+        banned: Boolean(profile?.is_banned),
+        hasProfile: Boolean(profile),
+      },
+    });
     throw new Error("Acesso negado");
   }
 
   if (profile.role !== "admin" && profile.role !== "owner") {
+    await writeSecurityAlert({
+      adminUserId: user.id,
+      action: "auth_403_admin_role",
+      targetType: "admin",
+      targetId: user.id,
+      riskLevel: "critical",
+      context: {
+        ...requestContext,
+        role: profile.role,
+      },
+    });
     throw new Error("Acesso negado");
   }
 

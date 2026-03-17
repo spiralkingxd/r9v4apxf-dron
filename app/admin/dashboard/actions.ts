@@ -1,6 +1,7 @@
 "use server";
 
 import { assertAdminAccess } from "@/app/admin/_lib";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type DashboardStat = {
   totalUsers: number;
@@ -40,6 +41,11 @@ export type DashboardAlertsPayload = {
   staleJoinRequests48h: Array<{ id: string; teamId: string; teamName: string; userId: string; userName: string; createdAt: string }>;
   staleMatches72h: Array<{ id: string; eventId: string; scheduledAt: string | null; createdAt: string }>;
   potentialMultiAccounts: Array<{ email: string; count: number; users: string[] }>;
+  securityAuthFailures15m: number;
+  securityAuthFailures24h: number;
+  suspiciousAdminActions24h: number;
+  criticalAdminActions24h: number;
+  recentSecurityEvents: Array<{ id: string; action: string; riskLevel: string; createdAt: string }>;
 };
 
 type ExportType = "overview" | "users" | "teams" | "events" | "registrations";
@@ -303,8 +309,10 @@ export async function getSystemAlerts(): Promise<DashboardAlertsPayload> {
   const now = new Date();
   const before48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const before72h = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+  const before24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const before15m = new Date(now.getTime() - 15 * 60 * 1000);
 
-  const [teamsRes, teamMembersRes, staleJoinRequestsRes, staleMatchesRes, profilesRes] = await Promise.all([
+  const [teamsRes, teamMembersRes, staleJoinRequestsRes, staleMatchesRes, profilesRes, adminActionsRes] = await Promise.all([
     supabase.from("teams").select("id, name, dissolved_at"),
     supabase.from("team_members").select("team_id"),
     supabase
@@ -322,7 +330,23 @@ export async function getSystemAlerts(): Promise<DashboardAlertsPayload> {
       .order("created_at", { ascending: true })
       .limit(50),
     supabase.from("profiles").select("id, display_name, username, email"),
+    supabase
+      .from("admin_action_logs")
+      .select("id, action, severity, suspicious, created_at")
+      .gte("created_at", before24h.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(500),
   ]);
+
+  const adminClient = createAdminClient();
+  const securityEventsRes = adminClient
+    ? await adminClient
+        .from("admin_security_alerts")
+        .select("id, action, risk_level, created_at")
+        .gte("created_at", before24h.toISOString())
+        .order("created_at", { ascending: false })
+        .limit(100)
+    : { data: [] as Array<{ id: string; action: string; risk_level: string; created_at: string }> };
 
   const memberCounts = new Map<string, number>();
   for (const row of teamMembersRes.data ?? []) {
@@ -395,11 +419,35 @@ export async function getSystemAlerts(): Promise<DashboardAlertsPayload> {
     .sort((a, b) => b.count - a.count)
     .slice(0, 20);
 
+  const adminLogs = adminActionsRes.data ?? [];
+  const suspiciousAdminActions24h = adminLogs.filter((row) => Boolean(row.suspicious)).length;
+  const criticalAdminActions24h = adminLogs.filter((row) => String(row.severity ?? "").toLowerCase() === "critical").length;
+
+  const securityEvents = securityEventsRes.data ?? [];
+  const securityAuthFailures24h = securityEvents.filter((row) => String(row.action).startsWith("auth_401") || String(row.action).startsWith("auth_403")).length;
+  const securityAuthFailures15m = securityEvents.filter((row) => {
+    const createdAt = new Date(String(row.created_at));
+    if (Number.isNaN(createdAt.getTime())) return false;
+    return createdAt >= before15m && (String(row.action).startsWith("auth_401") || String(row.action).startsWith("auth_403"));
+  }).length;
+
+  const recentSecurityEvents = securityEvents.slice(0, 5).map((row) => ({
+    id: String(row.id),
+    action: String(row.action),
+    riskLevel: String(row.risk_level ?? "medium"),
+    createdAt: String(row.created_at),
+  }));
+
   return {
     lowMemberTeams,
     staleJoinRequests48h,
     staleMatches72h,
     potentialMultiAccounts,
+    securityAuthFailures15m,
+    securityAuthFailures24h,
+    suspiciousAdminActions24h,
+    criticalAdminActions24h,
+    recentSecurityEvents,
   };
 }
 

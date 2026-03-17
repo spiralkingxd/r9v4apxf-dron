@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Loader2, Plus, Trash2, ShieldAlert, Star, MonitorUp } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { assertAdminAccess } from "@/app/admin/_lib";
+import { assertAdminAccess, enforceAdminRateLimit } from "@/app/admin/_lib";
 
 import { AdminButton as Button } from "@/components/admin/admin-button";
 
@@ -36,7 +36,8 @@ export default async function AdminStreamersPage() {
 
   async function addStreamer(formData: FormData) {
     "use server";
-    await assertAdminAccess();
+    const { supabase: accessSupabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(accessSupabase, adminId, "streamers_add");
 
     const username = formData.get("username")?.toString();
     if (!username) return;
@@ -52,7 +53,8 @@ export default async function AdminStreamersPage() {
 
   async function removeStreamer(formData: FormData) {
     "use server";
-    await assertAdminAccess();
+    const { supabase: accessSupabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(accessSupabase, adminId, "streamers_remove");
 
     const id = formData.get("id")?.toString();
     const username = formData.get("username")?.toString();
@@ -66,7 +68,8 @@ export default async function AdminStreamersPage() {
 
   async function toggleOfficial(formData: FormData) {
     "use server";
-    await assertAdminAccess();
+    const { supabase: accessSupabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(accessSupabase, adminId, "streamers_toggle_official");
 
     const id = formData.get("id")?.toString();
     const isOfficial = formData.get("isOfficial") === "true";
@@ -81,7 +84,8 @@ export default async function AdminStreamersPage() {
 
   async function toggleMultiview(formData: FormData) {
     "use server";
-    await assertAdminAccess();
+    const { supabase: accessSupabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(accessSupabase, adminId, "streamers_toggle_multiview");
 
     const id = formData.get("id")?.toString();
     if (!id) return;

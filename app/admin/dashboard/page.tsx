@@ -81,7 +81,9 @@ export default async function AdminDashboardPage() {
     alerts.lowMemberTeams.length +
     alerts.staleJoinRequests48h.length +
     alerts.staleMatches72h.length +
-    alerts.potentialMultiAccounts.length;
+    alerts.potentialMultiAccounts.length +
+    alerts.securityAuthFailures15m +
+    alerts.criticalAdminActions24h;
 
   const statCards = [
     {
@@ -230,7 +232,51 @@ export default async function AdminDashboardPage() {
               </Link>
             }
           />
+
+          <AlertBanner
+            severity={alerts.securityAuthFailures15m >= 8 ? "error" : alerts.securityAuthFailures24h > 0 ? "warning" : "info"}
+            title="Falhas de autenticação (401/403)"
+            description={
+              alerts.securityAuthFailures24h > 0
+                ? `${numberFmt.format(alerts.securityAuthFailures24h)} falhas nas últimas 24h (${numberFmt.format(alerts.securityAuthFailures15m)} nos últimos 15 min).`
+                : "Sem falhas relevantes de autenticação nas últimas 24h."
+            }
+            action={
+              <Link href="/admin/logs" className="text-xs font-semibold text-cyan-200 hover:text-cyan-900 dark:text-cyan-100">
+                Ver logs
+              </Link>
+            }
+          />
+
+          <AlertBanner
+            severity={alerts.criticalAdminActions24h > 0 ? "error" : alerts.suspiciousAdminActions24h > 0 ? "warning" : "info"}
+            title="Ações administrativas incomuns"
+            description={
+              alerts.criticalAdminActions24h > 0 || alerts.suspiciousAdminActions24h > 0
+                ? `${numberFmt.format(alerts.criticalAdminActions24h)} críticas e ${numberFmt.format(alerts.suspiciousAdminActions24h)} suspeitas nas últimas 24h.`
+                : "Nenhum comportamento administrativo incomum detectado nas últimas 24h."
+            }
+            action={
+              <Link href="/admin/logs" className="text-xs font-semibold text-cyan-200 hover:text-cyan-900 dark:text-cyan-100">
+                Investigar
+              </Link>
+            }
+          />
         </div>
+
+        {alerts.recentSecurityEvents.length > 0 ? (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Eventos recentes de segurança</p>
+            <div className="mt-3 space-y-2">
+              {alerts.recentSecurityEvents.map((event) => (
+                <div key={event.id} className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm">
+                  <span className="text-slate-200">{event.action}</span>
+                  <span className="text-xs uppercase tracking-wider text-amber-300">{event.riskLevel}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <div className="grid gap-4 xl:grid-cols-4">

@@ -50,24 +50,17 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
       .eq("id", 1)
       .maybeSingle<{ general_rules: string | null }>();
 
-    const upsertRows = parsed.data.rules.map((rule, index) => ({
-      id: rule.id ?? undefined,
+    const normalizedRows = parsed.data.rules.map((rule, index) => ({
       order: index + 1,
       title: rule.title.trim(),
       content: rule.content.trim(),
     }));
 
-    const keepIds = upsertRows.map((row) => row.id).filter((id): id is string => Boolean(id));
-    const existingIds = previousRules.map((rule) => rule.id);
-    const removeIds = existingIds.filter((id) => !keepIds.includes(id));
+    const { error: clearError } = await supabase.from("rules_content").delete().gte("order", 1);
+    if (clearError) return { error: "Não foi possível limpar regras antigas." };
 
-    if (removeIds.length > 0) {
-      const { error: deleteError } = await supabase.from("rules_content").delete().in("id", removeIds);
-      if (deleteError) return { error: "Não foi possível remover regras antigas." };
-    }
-
-    const { error: upsertError } = await supabase.from("rules_content").upsert(upsertRows, { onConflict: "id" });
-    if (upsertError) return { error: "Não foi possível salvar as regras." };
+    const { error: insertError } = await supabase.from("rules_content").insert(normalizedRows);
+    if (insertError) return { error: "Não foi possível salvar as regras." };
 
     const { error: settingsError } = await supabase
       .from("system_settings")
@@ -80,14 +73,14 @@ export async function saveRulesContent(input: z.input<typeof saveRulesSchema>): 
       action: "save_rules_content",
       targetType: "rules_content",
       details: {
-        count: upsertRows.length,
+        count: normalizedRows.length,
       },
       previousState: {
         rules: previousRules,
         footer: beforeSettings?.general_rules ?? null,
       },
       nextState: {
-        rules: upsertRows,
+        rules: normalizedRows,
         footer: parsed.data.footer.trim() || null,
       },
       severity: "warning",

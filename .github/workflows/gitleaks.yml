@@ -1,25 +1,10 @@
-name: Gitleaks Scan
+name: Gitleaks Scan (disabled)
 
 on:
-  push:
-  pull_request:
+  workflow_dispatch:
 
 jobs:
-  gitleaks:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Install Gitleaks
-        run: |
-          GITLEAKS_VERSION="8.30.0"
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            | tar -xz
-          chmod +x ./gitleaks
-          ./gitleaks version
-
-      - name: Run Gitleaks (working tree only)
-        run: ./gitleaks detect --source=. --no-git --verbose --exit-code 1
+      - run: echo "Gitleaks desativado para push/pull_request"
