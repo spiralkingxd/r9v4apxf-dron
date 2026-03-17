@@ -80,16 +80,20 @@ export default async function RegrasPage() {
           <p className="mt-2 text-sm text-slate-400">{dict.rules.desc}</p>
         </div>
 
-        <section className="glass-card soft-ring overflow-hidden rounded-2xl p-6 lg:p-10 prose prose-invert max-w-none">
-          {orderedRules.map((rule, index) => (
-            <div key={rule.id}>
-              <h2>{index + 1}. {rule.title}</h2>
-              <p className="whitespace-pre-line">{rule.content}</p>
+        <section className="admin-surface rounded-2xl border p-5 md:p-6">
+          <div className="mt-4 rounded-2xl border border-[color:var(--surface-border)] bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_45%)] p-5">
+            <div className="space-y-4">
+              {orderedRules.map((rule, index) => (
+                <article key={rule.id}>
+                  <h3 className="text-base font-bold text-white">{index + 1}. {rule.title}</h3>
+                  <p className="mt-1 whitespace-pre-line text-sm text-slate-300">{rule.content}</p>
+                </article>
+              ))}
             </div>
-          ))}
-          
-          <hr className="border-white/10 my-8" />
-          <p className="text-sm text-slate-500 whitespace-pre-line">{footer}</p>
+
+            <hr className="my-5 border-white/10" />
+            <p className="whitespace-pre-line text-sm text-slate-400">{footer}</p>
+          </div>
         </section>
       </div>
     </main>
