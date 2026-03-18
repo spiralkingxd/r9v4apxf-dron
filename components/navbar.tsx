@@ -120,8 +120,12 @@ export async function Navbar() {
         <NavLinks dict={dict} />
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <GlobalSearch dict={dict} /> <LanguageSwitcher /> <ThemeToggle />
-          
+          <GlobalSearch dict={dict} /> 
+          <div className="hidden md:flex items-center gap-1">
+            <LanguageSwitcher /> 
+            <ThemeToggle />
+          </div>
+
           {!isConfigured ? (
             <Link
               href="/auth/login"

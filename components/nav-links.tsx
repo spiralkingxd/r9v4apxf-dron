@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 
 
@@ -75,6 +77,14 @@ export function NavLinks({ dict }: { dict: any }) {
                 </Link>
               );
             })}
+            
+            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 md:hidden">
+              <span className="text-sm font-medium text-slate-400">Preferências</span>
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher />
+                <ThemeToggle />
+              </div>
+            </div>
           </nav>
         </div>
       )}

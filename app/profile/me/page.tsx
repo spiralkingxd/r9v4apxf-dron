@@ -90,6 +90,7 @@ export default async function MyProfilePage() {
   let maxTeamSize = 5;
   let userTeams: UserTeamCard[] = [];
   let teamIds: string[] = [];
+  let tournamentsWon = 0;
 
   const { data: membershipsRaw, error: membershipsError } = await supabase
     .from("team_members")
@@ -139,10 +140,42 @@ export default async function MyProfilePage() {
       }
     }
 
+    const dateLocale = locale === "en" ? "en-US" : "pt-BR";
+    const memberSince = new Intl.DateTimeFormat(dateLocale, { timeZone: "America/Sao_Paulo", dateStyle: "medium" }).format(new Date(profile.created_at));
+    const [teamRankingsResponse, finalWinsResponse] = teamIds.length
+      ? await Promise.all([
+          supabase.from("team_rankings").select("team_id, wins, losses, points, rank_position").in("team_id", teamIds),
+          supabase.from("matches").select("event_id, winner_id").in("winner_id", teamIds).is("next_match_id", null),
+        ])
+      : [
+          { data: [] as Array<{ team_id: string; wins: number; losses: number; points: number; rank_position: number | null }>, error: null },
+          { data: [] as Array<{ event_id: string; winner_id: string }>, error: null },
+        ];
+
+    const teamRankingMap = new Map(
+      (teamRankingsResponse.data ?? []).map((row) => [String(row.team_id), {
+        wins: Number(row.wins ?? 0),
+        losses: Number(row.losses ?? 0),
+        points: Number(row.points ?? 0),
+        rank_position: row.rank_position ?? null,
+      }]),
+    );
+    const teamTournamentWinsMap = new Map<string, number>();
+    for (const row of finalWinsResponse.data ?? []) {
+      const teamId = String(row.winner_id);
+      const current = teamTournamentWinsMap.get(teamId) ?? 0;
+      teamTournamentWinsMap.set(teamId, current + 1);
+    }
+    tournamentsWon = new Set((finalWinsResponse.data ?? []).map((row) => `${row.winner_id}:${row.event_id}`)).size;
+    const playerRanking = profile.rankings?.[0];
+
     userTeams = memberships
       .map((membership) => {
         const related = teamMap.get(membership.team_id);
         if (!related) return null;
+        
+        const ranking = teamRankingMap.get(related.id);
+        const tourneyWins = teamTournamentWinsMap.get(related.id) ?? 0;
 
         return {
           id: related.id,
@@ -152,6 +185,11 @@ export default async function MyProfilePage() {
           joined_at: membership.joined_at,
           member_count: countMap.get(related.id) ?? 1,
           max_members: related.max_members ?? 10,
+          wins: ranking?.wins ?? 0,
+          losses: ranking?.losses ?? 0,
+          points: ranking?.points ?? 0,
+          tournaments_won: tourneyWins,
+          rank_position: ranking?.rank_position ?? null,
         } satisfies UserTeamCard;
       })
       .filter((team): team is UserTeamCard => Boolean(team))
@@ -165,44 +203,8 @@ export default async function MyProfilePage() {
 
   const dateLocale = locale === "en" ? "en-US" : "pt-BR";
   const memberSince = new Intl.DateTimeFormat(dateLocale, { timeZone: "America/Sao_Paulo", dateStyle: "medium" }).format(new Date(profile.created_at));
-  const [teamRankingsResponse, finalWinsResponse] = teamIds.length
-    ? await Promise.all([
-        supabase.from("team_rankings").select("team_id, wins, losses, points, rank_position").in("team_id", teamIds),
-        supabase.from("matches").select("event_id, winner_id").in("winner_id", teamIds).is("next_match_id", null),
-      ])
-    : [
-        { data: [] as Array<{ team_id: string; wins: number; losses: number; points: number; rank_position: number | null }>, error: null },
-        { data: [] as Array<{ event_id: string; winner_id: string }>, error: null },
-      ];
-
-  const teamRankingMap = new Map(
-    (teamRankingsResponse.data ?? []).map((row) => [String(row.team_id), {
-      wins: Number(row.wins ?? 0),
-      losses: Number(row.losses ?? 0),
-      points: Number(row.points ?? 0),
-      rank_position: row.rank_position ?? null,
-    }]),
-  );
-  const teamTournamentWinsMap = new Map<string, number>();
-  for (const row of finalWinsResponse.data ?? []) {
-    const teamId = String(row.winner_id);
-    const current = teamTournamentWinsMap.get(teamId) ?? 0;
-    teamTournamentWinsMap.set(teamId, current + 1);
-  }
-  const tournamentsWon = new Set((finalWinsResponse.data ?? []).map((row) => `${row.winner_id}:${row.event_id}`)).size;
+  
   const playerRanking = profile.rankings?.[0];
-
-  userTeams = userTeams.map((team) => {
-    const ranking = teamRankingMap.get(team.id);
-    return {
-      ...team,
-      wins: ranking?.wins ?? 0,
-      losses: ranking?.losses ?? 0,
-      points: ranking?.points ?? 0,
-      tournaments_won: teamTournamentWinsMap.get(team.id) ?? 0,
-      rank_position: ranking?.rank_position ?? null,
-    };
-  });
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 dark:text-slate-100">
