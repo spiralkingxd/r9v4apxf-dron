@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowUpRight, AtSign, Calendar, Clock, Crown, Shield, Swords, Target, Trophy, Users } from "lucide-react";
+import { ArrowUpRight, Calendar, Clock, Crown, Shield, Swords, Target, Users } from "lucide-react";
 
 import { XboxStatusTag } from "@/components/xbox-status-tag";
 import { getDictionary, getLocale } from "@/lib/i18n";
@@ -135,12 +135,9 @@ export default async function PublicProfilePage({ params }: Props) {
   }
 
   const tournamentWinMap = new Map<string, number>();
-  const uniqueTournamentWins = new Set<string>();
   for (const row of finalWinsResponse.data ?? []) {
     const winnerId = String(row.winner_id);
-    const eventId = String(row.event_id);
     tournamentWinMap.set(winnerId, (tournamentWinMap.get(winnerId) ?? 0) + 1);
-    uniqueTournamentWins.add(`${winnerId}:${eventId}`);
   }
 
   const teams: TeamCard[] = memberships
@@ -178,10 +175,7 @@ export default async function PublicProfilePage({ params }: Props) {
     : [];
   const crewVictories = teams.reduce((sum, team) => sum + team.wins, 0);
   const crewLosses = teams.reduce((sum, team) => sum + team.losses, 0);
-  const tournamentsWon = uniqueTournamentWins.size;
-  const totalMatches = crewVictories + crewLosses;
   const winRate = crewVictories + crewLosses > 0 ? Math.round((crewVictories / (crewVictories + crewLosses)) * 100) : 0;
-  const teamResultsHelper = `${crewVictories}/${crewLosses} • ${dict.profile.winRate}: ${winRate}%`;
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-14 text-slate-900 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] dark:text-slate-100">
@@ -197,9 +191,9 @@ export default async function PublicProfilePage({ params }: Props) {
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.08),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.08),transparent_24%)]" />
             <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/5 to-transparent dark:from-cyan-400/5" />
 
-            <div className="relative grid gap-8 px-6 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
-              <div className="space-y-6">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+              <div className="space-y-8">
+                <div className="flex flex-col items-center text-center">
                   <div className="relative h-28 w-28 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-200 ring-2 ring-yellow-400/55 ring-offset-1 ring-offset-slate-900 shadow-lg dark:bg-slate-800">
                   {profile.avatar_url ? (
                     <Image src={profile.avatar_url} alt={profile.display_name} fill sizes="112px" className="object-cover" />
@@ -210,7 +204,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   )}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-4">
+                  <div className="mt-5 min-w-0 max-w-3xl space-y-4">
                     <div>
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300/90 dark:text-amber-200">
                         <span className="h-2 w-2 rounded-full bg-amber-400" />
@@ -221,7 +215,7 @@ export default async function PublicProfilePage({ params }: Props) {
                         {profile.role === "owner" ? <Crown className="h-6 w-6 text-yellow-500" /> : null}
                         {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-400" /> : null}
                       </h1>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/5 px-3 py-1 dark:bg-white/5">
                           <Calendar className="h-4 w-4 text-cyan-400" />
                           {dict.profile.memberSince}: {memberSince}
@@ -236,7 +230,7 @@ export default async function PublicProfilePage({ params }: Props) {
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                       <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
                       {boatRoles.map((role) => (
                         <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-200">
@@ -244,28 +238,30 @@ export default async function PublicProfilePage({ params }: Props) {
                         </span>
                       ))}
                     </div>
+                  </div>
+                </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      <CompactMeta>{dict.profile.winsLosses}: {crewVictories}/{crewLosses} ({winRate}%)</CompactMeta>
-                    </div>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <InfoPanel
+                      title={dict.profile.memberSince}
+                      value={memberSince}
+                      icon={<Calendar className="h-4 w-4 text-cyan-400" />}
+                    />
+                    <InfoPanel
+                      title={dict.profile.lastActivity}
+                      value={lastActivity}
+                      icon={<Clock className="h-4 w-4 text-cyan-400" />}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 xl:self-start">
+                    <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
+                    <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
                   </div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1 xl:self-start">
-                <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
-                <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
-              </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 border-t border-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:border-white/5 dark:sm:divide-white/5">
-            <InfoCard icon={<Calendar className="h-4 w-4 text-cyan-400" />} label={dict.profile.memberSince}>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{memberSince}</span>
-            </InfoCard>
-            <InfoCard icon={<Clock className="h-4 w-4 text-cyan-400" />} label={dict.profile.lastActivity}>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{lastActivity}</span>
-            </InfoCard>
           </div>
         </section>
 
@@ -332,14 +328,14 @@ export default async function PublicProfilePage({ params }: Props) {
   );
 }
 
-function InfoCard({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
+function InfoPanel({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="flex flex-col gap-3 px-6 py-6 text-center sm:text-left">
+    <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50/85 px-5 py-5 text-center shadow-sm dark:border-white/10 dark:bg-white/5 sm:text-left">
       <div className="flex items-center justify-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:justify-start">
         {icon}
-        <span>{label}</span>
+        <span>{title}</span>
       </div>
-      {children}
+      <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }

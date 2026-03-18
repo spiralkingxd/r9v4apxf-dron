@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { AtSign, Calendar, Clock, Crown, Shield, Swords, Target, Trophy, Users } from "lucide-react";
+import { Calendar, Clock, Crown, Shield, Swords, Target } from "lucide-react";
 
 import { ProfileSettingsForm } from "@/components/profile-settings-form";
 import { ProfileTeamsSection } from "@/components/profile-teams-section";
@@ -90,8 +90,6 @@ export default async function MyProfilePage() {
   let maxTeamSize = 5;
   let userTeams: UserTeamCard[] = [];
   let teamIds: string[] = [];
-  let tournamentsWon = 0;
-
   const { data: membershipsRaw, error: membershipsError } = await supabase
     .from("team_members")
     .select("team_id, role, joined_at")
@@ -115,7 +113,8 @@ export default async function MyProfilePage() {
     }
 
     const { data: sysSettings } = await supabase.from("system_settings").select("tournament").eq("id", 1).maybeSingle();
-    maxTeamSize = Number((sysSettings?.tournament as any)?.max_team_size ?? 5);
+    const tournamentSettings = sysSettings?.tournament as { max_team_size?: number } | null | undefined;
+    maxTeamSize = Number(tournamentSettings?.max_team_size ?? 5);
     const teamMap = new Map<string, TeamRow>();
     for (const team of teamsRaw ?? []) {
       teamMap.set(team.id as string, {
@@ -126,7 +125,7 @@ export default async function MyProfilePage() {
       });
     }
 
-    let countMap = new Map<string, number>();
+    const countMap = new Map<string, number>();
 
     if (teamIds.length > 0) {
       const { data: countsRaw } = await supabase
@@ -164,8 +163,6 @@ export default async function MyProfilePage() {
       const current = teamTournamentWinsMap.get(teamId) ?? 0;
       teamTournamentWinsMap.set(teamId, current + 1);
     }
-    tournamentsWon = new Set((finalWinsResponse.data ?? []).map((row) => `${row.winner_id}:${row.event_id}`)).size;
-
     userTeams = memberships
       .map((membership) => {
         const related = teamMap.get(membership.team_id);
@@ -209,9 +206,7 @@ export default async function MyProfilePage() {
   const playerRanking = profile.rankings?.[0];
   const crewVictories = userTeams.reduce((sum, team) => sum + team.wins, 0);
   const crewLosses = userTeams.reduce((sum, team) => sum + team.losses, 0);
-  const totalMatches = crewVictories + crewLosses;
   const winRate = crewVictories + crewLosses > 0 ? Math.round((crewVictories / (crewVictories + crewLosses)) * 100) : 0;
-  const teamResultsHelper = `${crewVictories}/${crewLosses} • ${dict.profile.winRate}: ${winRate}%`;
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 dark:text-slate-100">
@@ -224,8 +219,8 @@ export default async function MyProfilePage() {
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.08),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.08),transparent_24%)]" />
             <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/5 to-transparent dark:from-cyan-400/5" />
 
-            <div className="relative grid gap-8 px-6 py-6 sm:px-8 sm:py-8 xl:grid-cols-[minmax(0,1fr)_minmax(320px,360px)] xl:items-start">
-              <div className="space-y-6">
+            <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+              <div className="space-y-8">
                 <div className="flex justify-end xl:hidden">
                   <ProfileSettingsForm
                     initialStatus={profile.custom_status}
@@ -234,7 +229,7 @@ export default async function MyProfilePage() {
                   />
                 </div>
 
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                <div className="flex flex-col items-center text-center">
                   <div className="relative h-28 w-28 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-200 ring-2 ring-yellow-400/55 ring-offset-1 ring-offset-slate-900 shadow-lg dark:bg-slate-800">
                     {profile.avatar_url ? (
                       <Image
@@ -251,7 +246,7 @@ export default async function MyProfilePage() {
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-4">
+                  <div className="mt-5 min-w-0 max-w-3xl space-y-4">
                     <div>
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300/90 dark:text-amber-200">
                         <span className="h-2 w-2 rounded-full bg-amber-400" />
@@ -262,7 +257,7 @@ export default async function MyProfilePage() {
                         {profile.role === "owner" ? <Crown className="h-6 w-6 text-yellow-500" /> : null}
                         {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-500" /> : null}
                       </h1>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                      <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/5 px-3 py-1 dark:bg-white/5">
                           <Calendar className="h-4 w-4 text-cyan-400" />
                           {dict.profile.memberSince}: {memberSince}
@@ -277,7 +272,7 @@ export default async function MyProfilePage() {
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                       <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
                       {boatRoles.map((role) => (
                         <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-200 capitalize">
@@ -285,39 +280,40 @@ export default async function MyProfilePage() {
                         </span>
                       ))}
                     </div>
-
-                    <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      <CompactMeta>{dict.profile.winsLosses}: {crewVictories}/{crewLosses} ({winRate}%)</CompactMeta>
-                    </div>
                   </div>
                 </div>
 
-              </div>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <InfoPanel
+                      title={dict.profile.memberSince}
+                      value={memberSince}
+                      icon={<Calendar className="h-4 w-4 text-cyan-400" />}
+                    />
+                    <InfoPanel
+                      title={dict.profile.lastActivity}
+                      value={lastActivity}
+                      icon={<Clock className="h-4 w-4 text-cyan-400" />}
+                    />
+                  </div>
 
-              <div className="space-y-4 xl:pt-1">
-                <div className="hidden justify-end xl:flex">
-                  <ProfileSettingsForm
-                    initialStatus={profile.custom_status}
-                    initialRole={profile.boat_role}
-                    initialXboxGamertag={profile.xbox_gamertag}
-                  />
-                </div>
+                  <div className="space-y-4 xl:pt-1">
+                    <div className="hidden justify-end xl:flex">
+                      <ProfileSettingsForm
+                        initialStatus={profile.custom_status}
+                        initialRole={profile.boat_role}
+                        initialXboxGamertag={profile.xbox_gamertag}
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
-                <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                      <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
+                      <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 border-t border-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:border-white/5 dark:sm:divide-white/5">
-            <InfoCard icon={<Calendar className="h-4 w-4 text-cyan-400" />} label={dict.profile.memberSince}>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{memberSince}</span>
-            </InfoCard>
-            <InfoCard icon={<Clock className="h-4 w-4 text-cyan-400" />} label={dict.profile.lastActivity}>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{lastActivity}</span>
-            </InfoCard>
           </div>
         </div>
 
@@ -332,22 +328,14 @@ export default async function MyProfilePage() {
   );
 }
 
-function InfoCard({
-  icon,
-  label,
-  children,
-}: {
-  icon: ReactNode;
-  label: string;
-  children: ReactNode;
-}) {
+function InfoPanel({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="flex flex-col gap-3 px-6 py-6 text-center sm:text-left">
+    <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50/85 px-5 py-5 text-center shadow-sm dark:border-white/10 dark:bg-white/5 sm:text-left">
       <div className="flex items-center justify-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:justify-start">
         {icon}
-        <span>{label}</span>
+        <span>{title}</span>
       </div>
-      {children}
+      <p className="mt-3 text-sm font-semibold text-slate-800 dark:text-slate-100">{value}</p>
     </div>
   );
 }
@@ -372,10 +360,3 @@ function StatCard({ icon, label, value, description, tone }: { icon: ReactNode; 
   );
 }
 
-function CompactMeta({ children }: { children: ReactNode }) {
-  return (
-    <span className="rounded-full border border-white/10 bg-black/5 px-3 py-1.5 dark:bg-white/5">
-      {children}
-    </span>
-  );
-}
