@@ -209,7 +209,7 @@ export default async function MyProfilePage() {
   const winRate = crewVictories + crewLosses > 0 ? Math.round((crewVictories / (crewVictories + crewLosses)) * 100) : 0;
 
   return (
-    <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 dark:text-slate-100">
+    <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 md:px-6 dark:text-slate-100">
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/65 dark:shadow-2xl dark:shadow-black/30">
 
@@ -220,56 +220,55 @@ export default async function MyProfilePage() {
             <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/5 to-transparent dark:from-cyan-400/5" />
 
             <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-              <div className="space-y-8">
-                <div className="flex flex-col items-center text-center">
-                  <div className="relative h-32 w-32 overflow-hidden rounded-[2rem] border border-amber-400/35 bg-slate-200 ring-2 ring-amber-400/65 ring-offset-2 ring-offset-slate-900 shadow-lg sm:h-36 sm:w-36 dark:bg-slate-800">
-                    {profile.avatar_url ? (
-                      <Image
-                        src={profile.avatar_url}
-                        alt={profile.display_name}
-                        fill
-                        sizes="(min-width: 640px) 144px, 128px"
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-yellow-600 dark:text-yellow-400">
-                        {profile.display_name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+                <div className="md:col-span-1 lg:col-span-4">
+                  <div className="flex h-full flex-col items-center rounded-[1.6rem] border border-slate-200/80 bg-slate-50/80 p-6 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                      {profile.display_name}
+                    </h1>
 
-                  <div className="mt-5 min-w-0 w-full max-w-3xl space-y-4">
-                    <div className="space-y-3">
-                      <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300/90 dark:text-amber-200">
-                        <span className="h-2 w-2 rounded-full bg-amber-400" />
-                        Command Center
-                      </div>
-                      <h1 className="flex flex-wrap items-center justify-center gap-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                        <span>{profile.display_name}</span>
-                        {profile.role === "owner" ? <Crown className="h-6 w-6 text-yellow-500" /> : null}
-                        {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-500" /> : null}
-                      </h1>
+                    <div className="relative my-4 h-40 w-40 overflow-hidden rounded-full border border-amber-400/45 bg-slate-200 ring-2 ring-amber-400/70 ring-offset-2 ring-offset-slate-900 shadow-lg sm:h-44 sm:w-44 dark:bg-slate-800">
+                      {profile.avatar_url ? (
+                        <Image
+                          src={profile.avatar_url}
+                          alt={profile.display_name}
+                          fill
+                          sizes="(min-width: 1024px) 176px, (min-width: 640px) 160px, 160px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {profile.display_name.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50/90 p-4 shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <div className="my-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300 dark:bg-slate-950/80 dark:text-amber-200">
+                      <Crown className="h-3.5 w-3.5" />
+                      Command Center
+                      {profile.role === "owner" ? <Crown className="h-3.5 w-3.5 text-yellow-500" /> : null}
+                      {profile.role === "admin" ? <Shield className="h-3.5 w-3.5 text-cyan-400" /> : null}
+                    </div>
+
+                    <div className="my-4 w-full rounded-2xl border border-slate-200 bg-white/90 p-4 text-left shadow-sm dark:border-white/10 dark:bg-slate-950/35">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                         Conta Xbox
                       </p>
-                      <div className="mt-2 flex justify-center">
+                      <div className="mt-2 flex justify-start">
                         <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
                       </div>
                     </div>
 
                     {profile.custom_status ? (
-                      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+                      <div className="my-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         {profile.custom_status}
                       </div>
                     ) : null}
 
-                    <div className="flex flex-wrap items-center justify-center gap-2">
+                    <div className="my-4 flex flex-wrap items-center justify-center gap-2">
                       {boatRoles.map((role) => (
-                        <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-200 capitalize">
+                        <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 capitalize dark:text-cyan-200">
                           {role}
                         </span>
                       ))}
@@ -277,27 +276,31 @@ export default async function MyProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                  <InfoPanel
-                    title={dict.profile.memberSince}
-                    value={memberSince}
-                    icon={<Calendar className="h-4 w-4 text-cyan-400" />}
-                  />
-                  <InfoPanel
-                    title={dict.profile.lastActivity}
-                    value={lastActivity}
-                    icon={<Clock className="h-4 w-4 text-cyan-400" />}
-                  />
-                  <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
-                  <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
-                </div>
+                <div className="md:col-span-1 lg:col-span-8">
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <InfoPanel
+                        title={dict.profile.memberSince}
+                        value={memberSince}
+                        icon={<Calendar className="h-4 w-4 text-cyan-400" />}
+                      />
+                      <InfoPanel
+                        title={dict.profile.lastActivity}
+                        value={lastActivity}
+                        icon={<Clock className="h-4 w-4 text-cyan-400" />}
+                      />
+                      <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
+                      <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
+                    </div>
 
-                <div className="flex justify-center">
-                  <ProfileSettingsForm
-                    initialStatus={profile.custom_status}
-                    initialRole={profile.boat_role}
-                    initialXboxGamertag={profile.xbox_gamertag}
-                  />
+                    <div className="flex justify-start">
+                      <ProfileSettingsForm
+                        initialStatus={profile.custom_status}
+                        initialRole={profile.boat_role}
+                        initialXboxGamertag={profile.xbox_gamertag}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
