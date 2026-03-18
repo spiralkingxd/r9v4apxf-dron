@@ -1,8 +1,8 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { AlertTriangle, Bell, Check, X, Users, Gift, Info } from "lucide-react";
-import { getNotifications, markAllAsRead, markAsRead, processInviteAction, processJoinRequestAction, Notification } from "@/app/actions/notifications";
+import { AlertTriangle, Bell, Check, X, Users, Gift, Info, Trash2 } from "lucide-react";
+import { deleteNotification, deleteReadNotifications, getNotifications, markAllAsRead, markAsRead, processInviteAction, processJoinRequestAction, Notification } from "@/app/actions/notifications";
 import { createClient } from "@/lib/supabase/client"; // Assumindo que você tem isso
 import { cn } from "@/lib/utils";
 import { ActionToast } from "@/components/action-toast";
@@ -114,6 +114,34 @@ export function NotificationsBell() {
     });
   };
 
+  const handleDeleteNotification = (id: string) => {
+    startTransition(async () => {
+      const result = await deleteNotification(id);
+      if (!result.success) {
+        setToast({ message: result.error || "Não foi possível excluir a notificação.", tone: "error" });
+      }
+      await fetchNotifications();
+      if (result.success) {
+        setToast({ message: "Notificação excluída.", tone: "success" });
+      }
+      setTimeout(() => setToast(null), 3000);
+    });
+  };
+
+  const handleDeleteReadNotifications = () => {
+    startTransition(async () => {
+      const result = await deleteReadNotifications();
+      if (!result.success) {
+        setToast({ message: result.error || "Não foi possível excluir notificações lidas.", tone: "error" });
+      }
+      await fetchNotifications();
+      if (result.success) {
+        setToast({ message: "Notificações lidas excluídas.", tone: "success" });
+      }
+      setTimeout(() => setToast(null), 3000);
+    });
+  };
+
   const handleInviteAction = (id: string, action: "accept" | "decline", teamId: string) => {
     startTransition(async () => {
       const res = await processInviteAction(id, action, teamId);
@@ -141,6 +169,8 @@ export function NotificationsBell() {
     });
   };
 
+  const readCount = notifications.filter((notification) => notification.read).length;
+
   return (
     <div className="relative" ref={rootRef}>
       {toast && (
@@ -165,17 +195,28 @@ export function NotificationsBell() {
 
       {open && (
         <div className="absolute right-0 top-[120%] z-50 w-80 sm:w-96 rounded-2xl border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-[#0b141e]/95 p-4 shadow-xl shadow-black/50 backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3">
+          <div className="flex items-start justify-between gap-3 border-b border-white/5 pb-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notificações</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllRead}
-                disabled={isPending}
-                className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 transition"
-              >
-                Marcar todas como lidas
-              </button>
-            )}
+            <div className="flex flex-wrap justify-end gap-2">
+              {readCount > 0 && (
+                <button
+                  onClick={handleDeleteReadNotifications}
+                  disabled={isPending}
+                  className="text-xs font-semibold text-rose-400 transition hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Excluir lidas
+                </button>
+              )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  disabled={isPending}
+                  className="text-xs font-semibold text-cyan-400 transition hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Marcar todas como lidas
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-2 flex max-h-80 flex-col gap-2 overflow-y-auto">
@@ -259,16 +300,27 @@ export function NotificationsBell() {
                           {new Date(notif.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
-                      
-                      {!notif.read && !isActionable && (
+
+                      <div className="flex shrink-0 items-center gap-1 self-start opacity-0 transition group-hover:opacity-100">
+                        {!notif.read && !isActionable && (
+                          <button
+                            onClick={() => handleMarkRead(notif.id)}
+                            disabled={isPending}
+                            className="rounded-md p-1 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-white/10 dark:hover:text-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Marcar como lida"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleMarkRead(notif.id)}
-                          className="shrink-0 text-slate-500 opacity-0 transition hover:text-slate-300 group-hover:opacity-100"
-                          title="Marcar como lida"
+                          onClick={() => handleDeleteNotification(notif.id)}
+                          disabled={isPending}
+                          className="rounded-md p-1 text-slate-500 transition hover:bg-rose-500/10 hover:text-rose-400 disabled:cursor-not-allowed disabled:opacity-60"
+                          title="Excluir notificação"
                         >
-                          <Check className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 );

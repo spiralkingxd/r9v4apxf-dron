@@ -80,6 +80,50 @@ export async function markAllAsRead() {
   return { success: false };
 }
 
+export async function deleteNotification(notificationId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Não autenticado" };
+
+  const { error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", notificationId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { success: false, error: "Não foi possível excluir a notificação." };
+  }
+
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function deleteReadNotifications() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Não autenticado" };
+
+  const { error } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("read", true);
+
+  if (error) {
+    return { success: false, error: "Não foi possível excluir as notificações lidas." };
+  }
+
+  revalidatePath("/");
+  return { success: true };
+}
+
 export async function processInviteAction(notificationId: string, action: "accept" | "decline", teamId: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
