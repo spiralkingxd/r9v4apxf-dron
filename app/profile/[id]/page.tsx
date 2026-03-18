@@ -233,7 +233,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   <div className="flex justify-center sm:justify-end w-full sm:w-auto mt-4 sm:mt-0">
                     <button className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10">
                       <span className="material-icons text-base">settings</span>
-                      {dict.profile.configureProfile ?? 'Configurar Perfil'}
+                      Configurar Perfil
                     </button>
                   </div>
                 </div>
