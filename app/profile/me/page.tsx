@@ -221,14 +221,6 @@ export default async function MyProfilePage() {
 
             <div className="relative px-6 py-6 sm:px-8 sm:py-8">
               <div className="space-y-8">
-                <div className="flex justify-end xl:hidden">
-                  <ProfileSettingsForm
-                    initialStatus={profile.custom_status}
-                    initialRole={profile.boat_role}
-                    initialXboxGamertag={profile.xbox_gamertag}
-                  />
-                </div>
-
                 <div className="flex flex-col items-center text-center">
                   <div className="relative h-28 w-28 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-200 ring-2 ring-yellow-400/55 ring-offset-1 ring-offset-slate-900 shadow-lg dark:bg-slate-800">
                     {profile.avatar_url ? (
@@ -257,12 +249,6 @@ export default async function MyProfilePage() {
                         {profile.role === "owner" ? <Crown className="h-6 w-6 text-yellow-500" /> : null}
                         {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-500" /> : null}
                       </h1>
-                      <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/5 px-3 py-1 dark:bg-white/5">
-                          <Calendar className="h-4 w-4 text-cyan-400" />
-                          {dict.profile.memberSince}: {memberSince}
-                        </span>
-                      </div>
                     </div>
 
                     {profile.custom_status ? (
@@ -283,34 +269,27 @@ export default async function MyProfilePage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <InfoPanel
-                      title={dict.profile.memberSince}
-                      value={memberSince}
-                      icon={<Calendar className="h-4 w-4 text-cyan-400" />}
-                    />
-                    <InfoPanel
-                      title={dict.profile.lastActivity}
-                      value={lastActivity}
-                      icon={<Clock className="h-4 w-4 text-cyan-400" />}
-                    />
-                  </div>
+                <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <InfoPanel
+                    title={dict.profile.memberSince}
+                    value={memberSince}
+                    icon={<Calendar className="h-4 w-4 text-cyan-400" />}
+                  />
+                  <InfoPanel
+                    title={dict.profile.lastActivity}
+                    value={lastActivity}
+                    icon={<Clock className="h-4 w-4 text-cyan-400" />}
+                  />
+                  <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
+                  <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
+                </div>
 
-                  <div className="space-y-4 xl:pt-1">
-                    <div className="hidden justify-end xl:flex">
-                      <ProfileSettingsForm
-                        initialStatus={profile.custom_status}
-                        initialRole={profile.boat_role}
-                        initialXboxGamertag={profile.xbox_gamertag}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                      <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
-                      <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
-                    </div>
-                  </div>
+                <div className="flex justify-center">
+                  <ProfileSettingsForm
+                    initialStatus={profile.custom_status}
+                    initialRole={profile.boat_role}
+                    initialXboxGamertag={profile.xbox_gamertag}
+                  />
                 </div>
               </div>
             </div>
@@ -330,8 +309,8 @@ export default async function MyProfilePage() {
 
 function InfoPanel({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-[1.6rem] border border-slate-200 bg-slate-50/85 px-5 py-5 text-center shadow-sm dark:border-white/10 dark:bg-white/5 sm:text-left">
-      <div className="flex items-center justify-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:justify-start">
+    <div className="h-full rounded-[1.6rem] border border-slate-200 bg-slate-50/85 p-6 text-left shadow-sm dark:border-white/10 dark:bg-white/5">
+      <div className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
         {icon}
         <span>{title}</span>
       </div>
@@ -349,12 +328,12 @@ function StatCard({ icon, label, value, description, tone }: { icon: ReactNode; 
   } satisfies Record<string, string>;
 
   return (
-    <div className={`relative overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-50/90 p-4 text-center shadow-sm before:absolute before:left-4 before:right-4 before:top-0 before:h-px dark:border-white/10 dark:bg-white/5 ${toneClasses[tone]}`}>
-      <div className="flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+    <div className={`relative h-full overflow-hidden rounded-[1.6rem] border border-slate-200 bg-slate-50/90 p-6 text-left shadow-sm before:absolute before:left-4 before:right-4 before:top-0 before:h-px dark:border-white/10 dark:bg-white/5 ${toneClasses[tone]}`}>
+      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
         {icon}
         <span>{label}</span>
       </div>
-      <p className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{value}</p>
+      <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">{value}</p>
       <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">{description}</p>
     </div>
   );
