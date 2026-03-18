@@ -211,9 +211,7 @@ export default async function MyProfilePage() {
   const crewLosses = userTeams.reduce((sum, team) => sum + team.losses, 0);
   const totalMatches = crewVictories + crewLosses;
   const winRate = crewVictories + crewLosses > 0 ? Math.round((crewVictories / (crewVictories + crewLosses)) * 100) : 0;
-  const teamResultsHelper = totalMatches > 0
-    ? `${dict.profile.winRate}: ${winRate}% • ${totalMatches} ${dict.profile.matchesPlayed}`
-    : `${dict.profile.winRate}: 0% • ${dict.profile.noMatchesPlayed}`;
+  const teamResultsHelper = `${crewVictories}/${crewLosses} • ${dict.profile.winRate}: ${winRate}%`;
 
   return (
     <main className="min-h-[calc(100vh-72px)] bg-slate-50 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] px-4 py-16 text-slate-900 dark:text-slate-100">
@@ -265,9 +263,6 @@ export default async function MyProfilePage() {
                         {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-500" /> : null}
                       </h1>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/15 bg-cyan-400/8 px-3 py-1">
-                          <AtSign className="h-4 w-4 text-cyan-400" />@{profile.username}
-                        </span>
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-black/5 px-3 py-1 dark:bg-white/5">
                           <Calendar className="h-4 w-4 text-cyan-400" />
                           {dict.profile.memberSince}: {memberSince}
@@ -292,9 +287,7 @@ export default async function MyProfilePage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      <CompactMeta>{dict.profile.currentTeams}: {userTeams.length}</CompactMeta>
-                      <CompactMeta>{dict.profile.winsLosses}: {crewVictories}/{crewLosses}</CompactMeta>
-                      <CompactMeta>{dict.profile.winRate}: {winRate}%</CompactMeta>
+                      <CompactMeta>{dict.profile.winsLosses}: {crewVictories}/{crewLosses} ({winRate}%)</CompactMeta>
                     </div>
                   </div>
                 </div>
@@ -310,20 +303,15 @@ export default async function MyProfilePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-1">
                 <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
-                <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.matchWins} value={playerRanking?.wins ?? 0} description="Duel dominance" tone="cyan" />
-                <StatCard icon={<Trophy className="h-4 w-4 text-amber-400" />} label={dict.profile.tournamentsWon} value={tournamentsWon} description="Finals conquered" tone="amber" />
-                <StatCard icon={<Users className="h-4 w-4 text-violet-400" />} label={dict.profile.currentTeams} value={userTeams.length} description="Active rosters" tone="violet" />
+                <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 border-t border-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-slate-200 dark:border-white/5 dark:sm:divide-white/5">
-            <InfoCard icon={<AtSign className="h-4 w-4 text-cyan-400" />} label={dict.profile.username}>
-              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">@{profile.username}</span>
-            </InfoCard>
+          <div className="grid grid-cols-1 border-t border-slate-200 sm:grid-cols-2 sm:divide-x sm:divide-slate-200 dark:border-white/5 dark:sm:divide-white/5">
             <InfoCard icon={<Calendar className="h-4 w-4 text-cyan-400" />} label={dict.profile.memberSince}>
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">{memberSince}</span>
             </InfoCard>

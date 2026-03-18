@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Star } from "lucide-react";
+import { MonitorX, Radio, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 declare global {
@@ -46,8 +46,9 @@ function StreamerOfflineCard({ username }: { username: string }) {
 function getGridClass(count: number) {
   if (count <= 1) return "grid-cols-1";
   if (count === 2) return "grid-cols-1 lg:grid-cols-2";
-  if (count <= 4) return "grid-cols-1 sm:grid-cols-2";
-  if (count <= 6) return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3";
+  if (count === 3) return "grid-cols-1 md:grid-cols-3";
+  if (count === 4) return "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4";
+  if (count <= 6) return "grid-cols-1 md:grid-cols-3";
   if (count <= 9) return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
   return "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 }
@@ -151,8 +152,18 @@ export function TwitchMultiviewGrid({ streamers }: { streamers: Streamer[] }) {
 
   if (!hasAnySelected) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-slate-300">
-        Nenhum streamer selecionado pela administração está ao vivo no momento.
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+        <div className="mx-auto flex max-w-xl flex-col items-center gap-3 text-slate-300">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-slate-200">
+            <MonitorX className="h-7 w-7" />
+          </span>
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-white">Nenhum streamer disponível no multiview</p>
+            <p className="text-sm text-slate-400">
+              Nenhum streamer selecionado pela administração está ao vivo no momento. Assim que uma transmissão entrar no ar, ela aparece aqui automaticamente.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -160,8 +171,11 @@ export function TwitchMultiviewGrid({ streamers }: { streamers: Streamer[] }) {
   return (
     <div className="space-y-3">
       {!hasAnyLive && (
-        <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-center text-sm text-amber-100">
-          Nenhum streamer selecionado pela administração está ao vivo no momento.
+        <div className="rounded-xl border border-amber-400/20 bg-amber-400/10 px-4 py-3">
+          <div className="flex items-center justify-center gap-2 text-center text-sm text-amber-100">
+            <Radio className="h-4 w-4" />
+            <span>Nenhum streamer selecionado pela administração está ao vivo no momento.</span>
+          </div>
         </div>
       )}
 

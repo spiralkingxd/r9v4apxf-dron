@@ -71,9 +71,6 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
         </h2>
 
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-white/5 px-3 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {(dict?.teams?.teamsCountLabel || "Equipes")} ({teamsCount}/1)
-          </span>
           {!shouldShowTeamChoice ? (
             <button
               type="button"
@@ -161,7 +158,6 @@ function ProfileTeamsContent({ userId, userXboxGamertag, teams, teamsError, syst
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   <TeamMetaPill>{dict?.profile?.teamPoints || "Pontos"}: {team.points}</TeamMetaPill>
                   <TeamMetaPill>{dict?.profile?.winsLosses || "Vitórias / Derrotas"}: {team.wins}/{team.losses}</TeamMetaPill>
-                  <TeamMetaPill>{dict?.profile?.teamMembers || "Membros"}: {team.member_count}/{team.max_members}</TeamMetaPill>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
