@@ -18,6 +18,7 @@ const banSchema = z.object({
   userId: z.string().uuid(),
   reason: z.string().min(2).max(400),
   durationDays: z.number().int().min(1).max(3650).nullable().optional(),
+  scope: z.enum(["full_access", "tournament_registration"]).optional(),
   removeFromTeams: z.boolean().optional(),
   cancelActiveRegistrations: z.boolean().optional(),
   notifyDiscord: z.boolean().optional(),
@@ -54,6 +55,7 @@ const bansFilterSchema = z.object({
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
   durationType: z.enum(["all", "temporary", "permanent"]).optional(),
+  scopeType: z.enum(["all", "full_access", "tournament_registration"]).optional(),
   limit: z.number().int().min(1).max(500).optional(),
 });
 
@@ -176,6 +178,7 @@ export async function banUser(
   durationDays: number | null = null,
   _bannedBy?: string,
   options?: {
+    scope?: "full_access" | "tournament_registration";
     removeFromTeams?: boolean;
     cancelActiveRegistrations?: boolean;
     notifyDiscord?: boolean;
@@ -185,6 +188,7 @@ export async function banUser(
     userId,
     reason,
     durationDays,
+    scope: options?.scope ?? "full_access",
     removeFromTeams: options?.removeFromTeams ?? false,
     cancelActiveRegistrations: options?.cancelActiveRegistrations ?? false,
     notifyDiscord: options?.notifyDiscord ?? false,
@@ -209,20 +213,22 @@ export async function banUser(
     const nowIsoValue = now.toISOString();
     const expiresAt = parsed.data.durationDays ? new Date(now.getTime() + parsed.data.durationDays * 24 * 60 * 60 * 1000).toISOString() : null;
 
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        is_banned: true,
-        ban_reason: parsed.data.reason,
-        banned_reason: parsed.data.reason,
-        banned_at: nowIsoValue,
-        banned_by: adminId,
-        force_logout_after: nowIsoValue,
-        updated_at: nowIsoValue,
-      })
-      .eq("id", parsed.data.userId);
+    if (parsed.data.scope === "full_access") {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          is_banned: true,
+          ban_reason: parsed.data.reason,
+          banned_reason: parsed.data.reason,
+          banned_at: nowIsoValue,
+          banned_by: adminId,
+          force_logout_after: nowIsoValue,
+          updated_at: nowIsoValue,
+        })
+        .eq("id", parsed.data.userId);
 
-    if (profileError) return { error: "Nï¿½o foi possï¿½vel banir o usuï¿½rio." };
+      if (profileError) return { error: "Nï¿½o foi possï¿½vel banir o usuï¿½rio." };
+    }
 
     await supabase.from("bans").insert({
       user_id: parsed.data.userId,
@@ -230,6 +236,7 @@ export async function banUser(
       reason: parsed.data.reason,
       duration: parsed.data.durationDays ?? null,
       expires_at: expiresAt,
+      scope: parsed.data.scope,
       is_active: true,
     });
 
@@ -256,7 +263,8 @@ export async function banUser(
       entityId: parsed.data.userId,
       oldValue: { is_banned: target.is_banned },
       newValue: {
-        is_banned: true,
+        is_banned: parsed.data.scope === "full_access",
+        scope: parsed.data.scope,
         reason: parsed.data.reason,
         durationDays: parsed.data.durationDays ?? null,
         expiresAt,
@@ -276,7 +284,12 @@ export async function banUser(
     }
 
     revalidateMemberPaths(parsed.data.userId);
-    return { success: "Usuï¿½rio banido com sucesso." };
+    return {
+      success:
+        parsed.data.scope === "full_access"
+          ? "Usuï¿½rio banido com sucesso."
+          : "Usuï¿½rio suspenso de inscriï¿½ï¿½es em torneios.",
+    };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao banir usuï¿½rio." };
   }
@@ -316,6 +329,7 @@ export async function unbanUser(userId: string, _unbannedBy?: string): Promise<A
       .from("bans")
       .update({ is_active: false, expires_at: nowIsoValue })
       .eq("user_id", parsed.data.userId)
+      .eq("scope", "full_access")
       .eq("is_active", true);
 
     await logAdminTables(supabase, {
@@ -722,6 +736,7 @@ export async function getBans(filters?: {
   dateFrom?: string;
   dateTo?: string;
   durationType?: "all" | "temporary" | "permanent";
+  scopeType?: "all" | "full_access" | "tournament_registration";
   limit?: number;
 }) {
   const parsed = bansFilterSchema.safeParse(filters ?? {});
@@ -735,7 +750,7 @@ export async function getBans(filters?: {
 
     let query = supabase
       .from("bans")
-      .select("id, user_id, banned_by, reason, duration, expires_at, created_at, is_active")
+      .select("id, user_id, banned_by, reason, duration, expires_at, created_at, is_active, scope")
       .order("created_at", { ascending: false })
       .limit(cfg.limit ?? 120);
 
@@ -745,6 +760,7 @@ export async function getBans(filters?: {
     if (cfg.dateTo) query = query.lte("created_at", cfg.dateTo);
     if (cfg.durationType === "temporary") query = query.not("duration", "is", null);
     if (cfg.durationType === "permanent") query = query.is("duration", null);
+    if (cfg.scopeType && cfg.scopeType !== "all") query = query.eq("scope", cfg.scopeType);
 
     const { data, error } = await query;
     if (error) return { error: "Falha ao consultar banimentos.", data: [] as never[] };
@@ -770,6 +786,10 @@ export async function getBans(filters?: {
       expiresAt: row.expires_at ? String(row.expires_at) : null,
       createdAt: String(row.created_at),
       isActive: Boolean(row.is_active),
+      scope:
+        String((row as { scope?: string }).scope ?? "full_access") === "tournament_registration"
+          ? "tournament_registration"
+          : "full_access",
     }));
 
     return { error: null, data: normalized };
@@ -817,6 +837,59 @@ export async function updateBanDuration(banId: string, durationDays: number | nu
     return { success: "DuraÝ§Ý£o atualizada com sucesso." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao atualizar duraÝ§Ý£o." };
+  }
+}
+
+export async function liftBanEntry(banId: string): Promise<ActionResult> {
+  const parsed = z.string().uuid().safeParse(banId);
+  if (!parsed.success) return { error: "ID invÃ¡lido." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    const stamp = nowIso();
+
+    const { data: row } = await supabase
+      .from("bans")
+      .select("id, user_id, scope, is_active")
+      .eq("id", parsed.data)
+      .maybeSingle<{ id: string; user_id: string; scope: "full_access" | "tournament_registration"; is_active: boolean }>();
+
+    if (!row) return { error: "Registro nÃ£o encontrado." };
+    if (!row.is_active) return { success: "Registro jÃ¡ estava encerrado." };
+
+    const { error } = await supabase
+      .from("bans")
+      .update({ is_active: false, expires_at: stamp })
+      .eq("id", parsed.data);
+
+    if (error) return { error: "NÃ£o foi possÃ­vel encerrar o registro." };
+
+    if (row.scope === "full_access") {
+      await supabase
+        .from("profiles")
+        .update({
+          is_banned: false,
+          ban_reason: null,
+          banned_reason: null,
+          banned_at: null,
+          banned_by: null,
+          updated_at: stamp,
+        })
+        .eq("id", row.user_id);
+    }
+
+    await logAdminTables(supabase, {
+      adminId,
+      action: "lift_ban_entry",
+      entityType: "user",
+      entityId: row.user_id,
+      newValue: { banId: row.id, scope: row.scope, is_active: false },
+    });
+
+    revalidateMemberPaths(row.user_id);
+    return { success: row.scope === "full_access" ? "Banimento encerrado." : "SuspensÃ£o encerrada." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao encerrar registro." };
   }
 }
 

@@ -67,6 +67,7 @@ export default async function EventDetailPage({ params }: Props) {
   // Define qual estado da inscrição deve ser exibido ao usuário.
   let captainTeams: TeamOption[] = [];
   let alreadyRegisteredTeamIds: string[] = [];
+  let registrationSuspension: { reason: string; expiresAt: string | null } | null = null;
 
   if (user && event.status !== "finished") {
     const { data: myTeams } = await supabase
@@ -85,6 +86,25 @@ export default async function EventDetailPage({ params }: Props) {
         .in("team_id", teamIds);
 
       alreadyRegisteredTeamIds = (existingRegs ?? []).map((r) => r.team_id as string);
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data: activeRestriction } = await supabase
+      .from("bans")
+      .select("reason, expires_at")
+      .eq("user_id", user.id)
+      .eq("scope", "tournament_registration")
+      .eq("is_active", true)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ reason: string; expires_at: string | null }>();
+
+    if (activeRestriction) {
+      registrationSuspension = {
+        reason: String(activeRestriction.reason),
+        expiresAt: activeRestriction.expires_at ? String(activeRestriction.expires_at) : null,
+      };
     }
   }
 
@@ -254,6 +274,14 @@ export default async function EventDetailPage({ params }: Props) {
                     Login com Discord
                   </Link>
                 </div>
+              ) : registrationSuspension ? (
+                <p className="mt-4 rounded-xl border border-rose-300/20 bg-rose-300/10 px-4 py-3 text-sm text-rose-100">
+                  Sua conta está suspensa para inscrições em torneios.
+                  {registrationSuspension.expiresAt
+                    ? ` Expira em ${fmt.format(new Date(registrationSuspension.expiresAt))}.`
+                    : " Suspensão sem prazo definido."}
+                  {` Motivo: ${registrationSuspension.reason}`}
+                </p>
               ) : captainTeams.length === 0 ? (
                 <div className="mt-4 space-y-3">
                   <p className="text-sm text-slate-400">

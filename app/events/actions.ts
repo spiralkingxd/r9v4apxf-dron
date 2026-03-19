@@ -63,6 +63,25 @@ export async function registerTeamForEvent(
 
   const { event_id, team_id } = parsed.data;
 
+  const nowIso = new Date().toISOString();
+  const { data: activeRestriction } = await supabase
+    .from("bans")
+    .select("id, reason, expires_at")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .eq("scope", "tournament_registration")
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ id: string; reason: string; expires_at: string | null }>();
+
+  if (activeRestriction) {
+    const until = activeRestriction.expires_at
+      ? ` atÃ© ${new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }).format(new Date(activeRestriction.expires_at))}`
+      : "";
+    return { error: `Sua conta estÃ¡ suspensa para inscriÃ§Ãµes em torneios${until}. Motivo: ${activeRestriction.reason}` };
+  }
+
   const { data: event } = await supabase
     .from("events")
     .select("status, registration_deadline")

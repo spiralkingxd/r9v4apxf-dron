@@ -122,6 +122,13 @@ export default async function AdminDashboardPage() {
       tone: "danger" as const,
     },
     {
+      label: "Suspensoes Torneio",
+      value: numberFmt.format(statsPayload.stats.tournamentSuspensions),
+      helper: "Inscricao bloqueada",
+      icon: <ShieldAlert className="h-5 w-5" />,
+      tone: "warning" as const,
+    },
+    {
       label: "Solicitacoes Pendentes",
       value: numberFmt.format(statsPayload.stats.pendingJoinRequests),
       helper: "Aguardando aprovacao",

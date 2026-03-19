@@ -124,13 +124,14 @@ export async function updateSession(request: NextRequest) {
       const profile = existingProfile;
       const { data: activeBan } = await supabase
         .from("bans")
-        .select("expires_at")
+        .select("expires_at, scope")
         .eq("user_id", user.id)
         .eq("is_active", true)
+        .eq("scope", "full_access")
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle<{ expires_at: string | null }>();
+        .maybeSingle<{ expires_at: string | null; scope: string | null }>();
 
       const isCurrentlyBanned = Boolean(profile?.is_banned || activeBan);
 
@@ -145,6 +146,7 @@ export async function updateSession(request: NextRequest) {
         const bannedUrl = new URL("/account-banned", request.url);
         const reason = profile?.ban_reason ?? profile?.banned_reason ?? "Conta banida pela administracao.";
         bannedUrl.searchParams.set("reason", reason);
+        bannedUrl.searchParams.set("type", "ban");
         if (activeBan?.expires_at) {
           bannedUrl.searchParams.set("expires_at", activeBan.expires_at);
         }

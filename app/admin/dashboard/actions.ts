@@ -11,6 +11,7 @@ type DashboardStat = {
   activeTournaments: number;
   matchesToday: number;
   bannedUsers: number;
+  tournamentSuspensions: number;
   pendingJoinRequests: number;
 };
 
@@ -106,6 +107,7 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
     { count: totalUsers },
     { count: newUsersThisMonth },
     { count: bannedUsers },
+    { count: tournamentSuspensions },
     teamsRes,
     teamMembersRes,
     { count: activeTournaments },
@@ -116,6 +118,12 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
     supabase.from("profiles").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("id", { count: "exact", head: true }).gte("created_at", monthStart.toISOString()),
     supabase.from("profiles").select("id", { count: "exact", head: true }).eq("is_banned", true),
+    supabase
+      .from("bans")
+      .select("id", { count: "exact", head: true })
+      .eq("scope", "tournament_registration")
+      .eq("is_active", true)
+      .or(`expires_at.is.null,expires_at.gt.${now.toISOString()}`),
     supabase.from("teams").select("id, dissolved_at"),
     supabase.from("team_members").select("team_id"),
     supabase.from("events").select("id", { count: "exact", head: true }).eq("event_kind", "tournament").eq("status", "active"),
@@ -172,6 +180,7 @@ export async function getDashboardStats(): Promise<DashboardStatsPayload> {
       activeTournaments: activeTournaments ?? 0,
       matchesToday: matchesToday ?? 0,
       bannedUsers: bannedUsers ?? 0,
+      tournamentSuspensions: tournamentSuspensions ?? 0,
       pendingJoinRequests: pendingJoinRequests ?? 0,
     },
     tournamentStatus,
