@@ -17,6 +17,7 @@ import {
 import type { AdminNotificationUserOption, DiscordSettingsData, NotificationHistoryItem, NotificationTemplateItem } from "@/app/admin/notifications/_data";
 import type { DiscordNotificationType } from "@/lib/discord-notifications";
 import { AdminBadge } from "@/components/admin/admin-badge";
+import { AdminAutocompleteInput } from "@/components/admin/admin-autocomplete-input";
 import { AdminButton } from "@/components/admin/admin-button";
 import { AdminTable, type AdminTableColumn } from "@/components/admin/admin-table";
 import { useAdminToast } from "@/components/admin/admin-toast";
@@ -77,6 +78,15 @@ export function NotificationsCenter({ templates, history, settings, users, isOwn
   const selectedTemplate = useMemo(
     () => templates.find((item) => item.type === selectedTemplateType) ?? null,
     [templates, selectedTemplateType],
+  );
+  const userOptions = useMemo(
+    () =>
+      users.map((user) => ({
+        id: user.id,
+        title: user.display_name,
+        subtitle: `@${user.username}`,
+      })),
+    [users],
   );
 
   function refresh() {
@@ -215,21 +225,14 @@ export function NotificationsCenter({ templates, history, settings, users, isOwn
           </label>
 
           {inAppAudience === "single" ? (
-            <label className="block text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-              Usuário
-              <select
-                value={inAppUserId}
-                onChange={(event) => setInAppUserId(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-3 py-2 text-sm text-slate-800 dark:text-slate-100"
-              >
-                <option value="">Selecione</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.display_name} (@{user.username})
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div>
+              <AdminAutocompleteInput
+                label="Usuário"
+                placeholder="Digite 2 letras para buscar..."
+                localOptions={userOptions}
+                onSelect={(option) => setInAppUserId(option.id)}
+              />
+            </div>
           ) : null}
         </div>
 

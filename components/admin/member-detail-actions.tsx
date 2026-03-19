@@ -56,31 +56,61 @@ export function MemberDetailActions({
       ) : null}
 
       {!isBanned ? (
-        <AdminButton
-          type="button"
-          variant="danger"
-          disabled={isPending || currentRole === "owner"}
-          onClick={() => {
-            const reason = window.prompt("Motivo do banimento:", "Violação de regras")?.trim();
-            if (!reason) return;
-            const rawDuration = window.prompt("Duração em dias (vazio = permanente):", "")?.trim() ?? "";
-            const durationValue = rawDuration ? Number(rawDuration) : null;
-            if (rawDuration && (!Number.isFinite(durationValue ?? Number.NaN) || (durationValue ?? 0) <= 0)) {
-              pushToast("error", "Duração inválida.");
-              return;
-            }
-            run(() =>
-              banUser(userId, reason, durationValue, undefined, {
-                notifyDiscord: false,
-                removeFromTeams: false,
-                cancelActiveRegistrations: false,
-              }),
-            );
-          }}
-        >
-          <Ban className="h-4 w-4" />
-          Banir Usuário
-        </AdminButton>
+        <>
+          <AdminButton
+            type="button"
+            variant="danger"
+            disabled={isPending || currentRole === "owner"}
+            onClick={() => {
+              const reason = window.prompt("Motivo do banimento:", "Violação de regras")?.trim();
+              if (!reason) return;
+              const rawDuration = window.prompt("Duração em dias (vazio = permanente):", "")?.trim() ?? "";
+              const durationValue = rawDuration ? Number(rawDuration) : null;
+              if (rawDuration && (!Number.isFinite(durationValue ?? Number.NaN) || (durationValue ?? 0) <= 0)) {
+                pushToast("error", "Duração inválida.");
+                return;
+              }
+              run(() =>
+                banUser(userId, reason, durationValue, undefined, {
+                  scope: "full_access",
+                  notifyDiscord: false,
+                  removeFromTeams: false,
+                  cancelActiveRegistrations: false,
+                }),
+              );
+            }}
+          >
+            <Ban className="h-4 w-4" />
+            Banir Usuário
+          </AdminButton>
+
+          <AdminButton
+            type="button"
+            variant="ghost"
+            disabled={isPending || currentRole === "owner"}
+            onClick={() => {
+              const reason = window.prompt("Motivo da suspensão de torneios:", "Conduta antidesportiva")?.trim();
+              if (!reason) return;
+              const rawDuration = window.prompt("Duração da suspensão em dias (vazio = permanente):", "7")?.trim() ?? "";
+              const durationValue = rawDuration ? Number(rawDuration) : null;
+              if (rawDuration && (!Number.isFinite(durationValue ?? Number.NaN) || (durationValue ?? 0) <= 0)) {
+                pushToast("error", "Duração inválida.");
+                return;
+              }
+              run(() =>
+                banUser(userId, reason, durationValue, undefined, {
+                  scope: "tournament_registration",
+                  notifyDiscord: false,
+                  removeFromTeams: false,
+                  cancelActiveRegistrations: true,
+                }),
+              );
+            }}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Suspender Torneios
+          </AdminButton>
+        </>
       ) : (
         <AdminButton
           type="button"
@@ -105,3 +135,4 @@ export function MemberDetailActions({
     </div>
   );
 }
+

@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition, useEffect, useRef } from "react";
-import { Download, RefreshCcw, User, Users } from "lucide-react";
-import { globalSearchAction, type SearchResult } from "@/app/actions/search-actions";
+import { useMemo, useState, useTransition } from "react";
+import { Download, RefreshCcw } from "lucide-react";
 
 import {
   adjustRankingPoints,
@@ -11,6 +10,7 @@ import {
 } from "@/app/admin/final-actions";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
+import { AdminAutocompleteInput } from "@/components/admin/admin-autocomplete-input";
 import { AdminTable, type AdminTableColumn } from "@/components/admin/admin-table";
 import { useAdminToast } from "@/components/admin/admin-toast";
 
@@ -62,26 +62,24 @@ export function RankingsAdminPanel({
   const [gameType, setGameType] = useState<"all" | "tournament" | "special" | "scrimmage">("all");
   const [search, setSearch] = useState("");
   const [adjustEntityId, setAdjustEntityId] = useState("");
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (adjustEntityId.length >= 2 && !adjustEntityId.includes("-") && !adjustEntityId.match(/^[0-9a-f]{8}-/i)) {
-        setIsSearching(true);
-        const res = await globalSearchAction(adjustEntityId, "all");
-        setSearchResults(res.filter(r => r.type === "user" || r.type === "team"));
-        setIsSearching(false);
-      } else {
-        setSearchResults([]);
-      }
-    }, 400);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [adjustEntityId]);
   const [adjustPoints, setAdjustPoints] = useState(0);
   const [adjustReason, setAdjustReason] = useState("");
   const [seasonName, setSeasonName] = useState("");
+  const entityOptions = useMemo(
+    () => [
+      ...players.map((player) => ({
+        id: player.profile_id,
+        title: player.name,
+        subtitle: `Usuario | Xbox: ${player.xbox ?? "-"}`,
+      })),
+      ...teams.map((team) => ({
+        id: team.team_id,
+        title: team.team_name,
+        subtitle: `Equipe | Capitao: ${team.captain_name}`,
+      })),
+    ],
+    [players, teams],
+  );
 
   const filteredPlayers = useMemo(() => {
     const cutoff = periodCutoff(period);
@@ -186,10 +184,15 @@ export function RankingsAdminPanel({
       </div>
 
       <div className="grid gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-4 lg:grid-cols-6">
-        <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 lg:col-span-2">
-          Entity ID (jogador/equipe)
-          <input value={adjustEntityId} onChange={(event) => setAdjustEntityId(event.target.value)} className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />
-        </label>
+        <div className="lg:col-span-2">
+          <AdminAutocompleteInput
+            label="Jogador/equipe"
+            placeholder="Digite 2 letras para buscar..."
+            localOptions={entityOptions}
+            onQueryChange={setAdjustEntityId}
+            onSelect={(option) => setAdjustEntityId(option.id)}
+          />
+        </div>
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
           Pontos (+/-)
           <input type="number" value={adjustPoints} onChange={(event) => setAdjustPoints(Number(event.target.value))} className="rounded-xl border border-slate-300 dark:border-white/10 bg-transparent dark:bg-black/20 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 outline-none" />

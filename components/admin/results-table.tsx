@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Download, RefreshCcw } from "lucide-react";
 
 import { recalculateAllRankings, revertMatchResult } from "@/app/admin/match-actions";
+import { AdminAutocompleteInput } from "@/components/admin/admin-autocomplete-input";
 import { AdminButton } from "@/components/admin/admin-button";
 import { AdminTable, type AdminTableColumn } from "@/components/admin/admin-table";
 import { useAdminToast } from "@/components/admin/admin-toast";
@@ -26,6 +27,13 @@ export function ResultsTable({
   const [eventFilter, setEventFilter] = useState(initialFilters?.eventId ?? "all");
   const [dateFilter, setDateFilter] = useState<"all" | "7" | "30" | "90">("all");
   const [pageSize, setPageSize] = useState(25);
+  const teamOptions = useMemo(
+    () =>
+      Array.from(new Set(rows.flatMap((row) => [row.team_a_name, row.team_b_name])))
+        .map((name) => ({ id: name, title: name }))
+        .slice(0, 100),
+    [rows],
+  );
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -127,7 +135,12 @@ export function ResultsTable({
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-4">
         <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
           Buscar equipe
-          <input value={search} onChange={(event) => setSearch(event.target.value)} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none" />
+          <AdminAutocompleteInput
+            placeholder="Digite 2 letras para buscar equipe..."
+            localOptions={teamOptions}
+            onQueryChange={setSearch}
+            onSelect={(option) => setSearch(option.title)}
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">

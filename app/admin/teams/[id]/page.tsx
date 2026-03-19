@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Calendar, Gamepad2, Shield, Users } from "lucide-react";
 
-import { getTeamDetails } from "@/app/admin/team-actions";
+import { decideJoinRequestAsAdmin, getTeamDetails } from "@/app/admin/team-actions";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { TeamDetailAdminActions } from "@/components/admin/team-detail-admin-actions";
 import { TeamDetailMemberActions } from "@/components/admin/team-detail-member-actions";
@@ -24,7 +24,15 @@ export default async function AdminTeamDetailPage({ params }: Props) {
     );
   }
 
-  const { team, members, stats, history, registrations, availableUsers } = data;
+  const { team, members, stats, history, registrations, availableUsers, joinRequests } = data;
+
+  async function handleRequestAction(formData: FormData) {
+    "use server";
+    const requestId = String(formData.get("request_id") ?? "");
+    const decision = String(formData.get("decision") ?? "") as "approved" | "rejected";
+    if (!requestId || (decision !== "approved" && decision !== "rejected")) return;
+    await decideJoinRequestAsAdmin(requestId, decision);
+  }
 
   return (
     <section className="space-y-5">
@@ -129,6 +137,42 @@ export default async function AdminTeamDetailPage({ params }: Props) {
               </li>
             ))}
             {registrations.length === 0 ? <li className="text-sm text-slate-500">Sem inscrições registradas.</li> : null}
+          </ul>
+        </article>
+
+        <article className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-5">
+          <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+            <Users className="h-4 w-4" />
+            Solicitacoes de entrada
+          </h2>
+          <ul className="mt-3 space-y-2">
+            {joinRequests.filter((request) => request.status === "pending").map((request) => (
+              <li key={request.id} className="rounded-lg border border-slate-200 dark:border-white/10 bg-white/5 p-3">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{request.display_name}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  @{request.username} | Xbox: {request.xbox_gamertag ?? "-"} | {dateFmt.format(new Date(request.created_at))}
+                </p>
+                <div className="mt-2 flex gap-2">
+                  <form action={handleRequestAction}>
+                    <input type="hidden" name="request_id" value={request.id} />
+                    <input type="hidden" name="decision" value="approved" />
+                    <button type="submit" className="rounded-lg border border-emerald-300/30 bg-emerald-300/10 px-2 py-1 text-xs text-emerald-100 hover:bg-emerald-300/20">
+                      Aprovar
+                    </button>
+                  </form>
+                  <form action={handleRequestAction}>
+                    <input type="hidden" name="request_id" value={request.id} />
+                    <input type="hidden" name="decision" value="rejected" />
+                    <button type="submit" className="rounded-lg border border-rose-300/30 bg-rose-300/10 px-2 py-1 text-xs text-rose-100 hover:bg-rose-300/20">
+                      Recusar
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+            {joinRequests.filter((request) => request.status === "pending").length === 0 ? (
+              <li className="text-sm text-slate-500">Sem solicitacoes pendentes.</li>
+            ) : null}
           </ul>
         </article>
       </div>

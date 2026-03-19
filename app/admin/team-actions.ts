@@ -72,6 +72,15 @@ type TeamDetails = {
     created_at: string;
     event_title: string;
   }>;
+  joinRequests: Array<{
+    id: string;
+    user_id: string;
+    status: "pending" | "approved" | "rejected";
+    created_at: string;
+    display_name: string;
+    username: string;
+    xbox_gamertag: string | null;
+  }>;
   availableUsers: Array<{
     id: string;
     display_name: string;
@@ -114,8 +123,12 @@ const dissolveSchema = z.object({
   notifyDiscord: z.boolean().optional(),
 });
 
-const restoreSchema = z.object({
+  const restoreSchema = z.object({
   teamId: z.string().uuid(),
+});
+const joinRequestDecisionSchema = z.object({
+  requestId: z.string().uuid(),
+  decision: z.enum(["approved", "rejected"]),
 });
 
 function nowIso() {
@@ -324,7 +337,7 @@ export async function getTeamDetails(teamId: string) {
 
     if (!team) return { error: "Equipe nao encontrada.", data: null as TeamDetails | null };
 
-    const [membersRawRes, profilesRawRes, registrationsRes, matchesRes, actionLogsRes, adminLogsRes] = await Promise.all([
+    const [membersRawRes, profilesRawRes, registrationsRes, matchesRes, actionLogsRes, adminLogsRes, joinRequestsRes] = await Promise.all([
       supabase.from("team_members").select("user_id, role, joined_at").eq("team_id", team.id).order("joined_at", { ascending: true }),
       supabase.from("profiles").select("id, display_name, username, avatar_url, xbox_gamertag"),
       supabase
@@ -353,6 +366,12 @@ export async function getTeamDetails(teamId: string) {
         .eq("entity_id", team.id)
         .order("created_at", { ascending: false })
         .limit(80),
+      supabase
+        .from("team_join_requests")
+        .select("id, user_id, status, created_at")
+        .eq("team_id", team.id)
+        .order("created_at", { ascending: false })
+        .limit(80),
     ]);
 
     const membersRaw = membersRawRes.data ?? [];
@@ -361,6 +380,7 @@ export async function getTeamDetails(teamId: string) {
     const matchesRaw = matchesRes.data ?? [];
     const actionLogsRaw = actionLogsRes.data ?? [];
     const adminLogsRaw = adminLogsRes.data ?? [];
+    const joinRequestsRaw = joinRequestsRes.data ?? [];
 
     const profileMap = new Map<string, {
       display_name: string;
@@ -500,6 +520,18 @@ export async function getTeamDetails(teamId: string) {
           status: String(row.status),
           created_at: String(row.created_at),
           event_title: ((event as { title?: string } | null)?.title ?? "Evento") as string,
+        };
+      }),
+      joinRequests: joinRequestsRaw.map((request) => {
+        const profile = profileMap.get(String(request.user_id));
+        return {
+          id: String(request.id),
+          user_id: String(request.user_id),
+          status: (String(request.status) as "pending" | "approved" | "rejected") ?? "pending",
+          created_at: String(request.created_at),
+          display_name: profile?.display_name ?? "Usuario",
+          username: profile?.username ?? "desconhecido",
+          xbox_gamertag: profile?.xbox_gamertag ?? null,
         };
       }),
       availableUsers,
@@ -932,6 +964,87 @@ export async function restoreTeam(teamId: string, _adminId?: string): Promise<Ac
     return { success: "Equipe restaurada com sucesso." };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao restaurar equipe." };
+  }
+}
+
+export async function decideJoinRequestAsAdmin(
+  requestId: string,
+  decision: "approved" | "rejected",
+): Promise<ActionResult> {
+  const parsed = joinRequestDecisionSchema.safeParse({ requestId, decision });
+  if (!parsed.success) return { error: "Solicitacao invalida." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "decide_join_request_admin");
+
+    const { data: request } = await supabase
+      .from("team_join_requests")
+      .select("id, team_id, user_id, status")
+      .eq("id", parsed.data.requestId)
+      .maybeSingle<{ id: string; team_id: string; user_id: string; status: "pending" | "approved" | "rejected" }>();
+
+    if (!request) return { error: "Solicitacao nao encontrada." };
+    if (request.status !== "pending") return { error: "Solicitacao ja respondida." };
+
+    const [{ data: team }, { count: teamMembers }, { count: userTeams }, { data: alreadyMember }] = await Promise.all([
+      supabase.from("teams").select("id, name, max_members, dissolved_at").eq("id", request.team_id).maybeSingle<{ id: string; name: string; max_members: number; dissolved_at: string | null }>(),
+      supabase.from("team_members").select("*", { count: "exact", head: true }).eq("team_id", request.team_id),
+      supabase.from("team_members").select("*", { count: "exact", head: true }).eq("user_id", request.user_id),
+      supabase.from("team_members").select("id").eq("team_id", request.team_id).eq("user_id", request.user_id).maybeSingle<{ id: string }>(),
+    ]);
+
+    if (!team) return { error: "Equipe nao encontrada." };
+    if (team.dissolved_at) return { error: "Equipe dissolvida." };
+
+    if (parsed.data.decision === "approved") {
+      if (alreadyMember) return { error: "Usuario ja pertence a esta equipe." };
+      if ((teamMembers ?? 0) >= (team.max_members ?? 10)) return { error: "Equipe lotada." };
+      if ((userTeams ?? 0) >= 1) return { error: "Usuario ja participa de outra equipe." };
+
+      const { error: memberError } = await supabase
+        .from("team_members")
+        .insert({ team_id: request.team_id, user_id: request.user_id, role: "member" });
+      if (memberError) return { error: "Nao foi possivel adicionar o usuario na equipe." };
+    }
+
+    const { error: updateError } = await supabase
+      .from("team_join_requests")
+      .update({
+        status: parsed.data.decision,
+        responded_by: adminId,
+        responded_at: nowIso(),
+      })
+      .eq("id", request.id)
+      .eq("status", "pending");
+
+    if (updateError) return { error: "Nao foi possivel atualizar a solicitacao." };
+
+    await insertNotifications(supabase, {
+      user_id: request.user_id,
+      type: parsed.data.decision === "approved" ? "team_join_approved" : "team_join_rejected",
+      title: parsed.data.decision === "approved" ? "Solicitacao aprovada" : "Solicitacao recusada",
+      message:
+        parsed.data.decision === "approved"
+          ? `Sua solicitacao para entrar na equipe ${team.name} foi aprovada.`
+          : `Sua solicitacao para entrar na equipe ${team.name} foi recusada.`,
+      data: { team_id: team.id, request_id: request.id },
+    });
+
+    await logAdminTables(supabase, {
+      adminId,
+      action: "decide_join_request_admin",
+      teamId: request.team_id,
+      oldValue: { request_id: request.id, status: "pending" },
+      newValue: { request_id: request.id, status: parsed.data.decision },
+    });
+
+    revalidateTeamPaths(request.team_id);
+    revalidatePath("/admin/dashboard");
+    revalidatePath(`/admin/members/${request.user_id}`);
+    return { success: parsed.data.decision === "approved" ? "Solicitacao aprovada." : "Solicitacao recusada." };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao responder solicitacao." };
   }
 }
 

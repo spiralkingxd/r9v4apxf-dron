@@ -1,32 +1,36 @@
 import { Ban } from "lucide-react";
 
-import { getBans, unbanUser, updateBanDuration } from "@/app/admin/member-actions";
+import { getBans, liftBanEntry, updateBanDuration } from "@/app/admin/member-actions";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
+import { SuspensionCreateForm } from "@/components/admin/suspension-create-form";
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
 
 type SearchParams = Promise<{
   active?: string;
   duration?: "all" | "temporary" | "permanent";
+  scope?: "all" | "full_access" | "tournament_registration";
 }>;
 
 export default async function AdminBansPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const activeOnly = params.active === "1";
   const durationType = params.duration ?? "all";
+  const scopeType = params.scope ?? "all";
 
   const { data, error } = await getBans({
     activeOnly,
     durationType,
+    scopeType,
     limit: 300,
   });
 
-  async function handleUnban(formData: FormData) {
+  async function handleLift(formData: FormData) {
     "use server";
-    const userId = String(formData.get("user_id") ?? "");
-    if (!userId) return;
-    await unbanUser(userId);
+    const banId = String(formData.get("ban_id") ?? "");
+    if (!banId) return;
+    await liftBanEntry(banId);
   }
 
   async function handleDurationUpdate(formData: FormData) {
@@ -43,11 +47,18 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
       <header className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-6">
         <p className="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Admin</p>
         <h1 className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-slate-900 dark:text-white">
-          <Ban className="h-6 w-6 text-rose-300" />
-          Sistema de Banimentos
+          <Ban className="h-6 w-6 text-rose-400" />
+          Banimentos e Suspensoes
         </h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Lista de banimentos ativos e histórico completo.</p>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Gerencie banimentos totais e suspensoes temporarias de inscricao em torneios.
+        </p>
       </header>
+
+      <section className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-4">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Nova Suspensao de Torneios</h2>
+        <SuspensionCreateForm />
+      </section>
 
       <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-4">
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
@@ -59,11 +70,20 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
         </label>
 
         <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-          Duração
+          Duracao
           <select name="duration" defaultValue={durationType} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
             <option value="all">Todas</option>
-            <option value="temporary">Temporário</option>
+            <option value="temporary">Temporario</option>
             <option value="permanent">Permanente</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          Tipo
+          <select name="scope" defaultValue={scopeType} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-3 py-2 text-sm text-slate-800 dark:text-slate-100">
+            <option value="all">Todos</option>
+            <option value="full_access">Banimento total</option>
+            <option value="tournament_registration">Suspensao de torneio</option>
           </select>
         </label>
 
@@ -77,20 +97,28 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
           <table className="min-w-full divide-y divide-white/10">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Usuário</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Usuario</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Tipo</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Admin</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Motivo</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Duração</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Duracao</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Criado em</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Expira em</th>
                 <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Status</th>
-                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Ações</th>
+                <th className="px-4 py-3 text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">Acoes</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {data.map((ban) => (
                 <tr key={ban.id}>
                   <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{ban.userName}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {ban.scope === "tournament_registration" ? (
+                      <AdminBadge tone="pending">Suspensao de Torneio</AdminBadge>
+                    ) : (
+                      <AdminBadge tone="danger">Banimento Total</AdminBadge>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{ban.bannedByName}</td>
                   <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{ban.reason}</td>
                   <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{ban.duration ? `${ban.duration} dia(s)` : "Permanente"}</td>
@@ -102,9 +130,11 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
                   <td className="px-4 py-3 text-sm">
                     {ban.isActive ? (
                       <div className="flex flex-wrap gap-2">
-                        <form action={handleUnban}>
-                          <input type="hidden" name="user_id" value={ban.userId} />
-                          <AdminButton type="submit" variant="success" className="px-3 py-1.5 text-xs">Desbanir</AdminButton>
+                        <form action={handleLift}>
+                          <input type="hidden" name="ban_id" value={ban.id} />
+                          <AdminButton type="submit" variant="success" className="px-3 py-1.5 text-xs">
+                            {ban.scope === "tournament_registration" ? "Encerrar suspensao" : "Desbanir"}
+                          </AdminButton>
                         </form>
                         <form action={handleDurationUpdate} className="flex items-center gap-1">
                           <input type="hidden" name="ban_id" value={ban.id} />
@@ -125,8 +155,8 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
               ))}
               {data.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                    Nenhum banimento encontrado.
+                  <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Nenhum registro de banimento/suspensao encontrado.
                   </td>
                 </tr>
               ) : null}

@@ -144,13 +144,14 @@ export async function GET(request: NextRequest) {
 
   const { data: activeBan } = await supabase
     .from("bans")
-    .select("expires_at")
+    .select("expires_at, scope")
     .eq("user_id", user.id)
     .eq("is_active", true)
+    .eq("scope", "full_access")
     .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order("created_at", { ascending: false })
     .limit(1)
-    .maybeSingle<{ expires_at: string | null }>();
+    .maybeSingle<{ expires_at: string | null; scope: string | null }>();
 
   const isBanned = Boolean(syncedProfile?.is_banned || activeBan);
 
@@ -164,6 +165,7 @@ export async function GET(request: NextRequest) {
         syncedProfile?.banned_reason ??
         "Conta banida pela administracao.",
     );
+    bannedUrl.searchParams.set("type", "ban");
 
     if (activeBan?.expires_at) {
       bannedUrl.searchParams.set("expires_at", activeBan.expires_at);

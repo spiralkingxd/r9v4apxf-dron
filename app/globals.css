@@ -120,13 +120,13 @@ body::selection {
 }
 
 .action-secondary {
-  border: 1px solid var(--surface-border);
-  background: color-mix(in srgb, var(--foreground) 8%, transparent);
-  color: color-mix(in srgb, var(--foreground) 92%, #ffffff 8%);
+  border: 1px solid #5d738a;
+  background: #334c65;
+  color: #f3f8fd;
 }
 
 .action-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: #3e5b77;
 }
 
 .soft-ring {
@@ -168,8 +168,15 @@ body::selection {
 }
 
 [data-theme="light"] .action-secondary {
-  color: #1c334c;
-  background: rgba(28, 51, 76, 0.06);
+  color: #0f2740;
+  background: #eef4fb;
+  border-color: #8ea6be;
+  box-shadow: 0 10px 24px rgba(15, 39, 64, 0.16);
+}
+
+[data-theme="light"] .action-secondary:hover {
+  background: #ffffff;
+  border-color: rgba(120, 145, 173, 0.75);
 }
 
 [data-theme="light"] .text-white,

@@ -89,9 +89,9 @@ export async function deleteNotification(notificationId: string) {
 
   if (!user) return { success: false, error: "Não autenticado" };
 
-  let { error } = await supabase
+  let { error, count } = await supabase
     .from("notifications")
-    .delete()
+    .delete({ count: "exact" })
     .eq("id", notificationId)
     .eq("user_id", user.id);
 
@@ -100,10 +100,11 @@ export async function deleteNotification(notificationId: string) {
     if (admin) {
       const fallback = await admin
         .from("notifications")
-        .delete()
+        .delete({ count: "exact" })
         .eq("id", notificationId)
         .eq("user_id", user.id);
       error = fallback.error;
+      count = fallback.count ?? count;
     }
   }
 
@@ -112,7 +113,7 @@ export async function deleteNotification(notificationId: string) {
   }
 
   revalidatePath("/");
-  return { success: true, deletedCount: 1 };
+  return { success: true, deletedCount: count ?? 0 };
 }
 
 export async function deleteReadNotifications() {
@@ -139,9 +140,9 @@ export async function deleteReadNotifications() {
     return { success: true, deletedCount: 0 };
   }
 
-  let { error } = await supabase
+  let { error, count } = await supabase
     .from("notifications")
-    .delete()
+    .delete({ count: "exact" })
     .eq("user_id", user.id)
     .in("id", readIds);
 
@@ -150,10 +151,11 @@ export async function deleteReadNotifications() {
     if (admin) {
       const fallback = await admin
         .from("notifications")
-        .delete()
+        .delete({ count: "exact" })
         .eq("user_id", user.id)
         .in("id", readIds);
       error = fallback.error;
+      count = fallback.count ?? count;
     }
   }
 
@@ -162,7 +164,7 @@ export async function deleteReadNotifications() {
   }
 
   revalidatePath("/");
-  return { success: true, deletedCount: readIds.length };
+  return { success: true, deletedCount: count ?? readIds.length };
 }
 
 export async function processInviteAction(notificationId: string, action: "accept" | "decline", teamId: string) {

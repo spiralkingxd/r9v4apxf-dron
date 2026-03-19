@@ -149,6 +149,10 @@ export function TwitchMultiviewGrid({ streamers }: { streamers: Streamer[] }) {
 
   const hasAnySelected = ordered.length > 0;
   const hasAnyLive = ordered.some((s) => s.isLive);
+  const isOnlyHwmalkSelectedAndLive =
+    ordered.length === 1 &&
+    ordered[0]?.username.toLowerCase() === "hwmalk" &&
+    Boolean(ordered[0]?.isLive);
 
   if (!hasAnySelected) {
     return (
@@ -179,7 +183,13 @@ export function TwitchMultiviewGrid({ streamers }: { streamers: Streamer[] }) {
         </div>
       )}
 
-      <div className={`grid gap-2 md:gap-3 ${getGridClass(ordered.length)}`}>
+      <div
+        className={[
+          "grid gap-2 md:gap-3",
+          getGridClass(ordered.length),
+          isOnlyHwmalkSelectedAndLive ? "mx-auto w-full max-w-[78vw]" : "",
+        ].join(" ")}
+      >
         {ordered.map((streamer) => {
           const isOrganizer = streamer.username.toLowerCase() === "hwmalk";
           return (

@@ -12,6 +12,7 @@ export function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ message: string; tone: "success" | "error" } | null>(null);
 
@@ -34,6 +35,7 @@ export function NotificationsBell() {
       await fetchNotifications();
 
       const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id ?? null);
       if (!isMounted || !user) return;
 
       // Inscreve apenas nas notificações do usuário logado
@@ -116,8 +118,23 @@ export function NotificationsBell() {
 
   const handleDeleteNotification = (id: string) => {
     startTransition(async () => {
-      const result = await deleteNotification(id);
+      const previous = notifications;
+      setNotifications((prev) => prev.filter((item) => item.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - (previous.find((item) => item.id === id && !item.read) ? 1 : 0)));
+      let deleted = false;
+      if (currentUserId) {
+        const { error } = await supabase
+          .from("notifications")
+          .delete()
+          .eq("id", id)
+          .eq("user_id", currentUserId);
+        deleted = !error;
+      }
+
+      const result = deleted ? { success: true as const } : await deleteNotification(id);
       if (!result.success) {
+        setNotifications(previous);
+        setUnreadCount(previous.filter((item) => !item.read).length);
         setToast({ message: result.error || "Não foi possível excluir a notificação.", tone: "error" });
       }
       await fetchNotifications();
@@ -130,8 +147,21 @@ export function NotificationsBell() {
 
   const handleDeleteReadNotifications = () => {
     startTransition(async () => {
-      const result = await deleteReadNotifications();
+      const previous = notifications;
+      setNotifications((prev) => prev.filter((item) => !item.read));
+      let deleted = false;
+      if (currentUserId) {
+        const { error } = await supabase
+          .from("notifications")
+          .delete()
+          .eq("user_id", currentUserId)
+          .eq("read", true);
+        deleted = !error;
+      }
+
+      const result = deleted ? { success: true as const, deletedCount: previous.filter((item) => item.read).length } : await deleteReadNotifications();
       if (!result.success) {
+        setNotifications(previous);
         setToast({ message: result.error || "Não foi possível excluir notificações lidas.", tone: "error" });
       }
       await fetchNotifications();

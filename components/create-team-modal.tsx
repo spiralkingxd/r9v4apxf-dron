@@ -296,20 +296,20 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
       ) : null}
 
       {/* Painel */}
-      <div className="relative flex w-full max-w-xl flex-col rounded-3xl border border-white/10 bg-[#0d1f33] shadow-2xl">
+      <div className="relative flex w-full max-w-xl flex-col rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#0d1f33]">
         {/* Barra dourada */}
         <div className="h-1 w-full rounded-t-3xl bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />
 
         {/* Cabeçalho */}
         <div className="flex items-center justify-between px-7 pt-6">
-          <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-            <Anchor className="h-5 w-5 text-amber-400" />
+          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
+            <Anchor className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             Fundar Nova Equipe
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/8 hover:text-white"
+            className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-white/8 dark:hover:text-white"
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />
@@ -322,7 +322,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
           className="overflow-y-auto px-7 pb-7 pt-5"
           style={{ maxHeight: "calc(100dvh - 80px)" }}
         >
-          <div className="space-y-5"> {!userXboxGamertag && ( <div> <label className="mb-1.5 block text-sm font-medium text-slate-200"> Sua Xbox Gamertag <span className="text-rose-400">*</span> <span className="text-xs text-amber-400 ml-2">(Apenas 1 vez)</span> </label> <input id="xbox_gamertag" name="xbox_gamertag" disabled={isPending || teamLimitReached} placeholder="Ex: PlayerOne#1234" className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-100 outline-none ring-amber-300/40 transition focus:ring disabled:opacity-50" required /> <p className="mt-1 text-xs text-slate-400"> Necessário para participar de equipes e torneios. Você não poderá alterar isso depois sem contatar a moderação. </p> </div> )} 
+          <div className="space-y-5"> {!userXboxGamertag && ( <div> <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200"> Sua Xbox Gamertag <span className="text-rose-400">*</span> <span className="text-xs text-amber-600 dark:text-amber-400 ml-2">(Apenas 1 vez)</span> </label> <input id="xbox_gamertag" name="xbox_gamertag" disabled={isPending || teamLimitReached} placeholder="Ex: PlayerOne#1234" className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none ring-amber-300/40 transition focus:ring disabled:opacity-50" required /> <p className="mt-1 text-xs text-slate-500 dark:text-slate-400"> Necessário para participar de equipes e torneios. Você não poderá alterar isso depois sem contatar a moderação. </p> </div> )} 
             {/* ----- Nome da equipe ----- */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-200">
@@ -334,7 +334,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
                   disabled={isPending || teamLimitReached}
                   placeholder="Ex: Corsários do Abismo"
                   maxLength={30}
-                  className="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 pr-10 text-sm text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-500 focus:ring disabled:opacity-50"
+                  className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black/20 px-4 py-3 pr-10 text-sm text-slate-900 dark:text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring disabled:opacity-50"
                 />
                 {/* Indicador de disponibilidade */}
                 <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -378,7 +378,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
                   {...register("logo_url")}
                   disabled={isPending || teamLimitReached}
                   placeholder="https://exemplo.com/logo.png"
-                  className="flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-500 focus:ring disabled:opacity-50"
+                  className="flex-1 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black/20 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 outline-none ring-amber-300/40 transition placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring disabled:opacity-50"
                 />
               </div>
               {errors.logo_url ? (
@@ -448,7 +448,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
               {/* Campo de busca de membros */}
               {totalMembers < systemMaxMembers && (
                 <div ref={searchRef} className="relative">
-                  <div className="flex items-center rounded-xl border border-white/10 bg-black/20 px-4 py-3 focus-within:ring focus-within:ring-amber-300/40">
+                  <div className="flex items-center rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black/20 px-4 py-3 focus-within:ring focus-within:ring-amber-300/40">
                     {searching ? (
                       <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-slate-400" />
                     ) : (
@@ -463,7 +463,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
                       }
                       disabled={isPending || teamLimitReached}
                       placeholder="Buscar por nome ou @username…"
-                      className="w-full bg-transparent text-sm text-slate-100 outline-none placeholder:text-slate-500 disabled:opacity-50"
+                      className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500 disabled:opacity-50"
                     />
                   </div>
 
@@ -520,7 +520,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
             ) : null}
 
             {teamLimitReached ? (
-              <div className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              <div className="rounded-xl border border-amber-300/40 bg-amber-100 px-4 py-3 text-sm text-amber-900 dark:border-amber-300/30 dark:bg-amber-300/10 dark:text-amber-100">
                 Você já participa de uma equipe. Saia da equipe atual para poder fundar outra.
               </div>
             ) : null}
@@ -531,7 +531,7 @@ export function CreateTeamModal({ userId, userXboxGamertag, hasReachedTeamLimit 
                 type="button"
                 onClick={onClose}
                 disabled={isPending}
-                className="flex-1 rounded-xl border border-white/10 bg-white/4 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/8 disabled:opacity-50"
+                className="flex-1 rounded-xl border border-slate-300 dark:border-white/10 bg-slate-100 dark:bg-white/4 px-5 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 transition hover:bg-slate-200 dark:hover:bg-white/8 disabled:opacity-50"
               >
                 Cancelar
               </button>
