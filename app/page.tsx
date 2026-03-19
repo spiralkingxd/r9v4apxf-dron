@@ -119,8 +119,8 @@ export default async function Home() {
                 <Flame className="h-5 w-5" />
                 {dict.home.heroBtnEvents}
               </Link>
-              <Link href="/profile/me?action=new-team#teams" className="action-secondary inline-flex items-center gap-2 rounded-xl border border-slate-300 dark:border-white/20 bg-slate-200/50 dark:bg-white/10 backdrop-blur-md px-6 sm:px-8 py-3 sm:py-4 text-base font-semibold text-slate-800 dark:text-white transition hover:bg-slate-300/50 dark:hover:bg-white/20">
-                <Users className="h-5 w-5 text-cyan-300" />
+              <Link href="/profile/me?action=new-team#teams" className="action-secondary inline-flex items-center gap-2 rounded-xl border border-white/70 dark:border-white/20 bg-white/80 dark:bg-white/10 backdrop-blur-md px-6 sm:px-8 py-3 sm:py-4 text-base font-semibold text-slate-900 dark:text-white transition hover:bg-white/95 dark:hover:bg-white/20">
+                <Users className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
                 {dict.home.heroBtnTeam}
               </Link>
             </div>
