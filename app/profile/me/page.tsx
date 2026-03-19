@@ -243,12 +243,17 @@ export default async function MyProfilePage() {
                       )}
                     </div>
 
-                    <div className="my-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300 dark:bg-slate-950/80 dark:text-amber-200">
-                      <Crown className="h-3.5 w-3.5" />
-                      Command Center
-                      {profile.role === "owner" ? <Crown className="h-3.5 w-3.5 text-yellow-500" /> : null}
-                      {profile.role === "admin" ? <Shield className="h-3.5 w-3.5 text-cyan-400" /> : null}
-                    </div>
+                    {profile.role === "owner" ? (
+                      <div className="my-4 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-700 dark:text-amber-200">
+                        <Crown className="h-3.5 w-3.5 text-yellow-600 dark:text-yellow-500" />
+                        Owner
+                      </div>
+                    ) : profile.role === "admin" ? (
+                      <div className="my-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-200">
+                        <Shield className="h-3.5 w-3.5 text-cyan-700 dark:text-cyan-400" />
+                        Admin
+                      </div>
+                    ) : null}
 
                     <div className="my-4 w-full rounded-2xl border border-slate-200 bg-white/90 p-4 text-left shadow-sm dark:border-white/10 dark:bg-slate-950/35">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">

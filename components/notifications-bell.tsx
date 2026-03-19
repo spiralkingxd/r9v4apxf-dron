@@ -116,8 +116,13 @@ export function NotificationsBell() {
 
   const handleDeleteNotification = (id: string) => {
     startTransition(async () => {
+      const previous = notifications;
+      setNotifications((prev) => prev.filter((item) => item.id !== id));
+      setUnreadCount((prev) => Math.max(0, prev - (previous.find((item) => item.id === id && !item.read) ? 1 : 0)));
       const result = await deleteNotification(id);
       if (!result.success) {
+        setNotifications(previous);
+        setUnreadCount(previous.filter((item) => !item.read).length);
         setToast({ message: result.error || "Não foi possível excluir a notificação.", tone: "error" });
       }
       await fetchNotifications();
@@ -130,8 +135,11 @@ export function NotificationsBell() {
 
   const handleDeleteReadNotifications = () => {
     startTransition(async () => {
+      const previous = notifications;
+      setNotifications((prev) => prev.filter((item) => !item.read));
       const result = await deleteReadNotifications();
       if (!result.success) {
+        setNotifications(previous);
         setToast({ message: result.error || "Não foi possível excluir notificações lidas.", tone: "error" });
       }
       await fetchNotifications();
