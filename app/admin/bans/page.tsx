@@ -145,7 +145,7 @@ export default async function AdminBansPage({ searchParams }: { searchParams: Se
                   <td className="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{ban.userName}</td>
                   <td className="px-4 py-3 text-sm">
                     {ban.scope === "tournament_registration" ? (
-                      <AdminBadge tone="warning">Suspensão de Torneio</AdminBadge>
+                      <AdminBadge tone="pending">Suspensão de Torneio</AdminBadge>
                     ) : (
                       <AdminBadge tone="danger">Banimento Total</AdminBadge>
                     )}
