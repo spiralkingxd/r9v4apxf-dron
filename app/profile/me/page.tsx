@@ -232,9 +232,18 @@ export default async function MyProfilePage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
                 <div className="md:col-span-1 lg:col-span-4">
                   <div className="flex h-full flex-col items-center rounded-[1.75rem] border border-slate-200/80 bg-slate-50/85 p-6 text-center shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-white/5 sm:p-7">
-                    <h1 className="mb-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                      {profile.display_name}
-                    </h1>
+                    <div className="mb-3 flex w-full items-start justify-between gap-3">
+                      <h1 className="text-left text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                        {profile.display_name}
+                      </h1>
+                      <ProfileSettingsForm
+                        initialStatus={profile.custom_status}
+                        initialRole={profile.boat_role}
+                        initialXboxGamertag={profile.xbox_gamertag}
+                        triggerMode="icon"
+                        triggerTitle="Configurar Perfil"
+                      />
+                    </div>
 
                     <span className={`mb-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${roleBadgeClasses}`}>
                       <RoleIcon className="h-3.5 w-3.5" />
@@ -296,14 +305,6 @@ export default async function MyProfilePage() {
 
                 <div className="md:col-span-1 lg:col-span-8">
                   <div className="space-y-6">
-                    <div className="flex justify-end">
-                      <ProfileSettingsForm
-                        initialStatus={profile.custom_status}
-                        initialRole={profile.boat_role}
-                        initialXboxGamertag={profile.xbox_gamertag}
-                      />
-                    </div>
-
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <InfoPanel
                         title={dict.profile.lastActivity}

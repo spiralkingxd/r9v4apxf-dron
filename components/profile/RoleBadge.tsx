@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bomb, Hammer, Shield, ShipWheel, User } from "lucide-react";
+import { Bomb, Bucket, Hammer, ShipWheel, User } from "lucide-react";
 
 type RoleBadgeProps = {
   role: string;
@@ -41,7 +41,7 @@ const roleMap: Record<string, RoleConfig> = {
   suporte: {
     label: "Suporte",
     description: "Apoio geral a tripulacao",
-    icon: Shield,
+    icon: Bucket,
     className: "border-cyan-500/40 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300",
   },
   canhoneiro: {
