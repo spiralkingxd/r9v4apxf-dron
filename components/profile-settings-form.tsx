@@ -76,10 +76,10 @@ export function ProfileSettingsForm({
     <div className="flex transition-all">
       <button 
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-white/10 bg-slate-100/80 dark:bg-slate-800/80 px-4 py-2 text-xs md:text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition shadow-sm backdrop-blur-md"
+        className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-100 px-5 py-2.5 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-200 dark:border-amber-300/30 dark:bg-amber-400/15 dark:text-amber-100 dark:hover:bg-amber-400/25"
       >
         <Settings className="h-4 w-4" />
-        <span className="hidden md:inline">Configurar Perfil</span>
+        <span>Configurar Perfil</span>
       </button>
 
       {mounted && isOpen ? createPortal(

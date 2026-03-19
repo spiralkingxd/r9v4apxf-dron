@@ -278,6 +278,14 @@ export default async function MyProfilePage() {
 
                 <div className="md:col-span-1 lg:col-span-8">
                   <div className="space-y-6">
+                    <div className="flex justify-end">
+                      <ProfileSettingsForm
+                        initialStatus={profile.custom_status}
+                        initialRole={profile.boat_role}
+                        initialXboxGamertag={profile.xbox_gamertag}
+                      />
+                    </div>
+
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <InfoPanel
                         title={dict.profile.memberSince}
@@ -291,14 +299,6 @@ export default async function MyProfilePage() {
                       />
                       <StatCard icon={<Target className="h-4 w-4 text-emerald-400" />} label={dict.profile.leaguePoints} value={playerRanking?.points ?? 0} description="Season pressure" tone="emerald" />
                       <StatCard icon={<Swords className="h-4 w-4 text-cyan-400" />} label={dict.profile.winsLosses} value={`${crewVictories}/${crewLosses}`} description={`${dict.profile.winRate}: ${winRate}%`} tone="cyan" />
-                    </div>
-
-                    <div className="flex justify-start">
-                      <ProfileSettingsForm
-                        initialStatus={profile.custom_status}
-                        initialRole={profile.boat_role}
-                        initialXboxGamertag={profile.xbox_gamertag}
-                      />
                     </div>
                   </div>
                 </div>
