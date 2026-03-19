@@ -15,14 +15,14 @@ type PublicProfile = {
   avatar_url: string | null;
   xbox_gamertag: string | null;
   custom_status: string | null;
-  return (
-    <main className="min-h-[calc(100vh-72px)] bg-slate-50 px-4 py-16 text-slate-900 md:px-6 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] dark:text-slate-100">
+  boat_role: string | null;
+  role: string;
   created_at: string;
   updated_at: string;
   rankings?: {
     wins: number;
     losses: number;
-        <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/65 dark:shadow-2xl dark:shadow-black/30">
+    points: number;
   }[];
 };
 
@@ -30,64 +30,49 @@ type TeamMembershipRow = {
   team_id: string;
   role: "captain" | "member";
   joined_at: string;
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
-                <div className="md:col-span-1 lg:col-span-4">
-                  <div className="flex h-full flex-col items-center rounded-[1.6rem] border border-slate-200/80 bg-slate-50/80 p-6 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-                      {profile.display_name}
-                    </h1>
+};
 
-                    <div className="relative my-4 h-40 w-40 overflow-hidden rounded-full border border-amber-400/45 bg-slate-200 ring-2 ring-amber-400/70 ring-offset-2 ring-offset-slate-900 shadow-lg sm:h-44 sm:w-44 dark:bg-slate-800">
-                      {profile.avatar_url ? (
-                        <Image
-                          src={profile.avatar_url}
-                          alt={profile.display_name}
-                          fill
-                          sizes="(min-width: 1024px) 176px, (min-width: 640px) 160px, 160px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-yellow-600 dark:text-yellow-400">
-                          {profile.display_name.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
+type TeamRow = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  max_members: number | null;
+};
 
-                    <div className="my-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300 dark:bg-slate-950/80 dark:text-amber-200">
-                      <Crown className="h-3.5 w-3.5" />
-                      Command Center
-                      {profile.role === "owner" ? <Crown className="h-3.5 w-3.5 text-yellow-500" /> : null}
-                      {profile.role === "admin" ? <Shield className="h-3.5 w-3.5 text-cyan-400" /> : null}
-                    </div>
+type TeamRankingRow = {
+  team_id: string;
+  points: number;
+  wins: number;
+  losses: number;
+  rank_position: number | null;
+};
 
-                    <div className="my-4 w-full rounded-2xl border border-slate-200 bg-white/90 p-4 text-left shadow-sm dark:border-white/10 dark:bg-slate-950/35">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                        Conta Xbox
-                      </p>
-                      <div className="mt-2 flex justify-start">
-                        <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
-                      </div>
-                    </div>
+type TeamCard = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  role: "captain" | "member";
+  joined_at: string;
+  member_count: number;
+  max_members: number;
+  wins: number;
+  losses: number;
+  points: number;
+  rank_position: number | null;
+  tournaments_won: number;
+};
 
-                    {profile.custom_status ? (
-                      <div className="my-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        {profile.custom_status}
-                      </div>
-                    ) : null}
+type Props = { params: Promise<{ id: string }> };
 
-                    <div className="my-4 flex flex-wrap items-center justify-center gap-2">
-                      {boatRoles.map((role) => (
-                        <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 capitalize dark:text-cyan-200">
-                          {role}
-                        </span>
+export default async function PublicProfilePage({ params }: Props) {
   const dict = await getDictionary();
   const locale = await getLocale();
   const { id } = await params;
   const supabase = await createClient();
 
-                <div className="md:col-span-1 lg:col-span-8">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, display_name, username, avatar_url, xbox_gamertag, custom_status, boat_role, role, created_at, updated_at, rankings(wins, losses, points)")
     .eq("id", id)
     .maybeSingle<PublicProfile>();
 
@@ -193,13 +178,13 @@ type TeamMembershipRow = {
   const winRate = crewVictories + crewLosses > 0 ? Math.round((crewVictories / (crewVictories + crewLosses)) * 100) : 0;
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-14 text-slate-900 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] dark:text-slate-100">
+    <main className="min-h-[calc(100vh-72px)] bg-slate-50 px-4 py-16 text-slate-900 md:px-6 dark:bg-[radial-gradient(ellipse_at_top,_#0f2847_0%,_#0b1826_50%,_#050b12_100%)] dark:text-slate-100">
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <Link href="/" className="inline-flex items-center gap-2 text-sm text-slate-600 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
           {dict.profile.backHome}
         </Link>
 
-        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/65 dark:shadow-2xl dark:shadow-black/28">
+        <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white/95 shadow-xl backdrop-blur-sm dark:border-white/10 dark:bg-slate-950/65 dark:shadow-2xl dark:shadow-black/30">
           <div className="h-1.5 w-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600" />
 
           <div className="relative overflow-hidden">
@@ -207,38 +192,55 @@ type TeamMembershipRow = {
             <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/5 to-transparent dark:from-cyan-400/5" />
 
             <div className="relative px-6 py-6 sm:px-8 sm:py-8">
-              <div className="flex flex-col gap-8">
-                {/* Top: Avatar, nome, status, roles, botão configurar perfil */}
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                  <div className="flex flex-col items-center sm:items-start text-center sm:text-left gap-3">
-                    <div className="relative h-28 w-28 overflow-hidden rounded-[1.75rem] border border-white/10 bg-slate-200 ring-2 ring-yellow-400/55 ring-offset-1 ring-offset-slate-900 shadow-lg dark:bg-slate-800">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+                <div className="md:col-span-1 lg:col-span-4">
+                  <div className="flex h-full flex-col items-center rounded-[1.6rem] border border-slate-200/80 bg-slate-50/80 p-6 text-center shadow-sm dark:border-white/10 dark:bg-white/5">
+                    <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+                      {profile.display_name}
+                    </h1>
+
+                    <div className="relative my-4 h-40 w-40 overflow-hidden rounded-full border border-amber-400/45 bg-slate-200 ring-2 ring-amber-400/70 ring-offset-2 ring-offset-slate-900 shadow-lg sm:h-44 sm:w-44 dark:bg-slate-800">
                       {profile.avatar_url ? (
-                        <Image src={profile.avatar_url} alt={profile.display_name} fill sizes="112px" className="object-cover" />
+                        <Image
+                          src={profile.avatar_url}
+                          alt={profile.display_name}
+                          fill
+                          sizes="(min-width: 1024px) 176px, (min-width: 640px) 160px, 160px"
+                          className="object-cover"
+                        />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-yellow-600 dark:text-yellow-400">
+                        <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-yellow-600 dark:text-yellow-400">
                           {profile.display_name.slice(0, 1).toUpperCase()}
                         </div>
                       )}
                     </div>
-                    <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300/90 dark:text-amber-200">
-                      <span className="h-2 w-2 rounded-full bg-amber-400" />
-                      Arena profile
+
+                    <div className="my-4 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300 dark:bg-slate-950/80 dark:text-amber-200">
+                      <Crown className="h-3.5 w-3.5" />
+                      Command Center
+                      {profile.role === "owner" ? <Crown className="h-3.5 w-3.5 text-yellow-500" /> : null}
+                      {profile.role === "admin" ? <Shield className="h-3.5 w-3.5 text-cyan-400" /> : null}
                     </div>
-                    <h1 className="flex flex-wrap items-center gap-2 text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
-                      <span>{profile.display_name}</span>
-                      {profile.role === "owner" ? <Crown className="h-6 w-6 text-yellow-500" /> : null}
-                      {profile.role === "admin" ? <Shield className="h-6 w-6 text-cyan-400" /> : null}
-                    </h1>
+
+                    <div className="my-4 w-full rounded-2xl border border-slate-200 bg-white/90 p-4 text-left shadow-sm dark:border-white/10 dark:bg-slate-950/35">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                        Conta Xbox
+                      </p>
+                      <div className="mt-2 flex justify-start">
+                        <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
+                      </div>
+                    </div>
+
                     {profile.custom_status ? (
-                      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
+                      <div className="my-4 inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-200">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         {profile.custom_status}
                       </div>
                     ) : null}
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                      <XboxStatusTag gamertag={profile.xbox_gamertag} emptyLabel={dict.profile.xboxNotLinked} />
+
+                    <div className="my-4 flex flex-wrap items-center justify-center gap-2">
                       {boatRoles.map((role) => (
-                        <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-200">
+                        <span key={role} className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-700 capitalize dark:text-cyan-200">
                           {role}
                         </span>
                       ))}
@@ -246,9 +248,8 @@ type TeamMembershipRow = {
                   </div>
                 </div>
 
-                {/* Painéis de datas e estatísticas lado a lado */}
-                <div className="flex flex-col md:flex-row gap-4 w-full justify-center">
-                  <div className="flex flex-1 gap-4">
+                <div className="md:col-span-1 lg:col-span-8">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <InfoPanel
                       title={dict.profile.memberSince}
                       value={memberSince}
@@ -268,7 +269,6 @@ type TeamMembershipRow = {
           </div>
         </section>
 
-        {/* Times */}
         <section className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl dark:border-white/10 dark:bg-slate-950/60 dark:shadow-black/20">
           <div className="flex items-center justify-between gap-3">
             <div>
