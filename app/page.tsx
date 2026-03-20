@@ -60,7 +60,12 @@ async function getHomeData() {
   if (!isSupabaseConfigured()) {
     return { featuredEvent: null, finishedEvents: [] };
   }
-  return await getCachedHomeData();
+  try {
+    return await getCachedHomeData();
+  } catch (error) {
+    console.error("[home-data] fallback due to server error", error);
+    return { featuredEvent: null, finishedEvents: [] };
+  }
 }
 
 export default async function Home() {

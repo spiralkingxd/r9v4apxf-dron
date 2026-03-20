@@ -28,49 +28,73 @@ const PROFILE_SELECT =
   "display_name, username, avatar_url, xbox_gamertag, role";
 
 async function UserSection() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  let profile: ProfileNavbarRow | null = null;
-  let teamsCount = 0;
+    let profile: ProfileNavbarRow | null = null;
+    let teamsCount = 0;
 
-  if (user) {
-    const [{ data }, { count }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select(PROFILE_SELECT)
-        .eq("id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("team_members")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id),
-    ]);
+    if (user) {
+      const [{ data }, { count }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(PROFILE_SELECT)
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("team_members")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id),
+      ]);
 
-    profile = data;
-    teamsCount = count ?? 0;
+      profile = data;
+      teamsCount = count ?? 0;
 
-    if (!profile) {
-      await upsertProfileFromOAuth();
+      if (!profile) {
+        await upsertProfileFromOAuth();
 
-      const { data: syncedProfile } = await supabase
-        .from("profiles")
-        .select(PROFILE_SELECT)
-        .eq("id", user.id)
-        .maybeSingle();
+        const { data: syncedProfile } = await supabase
+          .from("profiles")
+          .select(PROFILE_SELECT)
+          .eq("id", user.id)
+          .maybeSingle();
 
-      profile = syncedProfile;
+        profile = syncedProfile;
+      }
     }
-  }
 
-  const avatarUrl =
-    profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
-  const nickname =
-    profile?.display_name ?? profile?.username ?? user?.email ?? "Jogador";
+    const avatarUrl =
+      profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
+    const nickname =
+      profile?.display_name ?? profile?.username ?? user?.email ?? "Jogador";
 
-  if (!user) {
+    if (!user) {
+      return (
+        <Link
+          href="/auth/login"
+          className="action-primary inline-flex items-center rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition"
+        >
+          <span className="sm:hidden">Login</span>
+          <span className="hidden sm:inline">Login com Discord</span>
+        </Link>
+      );
+    }
+
+    return (
+      <UserDropdown
+        nickname={nickname}
+        username={profile?.username ?? null}
+        avatarUrl={avatarUrl}
+        xboxGamertag={profile?.xbox_gamertag ?? null}
+        teamsCount={teamsCount}
+        role={profile?.role}
+      />
+    );
+  } catch (error) {
+    console.error("[navbar-user-section] fallback due to server error", error);
     return (
       <Link
         href="/auth/login"
@@ -81,17 +105,6 @@ async function UserSection() {
       </Link>
     );
   }
-
-  return (
-    <UserDropdown
-      nickname={nickname}
-      username={profile?.username ?? null}
-      avatarUrl={avatarUrl}
-      xboxGamertag={profile?.xbox_gamertag ?? null}
-      teamsCount={teamsCount}
-      role={profile?.role}
-    />
-  );
 }
 
 export async function Navbar() {
