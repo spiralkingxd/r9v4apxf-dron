@@ -4,7 +4,6 @@ import {
   AlertCircle,
   Ban,
   Clock3,
-  Gamepad2,
   Shield,
   ShieldAlert,
   Swords,
@@ -219,8 +218,8 @@ export default async function AdminDashboardPage() {
                 : "Nenhuma partida atrasada identificada."
             }
             action={
-              <Link href="/admin/matches" className="text-xs font-semibold text-cyan-200 hover:text-cyan-900 dark:text-cyan-100">
-                Abrir partidas
+              <Link href="/admin/tournaments" className="text-xs font-semibold text-cyan-200 hover:text-cyan-900 dark:text-cyan-100">
+                Abrir torneios
               </Link>
             }
           />
@@ -349,12 +348,6 @@ export default async function AdminDashboardPage() {
             <AdminButton type="button">
               <Trophy className="h-4 w-4" />
               Novo torneio
-            </AdminButton>
-          </Link>
-          <Link href="/admin/matches">
-            <AdminButton type="button" variant="ghost">
-              <Gamepad2 className="h-4 w-4" />
-              Gerenciar partidas
             </AdminButton>
           </Link>
           <Link href="/admin/teams">

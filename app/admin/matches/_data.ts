@@ -149,6 +149,55 @@ export async function getAdminMatches() {
   });
 }
 
+export async function getMatchesByEvent(eventId: string) {
+  const supabase = await createClient();
+  const [{ data: eventRaw }, { data: matchesRaw }, teamMap] = await Promise.all([
+    supabase.from("events").select("id, title, status").eq("id", eventId).maybeSingle<Record<string, unknown>>(),
+    supabase
+      .from("matches")
+      .select("id, event_id, round, team_a_id, team_b_id, winner_id, score_a, score_b, status, scheduled_at, updated_at, bracket_position")
+      .eq("event_id", eventId)
+      .order("round", { ascending: true })
+      .order("bracket_position", { ascending: true }),
+    getTeamNameMap(supabase),
+  ]);
+
+  if (!eventRaw) notFound();
+
+  const event = {
+    id: String(eventRaw.id),
+    title: String(eventRaw.title),
+    status: String(eventRaw.status),
+  };
+
+  const matches = ((matchesRaw ?? []) as Array<Record<string, unknown>>).map((row) => {
+    const teamAId = row.team_a_id ? String(row.team_a_id) : null;
+    const teamBId = row.team_b_id ? String(row.team_b_id) : null;
+    const winnerId = row.winner_id ? String(row.winner_id) : null;
+
+    return {
+      id: String(row.id),
+      event_id: eventId,
+      event_title: event.title,
+      round: Number(row.round ?? 1),
+      team_a_id: teamAId,
+      team_a_name: teamAId ? teamMap.get(teamAId)?.name ?? "Equipe removida" : "A definir",
+      team_b_id: teamBId,
+      team_b_name: teamBId ? teamMap.get(teamBId)?.name ?? "Equipe removida" : "A definir",
+      score_a: Number(row.score_a ?? 0),
+      score_b: Number(row.score_b ?? 0),
+      winner_id: winnerId,
+      winner_name: winnerId ? teamMap.get(winnerId)?.name ?? "Equipe removida" : "-",
+      status: (row.status as AdminMatchRow["status"]) ?? "pending",
+      scheduled_at: (row.scheduled_at as string | null) ?? null,
+      updated_at: String(row.updated_at),
+      bracket_position: (row.bracket_position as string | null) ?? null,
+    } satisfies AdminMatchRow;
+  });
+
+  return { event, matches };
+}
+
 export async function getMatchDetail(matchId: string) {
   const supabase = await createClient();
   const { data: match } = await supabase.from("matches").select("*").eq("id", matchId).maybeSingle<Record<string, unknown>>();

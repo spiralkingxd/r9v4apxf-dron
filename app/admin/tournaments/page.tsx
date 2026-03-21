@@ -211,6 +211,9 @@ export default async function AdminTournamentsPage({
                     <Link href={`/admin/tournaments/${row.id}/registrations`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
                       Inscrições
                     </Link>
+                    <Link href={`/admin/tournaments/${row.id}/matches`} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-300 hover:bg-cyan-400/20" title="Gerenciar Partidas deste Torneio">
+                      Partidas
+                    </Link>
                   </div>
                 </td>
               </tr>

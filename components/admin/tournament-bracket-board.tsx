@@ -211,7 +211,7 @@ export function TournamentBracketBoard({
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-1">
-                    <Link href={`/admin/matches/${match.id}`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">Editar</Link>
+                    <Link href={`/admin/tournaments/${eventId}/matches/${match.id}`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">Editar</Link>
                     {match.status === "finished" && match.winner_id ? (
                       <button
                         type="button"

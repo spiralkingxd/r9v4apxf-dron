@@ -34,6 +34,7 @@ export function MatchesTable({
   events,
   teams,
   initialFilters,
+  detailBasePath = "/admin/matches",
 }: {
   rows: AdminMatchRow[];
   events: Array<{ id: string; title: string }>;
@@ -43,6 +44,7 @@ export function MatchesTable({
     status?: AdminMatchRow["status"] | "all";
     round?: string;
   };
+  detailBasePath?: string;
 }) {
   const router = useRouter();
   const { pushToast } = useAdminToast();
@@ -145,7 +147,7 @@ export function MatchesTable({
       header: "Ações",
       render: (row) => (
         <div className="flex flex-wrap gap-1">
-          <Link href={`/admin/matches/${row.id}`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
+          <Link href={`${detailBasePath}/${row.id}`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
             Ver
           </Link>
           {row.status !== "finished" && row.team_a_id && row.team_b_id ? (

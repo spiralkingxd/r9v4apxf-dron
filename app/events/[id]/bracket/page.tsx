@@ -213,7 +213,7 @@ export default async function EventBracketPage({ params }: Props) {
 
                         {isAdmin ? (
                           <Link
-                            href={`/admin/matches/${match.id}`}
+                          href={`/admin/tournaments/${id}/matches/${match.id}`}
                             className="mt-3 inline-flex text-xs font-medium text-cyan-300 hover:text-cyan-200"
                           >
                             Ver detalhes da partida →

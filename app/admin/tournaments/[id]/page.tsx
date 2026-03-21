@@ -131,8 +131,8 @@ export default async function AdminTournamentDetailPage({ params, searchParams }
         <section className="space-y-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-950/60 p-6">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Partidas vinculadas</h2>
-            <Link href={`/admin/matches?eventId=${id}`} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-white/10">
-              Abrir módulo de partidas
+            <Link href={`/admin/tournaments/${id}/matches`} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 hover:bg-white/10">
+              Abrir gerenciamento de partidas
             </Link>
           </div>
           <ul className="space-y-2">
