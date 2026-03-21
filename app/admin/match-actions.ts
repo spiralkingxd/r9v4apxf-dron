@@ -825,21 +825,44 @@ export async function generateBracket(
 
     if (parsed.data.format === "round_robin") {
       const insertRows: Array<Record<string, unknown>> = [];
-      let round = 1;
-      for (let i = 0; i < order.length; i += 1) {
-        for (let j = i + 1; j < order.length; j += 1) {
+      const participants: Array<string | null> = [...order];
+      if (participants.length % 2 !== 0) {
+        participants.push(null);
+      }
+
+      const totalRounds = participants.length - 1;
+      const matchesPerRound = participants.length / 2;
+      let rotating = [...participants];
+
+      for (let round = 1; round <= totalRounds; round += 1) {
+        let matchIndex = 1;
+        for (let index = 0; index < matchesPerRound; index += 1) {
+          const teamA = rotating[index];
+          const teamB = rotating[rotating.length - 1 - index];
+
+          // Rodadas com número ímpar de equipes geram um "bye" por rodada.
+          if (!teamA || !teamB) continue;
+
           insertRows.push({
             event_id: parsed.data.eventId,
-            team_a_id: order[i],
-            team_b_id: order[j],
+            team_a_id: teamA,
+            team_b_id: teamB,
             round,
-            bracket_position: `R${round}-M${insertRows.length + 1}`,
+            bracket_position: `R${round}-M${matchIndex}`,
             status: "pending",
             scheduled_at: null,
             updated_at: nowIso(),
             updated_by: adminId,
           });
-          round += 1;
+          matchIndex += 1;
+        }
+
+        const fixed = rotating[0];
+        const movable = rotating.slice(1);
+        const last = movable.pop();
+        if (last !== undefined) {
+          movable.unshift(last);
+          rotating = [fixed, ...movable];
         }
       }
 

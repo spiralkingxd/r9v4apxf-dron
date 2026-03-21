@@ -29,6 +29,18 @@ type EventDetail = {
 };
 
 type TeamOption = { id: string; name: string; memberCount: number };
+type RegistrationStatus = "approved" | "pending";
+
+type RegisteredTeamRow = {
+  teamId: string;
+  teamName: string;
+  teamLogoUrl: string | null;
+  captainName: string;
+  captainAvatarUrl: string | null;
+  memberCount: number;
+  status: RegistrationStatus;
+  createdAt: string;
+};
 
 const STATUS_LABELS: Record<string, string> = {
   registrations_open: "Inscricoes abertas",
@@ -57,6 +69,11 @@ const CREW_REQUIRED_SIZE: Record<EventDetail["crew_type"], number> = {
 };
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "long" });
+const fmtShort = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
+  approved: "Aprovada",
+  pending: "Pendente",
+};
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -69,7 +86,6 @@ export default async function EventDetailPage({ params }: Props) {
 
   const [
     { data: event },
-    { count: registrationCount },
     { data: { user } },
   ] = await Promise.all([
     supabase
@@ -77,15 +93,98 @@ export default async function EventDetailPage({ params }: Props) {
       .select("id, title, name, description, rules, status, tournament_type, crew_type, start_date, end_date, registration_deadline, prize, max_teams, published_at, created_at, logo_url, banner_url")
       .eq("id", id)
       .single<EventDetail>(),
-    supabase
-      .from("registrations")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "approved")
-      .eq("event_id", id),
     supabase.auth.getUser(),
   ]);
 
   if (!event) notFound();
+
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+    isAdmin = profile?.role === "admin" || profile?.role === "owner";
+  }
+
+  const { data: registrationsRaw } = await supabase
+    .from("registrations")
+    .select("team_id, status, created_at")
+    .eq("event_id", id)
+    .in("status", ["approved", "pending"])
+    .order("created_at", { ascending: true });
+
+  const visibleRegistrations = ((registrationsRaw ?? []) as Array<{ team_id: string; status: RegistrationStatus; created_at: string }>)
+    .filter((row) => row.status === "approved" || row.status === "pending");
+
+  const registeredTeamIds = [...new Set(visibleRegistrations.map((row) => String(row.team_id)))];
+  const [{ data: registeredTeamsRaw }, { data: membersRaw }] = registeredTeamIds.length > 0
+    ? await Promise.all([
+        supabase.from("teams").select("id, name, logo_url, captain_id").in("id", registeredTeamIds),
+        supabase.from("team_members").select("team_id, user_id").in("team_id", registeredTeamIds),
+      ])
+    : [{ data: [] }, { data: [] }];
+
+  const teams = (registeredTeamsRaw ?? []) as Array<{ id: string; name: string; logo_url: string | null; captain_id: string }>;
+  const teamById = new Map<string, { name: string; logoUrl: string | null; captainId: string }>();
+  for (const team of teams) {
+    teamById.set(String(team.id), {
+      name: String(team.name),
+      logoUrl: team.logo_url ? String(team.logo_url) : null,
+      captainId: String(team.captain_id),
+    });
+  }
+
+  const captainIds = [...new Set(teams.map((team) => String(team.captain_id)))];
+  const { data: captainsRaw } = captainIds.length > 0
+    ? await supabase.from("profiles").select("id, display_name, username, avatar_url").in("id", captainIds)
+    : { data: [] };
+
+  const captainById = new Map<string, { name: string; avatarUrl: string | null }>();
+  for (const captain of captainsRaw ?? []) {
+    captainById.set(String(captain.id), {
+      name: String(captain.display_name ?? captain.username ?? "Capitão"),
+      avatarUrl: captain.avatar_url ? String(captain.avatar_url) : null,
+    });
+  }
+
+  const rosterByTeam = new Map<string, Set<string>>();
+  for (const team of teams) {
+    rosterByTeam.set(String(team.id), new Set<string>([String(team.captain_id)]));
+  }
+  for (const row of membersRaw ?? []) {
+    const teamId = String(row.team_id);
+    const userId = String(row.user_id);
+    const roster = rosterByTeam.get(teamId) ?? new Set<string>();
+    roster.add(userId);
+    rosterByTeam.set(teamId, roster);
+  }
+
+  const visibleRegisteredTeams: RegisteredTeamRow[] = visibleRegistrations
+    .map((registration) => {
+      const team = teamById.get(String(registration.team_id));
+      if (!team) return null;
+      const captain = captainById.get(team.captainId);
+      return {
+        teamId: String(registration.team_id),
+        teamName: team.name,
+        teamLogoUrl: team.logoUrl,
+        captainName: captain?.name ?? "Capitão",
+        captainAvatarUrl: captain?.avatarUrl ?? null,
+        memberCount: rosterByTeam.get(String(registration.team_id))?.size ?? 1,
+        status: registration.status,
+        createdAt: String(registration.created_at),
+      } satisfies RegisteredTeamRow;
+    })
+    .filter((row): row is RegisteredTeamRow => Boolean(row))
+    .sort((a, b) => {
+      const statusWeight = a.status === b.status ? 0 : a.status === "approved" ? -1 : 1;
+      if (statusWeight !== 0) return statusWeight;
+      const nameCompare = a.teamName.localeCompare(b.teamName, "pt-BR");
+      if (nameCompare !== 0) return nameCompare;
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+
+  const approvedRegistrationsCount = visibleRegisteredTeams.filter((row) => row.status === "approved").length;
+  const pendingRegistrationsCount = visibleRegisteredTeams.filter((row) => row.status === "pending").length;
+  const visibleRegistrationsCount = visibleRegisteredTeams.length;
 
   // Define qual estado da inscrição deve ser exibido ao usuário.
   let captainTeams: TeamOption[] = [];
@@ -163,7 +262,7 @@ export default async function EventDetailPage({ params }: Props) {
   }
 
   const openForRegistration = event.status === "registrations_open" || event.status === "check_in";
-  const slotsFull = Boolean(event.max_teams && (registrationCount ?? 0) >= event.max_teams);
+  const slotsFull = Boolean(event.max_teams && approvedRegistrationsCount >= event.max_teams);
   const eligibleTeams = captainTeams.filter((t) => !alreadyRegisteredTeamIds.includes(t.id) && t.memberCount === requiredSize);
   incompatibleTeamsCount = captainTeams.filter((t) => !alreadyRegisteredTeamIds.includes(t.id) && t.memberCount !== requiredSize).length;
   const allTeamsAlreadyRegistered =
@@ -216,7 +315,10 @@ export default async function EventDetailPage({ params }: Props) {
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <InfoCard label="Tipo de torneio" value={TOURNAMENT_TYPE_LABELS[event.tournament_type]} />
             <InfoCard label="Tipo de tripulação" value={CREW_TYPE_LABELS[event.crew_type]} />
-            <InfoCard label="Equipes inscritas" value={`${registrationCount ?? 0}${event.max_teams ? `/${event.max_teams}` : ""}`} />
+            <InfoCard
+              label="Equipes inscritas"
+              value={`${visibleRegistrationsCount}${event.max_teams ? ` (${approvedRegistrationsCount}/${event.max_teams} aprovadas)` : ""}`}
+            />
           </div>
 
           {event.description ? (
@@ -274,10 +376,81 @@ export default async function EventDetailPage({ params }: Props) {
                 <Trophy className="h-5 w-5 text-amber-400" />
                 Equipes Inscritas
               </h2>
-              <p className="mt-3 text-sm text-slate-300">
-                {registrationCount ?? 0} equipe{(registrationCount ?? 0) !== 1 ? "s" : ""}
-                {event.max_teams ? ` de ${event.max_teams} vagas preenchidas` : " inscrita" + ((registrationCount ?? 0) !== 1 ? "s" : "")}
-              </p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 font-semibold text-emerald-200">
+                  {approvedRegistrationsCount} aprovadas
+                </span>
+                <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 font-semibold text-amber-200">
+                  {pendingRegistrationsCount} pendentes
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-semibold text-slate-300">
+                  {visibleRegistrationsCount} no total
+                </span>
+                {event.max_teams ? (
+                  <span className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 font-semibold text-cyan-200">
+                    Limite: {event.max_teams}
+                  </span>
+                ) : null}
+              </div>
+
+              {visibleRegisteredTeams.length === 0 ? (
+                <div className="mt-4 rounded-xl border border-dashed border-white/15 bg-white/5 px-4 py-4 text-sm text-slate-300">
+                  <p>Nenhuma equipe cadastrada para este evento até o momento.</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Status das inscrições: {openForRegistration ? "abertas" : event.status === "finished" ? "encerradas" : "em análise"}.
+                  </p>
+                  {openForRegistration ? (
+                    <Link
+                      href="#inscricao"
+                      className="mt-3 inline-flex rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-300/20"
+                    >
+                      Inscrever equipe
+                    </Link>
+                  ) : null}
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-3">
+                  {visibleRegisteredTeams.map((row) => (
+                    <li key={`${row.teamId}-${row.createdAt}`} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                          {row.teamLogoUrl ? (
+                            <img src={row.teamLogoUrl} alt={row.teamName} className="h-10 w-10 rounded-lg object-cover" />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-xs font-semibold text-slate-300">
+                              {row.teamName.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">{row.teamName}</p>
+                            <p className="text-xs text-slate-400">
+                              Capitão: {row.captainName} · {row.memberCount} membro{row.memberCount !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span
+                          className={cn(
+                            "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em]",
+                            row.status === "approved"
+                              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                              : "border-amber-400/30 bg-amber-400/10 text-amber-200",
+                          )}
+                        >
+                          {REGISTRATION_STATUS_LABELS[row.status]}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-[11px] text-slate-500">
+                        Inscrita em {fmtShort.format(new Date(row.createdAt))}
+                        {!isAdmin && row.status === "pending" ? " · visível conforme permissões" : ""}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
               <Link
                 href={`/events/${event.id}/bracket`}
                 className="mt-3 inline-flex text-sm font-medium text-cyan-300 hover:text-cyan-200"
