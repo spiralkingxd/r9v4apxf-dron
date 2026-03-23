@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { Crown, Swords } from "lucide-react";
 
-import { MatchResultForm } from "@/components/match-result-form";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { cn } from "@/lib/utils";
 
 type EventRow = {
@@ -24,6 +24,13 @@ type MatchRow = {
   bracket_position: string | null;
   status: "pending" | "in_progress" | "finished" | "cancelled";
   scheduled_at: string | null;
+  created_at: string;
+};
+
+type TeamMeta = {
+  name: string;
+  logoUrl: string | null;
+  memberCount: number;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -46,7 +53,51 @@ const fmt = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "short",
 });
 
+function getBracketOrderValue(position: string | null) {
+  if (!position) return Number.MAX_SAFE_INTEGER;
+  const match = /^R(\d+)-M(\d+)$/i.exec(position.trim());
+  if (!match) return Number.MAX_SAFE_INTEGER - 1;
+  const round = Number(match[1]);
+  const slot = Number(match[2]);
+  return round * 10_000 + slot;
+}
+
 type Props = { params: Promise<{ id: string }> };
+
+async function getCachedEventBracketData(eventId: string) {
+  const fetcher = unstable_cache(
+    async () => {
+      const supabase = createPublicServerClient();
+
+      const [{ data: event }, { data: matchesRaw }, { data: teamsRaw }, { data: teamMembersRaw }] = await Promise.all([
+        supabase.from("events").select("id, title, status").eq("id", eventId).single<EventRow>(),
+        supabase
+          .from("matches")
+          .select("id, team_a_id, team_b_id, winner_id, score_a, score_b, round, bracket_position, status, scheduled_at, created_at")
+          .eq("event_id", eventId)
+          .order("round", { ascending: true })
+          .order("bracket_position", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabase.from("teams").select("id, name, logo_url"),
+        supabase.from("team_members").select("team_id"),
+      ]);
+
+      return {
+        event: event ?? null,
+        matchesRaw: (matchesRaw ?? []) as MatchRow[],
+        teamsRaw: teamsRaw ?? [],
+        teamMembersRaw: teamMembersRaw ?? [],
+      };
+    },
+    [`event-bracket-${eventId}`],
+    {
+      tags: ["events", "public-data", `event:${eventId}`, `event-bracket:${eventId}`],
+      revalidate: 60,
+    },
+  );
+
+  return fetcher();
+}
 
 export default async function EventBracketPage({ params }: Props) {
   const { id } = await params;
@@ -55,42 +106,30 @@ export default async function EventBracketPage({ params }: Props) {
     notFound();
   }
 
-  const supabase = await createClient();
-
-  const [
-    { data: event },
-    { data: matchesRaw },
-    { data: teamsRaw },
-    { data: { user } },
-  ] = await Promise.all([
-    supabase.from("events").select("id, title, status").eq("id", id).single<EventRow>(),
-    supabase
-      .from("matches")
-      .select("id, team_a_id, team_b_id, winner_id, score_a, score_b, round, bracket_position, status, scheduled_at")
-      .eq("event_id", id)
-      .order("round", { ascending: true })
-      .order("bracket_position", { ascending: true })
-      .order("created_at", { ascending: true }),
-    supabase.from("teams").select("id, name"),
-    supabase.auth.getUser(),
-  ]);
+  const { event, matchesRaw, teamsRaw, teamMembersRaw } = await getCachedEventBracketData(id);
 
   if (!event) {
     notFound();
   }
 
-  let isAdmin = false;
+  const matches = (matchesRaw ?? []) as MatchRow[];
+  const teamMemberCountById = new Map<string, number>();
 
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-    isAdmin = profile?.role === "admin" || profile?.role === "owner";
+  for (const row of teamMembersRaw ?? []) {
+    const teamId = String(row.team_id);
+    teamMemberCountById.set(teamId, (teamMemberCountById.get(teamId) ?? 0) + 1);
   }
 
-  const matches = (matchesRaw ?? []) as MatchRow[];
-  const teamNameById = new Map<string, string>();
+  const teamById = new Map<string, TeamMeta>();
 
   for (const row of teamsRaw ?? []) {
-    teamNameById.set(row.id as string, row.name as string);
+    const teamId = String(row.id);
+    teamById.set(teamId, {
+      name: String(row.name),
+      logoUrl: (row.logo_url as string | null) ?? null,
+      // Inclui capitão na contagem além da tabela team_members.
+      memberCount: (teamMemberCountById.get(teamId) ?? 0) + 1,
+    });
   }
 
   const groupedByRound = new Map<number, MatchRow[]>();
@@ -104,10 +143,14 @@ export default async function EventBracketPage({ params }: Props) {
     .sort((a, b) => a[0] - b[0])
     .map(([roundNumber, roundMatches]) => [
       roundNumber,
-      [...roundMatches].sort((a, b) => String(a.bracket_position ?? "").localeCompare(String(b.bracket_position ?? ""), "en")),
+      [...roundMatches].sort((a, b) => {
+        const posDiff = getBracketOrderValue(a.bracket_position) - getBracketOrderValue(b.bracket_position);
+        if (posDiff !== 0) return posDiff;
+        return a.created_at.localeCompare(b.created_at);
+      }),
     ] as const);
 
-  const shouldShowComingSoon = event.status === "registrations_open" || event.status === "check_in";
+  const shouldShowComingSoon = (event.status === "registrations_open" || event.status === "check_in") && matches.length === 0;
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] px-6 py-10 text-slate-100 lg:px-10">
@@ -145,10 +188,13 @@ export default async function EventBracketPage({ params }: Props) {
                   </h2>
 
                   {roundMatches.map((match) => {
-                    const teamAName = match.team_a_id ? teamNameById.get(match.team_a_id) ?? "Equipe removida" : "A definir";
-                    const teamBName = match.team_b_id ? teamNameById.get(match.team_b_id) ?? "Equipe removida" : "A definir";
+                    const teamA = match.team_a_id ? teamById.get(match.team_a_id) : null;
+                    const teamB = match.team_b_id ? teamById.get(match.team_b_id) : null;
+                    const teamAName = match.team_a_id ? teamA?.name ?? "Equipe removida" : "A definir (TBD)";
+                    const teamBName = match.team_b_id ? teamB?.name ?? "Equipe removida" : "A definir (TBD)";
                     const showScores = match.status === "in_progress" || match.status === "finished";
                     const hasBothTeams = Boolean(match.team_a_id && match.team_b_id);
+                    const isByeMatch = Boolean(match.winner_id && (!match.team_a_id || !match.team_b_id));
 
                     return (
                       <article
@@ -178,15 +224,34 @@ export default async function EventBracketPage({ params }: Props) {
                           </span>
                         </div>
 
+                        {match.round === 1 ? (
+                          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+                            <span className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-cyan-100">
+                              Sorteado
+                            </span>
+                            <span className="text-slate-500">{fmt.format(new Date(match.created_at))}</span>
+                          </div>
+                        ) : null}
+
+                        {isByeMatch ? (
+                          <p className="mb-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[11px] font-medium text-amber-200">
+                            BYE: avanço automático para a próxima fase.
+                          </p>
+                        ) : null}
+
                         <div className="space-y-2">
                           <TeamRow
                             name={teamAName}
+                            logoUrl={teamA?.logoUrl ?? null}
+                            memberCount={teamA?.memberCount ?? null}
                             score={showScores ? match.score_a : null}
                             isWinner={match.winner_id === match.team_a_id}
                             isPending={!match.team_a_id}
                           />
                           <TeamRow
                             name={teamBName}
+                            logoUrl={teamB?.logoUrl ?? null}
+                            memberCount={teamB?.memberCount ?? null}
                             score={showScores ? match.score_b : null}
                             isWinner={match.winner_id === match.team_b_id}
                             isPending={!match.team_b_id}
@@ -200,25 +265,6 @@ export default async function EventBracketPage({ params }: Props) {
                           {!hasBothTeams ? <span className="text-amber-200/80">Aguardando definição de equipes</span> : null}
                         </div>
 
-                        {isAdmin && hasBothTeams ? (
-                          <MatchResultForm
-                            eventId={event.id}
-                            matchId={match.id}
-                            teamAId={match.team_a_id as string}
-                            teamBId={match.team_b_id as string}
-                            scoreA={match.score_a}
-                            scoreB={match.score_b}
-                          />
-                        ) : null}
-
-                        {isAdmin ? (
-                          <Link
-                          href={`/admin/tournaments/${id}/matches/${match.id}`}
-                            className="mt-3 inline-flex text-xs font-medium text-cyan-300 hover:text-cyan-200"
-                          >
-                            Ver detalhes da partida →
-                          </Link>
-                        ) : null}
                       </article>
                     );
                   })}
@@ -234,11 +280,15 @@ export default async function EventBracketPage({ params }: Props) {
 
 function TeamRow({
   name,
+  logoUrl,
+  memberCount,
   score,
   isWinner,
   isPending,
 }: {
   name: string;
+  logoUrl: string | null;
+  memberCount: number | null;
   score: number | null;
   isWinner: boolean;
   isPending: boolean;
@@ -255,8 +305,10 @@ function TeamRow({
       )}
     >
       <span className="flex items-center gap-2 truncate pr-3">
+        {logoUrl ? <img src={logoUrl} alt={`Logo da equipe ${name}`} className="h-4 w-4 shrink-0 rounded-full object-cover" /> : null}
         {isWinner ? <Crown className="h-3.5 w-3.5 shrink-0" /> : <Swords className="h-3.5 w-3.5 shrink-0" />}
         <span className="truncate">{name}</span>
+        {memberCount ? <span className="text-[10px] text-slate-500">({memberCount})</span> : null}
       </span>
       <span className="text-base font-bold">{score ?? "-"}</span>
     </div>

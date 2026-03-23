@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Download, RefreshCcw, Sparkles } from "lucide-react";
+import { Download, RefreshCcw, Shuffle, Sparkles } from "lucide-react";
 
-import { advanceWinner, generateBracket, reorderBracketRound, resetBracket } from "@/app/admin/match-actions";
+import { advanceWinner, generateBracket, generateFirstRoundMatches, reorderBracketRound, resetBracket } from "@/app/admin/match-actions";
 import { AdminBadge } from "@/components/admin/admin-badge";
 import { AdminButton } from "@/components/admin/admin-button";
 import { useAdminToast } from "@/components/admin/admin-toast";
 import type { BracketMatchRow } from "@/app/admin/matches/_data";
 
 type BracketFormat = "single_elimination" | "double_elimination" | "round_robin";
+
+function getBracketOrderValue(position: string | null) {
+  if (!position) return Number.MAX_SAFE_INTEGER;
+  const match = /^R(\d+)-M(\d+)$/i.exec(position.trim());
+  if (!match) return Number.MAX_SAFE_INTEGER - 1;
+  return Number(match[1]) * 10_000 + Number(match[2]);
+}
 
 export function TournamentBracketBoard({
   eventId,
@@ -40,13 +47,24 @@ export function TournamentBracketBoard({
       map.set(match.round, list);
     }
     for (const [round, list] of map.entries()) {
-      map.set(round, [...list].sort((a, b) => String(a.bracket_position ?? "").localeCompare(String(b.bracket_position ?? ""), "en")));
+      map.set(
+        round,
+        [...list].sort((a, b) => {
+          const posDiff = getBracketOrderValue(a.bracket_position) - getBracketOrderValue(b.bracket_position);
+          if (posDiff !== 0) return posDiff;
+          return a.created_at.localeCompare(b.created_at);
+        }),
+      );
     }
     return map;
   }, [matches]);
 
   const rounds = [...grouped.keys()].sort((a, b) => a - b);
   const finishedCount = matches.filter((match) => match.status === "finished").length;
+  const dtFmt = useMemo(
+    () => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }),
+    [],
+  );
 
   function swapInRound(round: number, sourceId: string, targetId: string) {
     const roundList = [...(grouped.get(round) ?? [])];
@@ -106,6 +124,20 @@ export function TournamentBracketBoard({
             <option value="double_elimination">Double Elimination</option>
             <option value="round_robin">Round Robin</option>
           </select>
+          <AdminButton
+            type="button"
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await generateFirstRoundMatches(eventId);
+                pushToast(result.error ? "error" : "success", result.error ?? result.success ?? "Ação concluída.");
+                router.refresh();
+              })
+            }
+          >
+            <Shuffle className="h-4 w-4" />
+            Sortear 1a fase
+          </AdminButton>
           <AdminButton
             type="button"
             disabled={isPending}
@@ -195,16 +227,39 @@ export function TournamentBracketBoard({
                     </AdminBadge>
                   </div>
 
+                  {match.round === 1 ? (
+                    <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+                      <span className="rounded-full border border-cyan-300/30 bg-cyan-100 dark:bg-cyan-300/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-cyan-900 dark:text-cyan-100">
+                        Sorteado
+                      </span>
+                      <span className="text-slate-500">{dtFmt.format(new Date(match.created_at))}</span>
+                    </div>
+                  ) : null}
+
+                  {match.winner_id && (match.team_a_id === null || match.team_b_id === null) ? (
+                    <p className="mb-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-2 py-1 text-[11px] font-medium text-amber-900 dark:text-amber-100">
+                      BYE: avanço automático para próxima fase.
+                    </p>
+                  ) : null}
+
                   <div className="space-y-2">
                     <div className={`rounded-lg border px-3 py-2 text-sm ${match.winner_id === match.team_a_id ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-200" : "border-slate-200 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-200"}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{match.team_a_name}</span>
+                        <span className="flex items-center gap-2 truncate">
+                          {match.team_a_logo_url ? <img src={match.team_a_logo_url} alt="Logo equipe A" className="h-4 w-4 rounded-full object-cover" /> : null}
+                          <span className="truncate">{match.team_a_name}</span>
+                          {match.team_a_member_count ? <span className="text-[10px] text-slate-500">({match.team_a_member_count})</span> : null}
+                        </span>
                         <span className="font-bold">{match.score_a}</span>
                       </div>
                     </div>
                     <div className={`rounded-lg border px-3 py-2 text-sm ${match.winner_id === match.team_b_id ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-200" : "border-slate-200 dark:border-white/10 bg-white/5 text-slate-700 dark:text-slate-200"}`}>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{match.team_b_name}</span>
+                        <span className="flex items-center gap-2 truncate">
+                          {match.team_b_logo_url ? <img src={match.team_b_logo_url} alt="Logo equipe B" className="h-4 w-4 rounded-full object-cover" /> : null}
+                          <span className="truncate">{match.team_b_name}</span>
+                          {match.team_b_member_count ? <span className="text-[10px] text-slate-500">({match.team_b_member_count})</span> : null}
+                        </span>
                         <span className="font-bold">{match.score_b}</span>
                       </div>
                     </div>

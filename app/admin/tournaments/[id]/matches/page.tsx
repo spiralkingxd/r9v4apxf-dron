@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, Swords } from "lucide-react";
 
 import { getMatchesByEvent } from "@/app/admin/matches/_data";
+import { FirstRoundDrawButton } from "@/components/admin/first-round-draw-button";
 import { MatchesTable } from "@/components/admin/matches-table";
 import { createClient } from "@/lib/supabase/server";
 
@@ -19,10 +20,28 @@ export default async function TournamentMatchesPage({ params, searchParams }: Pr
   const query = await searchParams;
   const supabase = await createClient();
 
-  const [{ event, matches }, { data: teamsRaw }] = await Promise.all([
+  const [{ event, matches }, { data: teamsRaw }, { data: { user } }, { count: approvedTeamsCountRaw }] = await Promise.all([
     getMatchesByEvent(id),
     supabase.from("teams").select("id, name").order("name", { ascending: true }),
+    supabase.auth.getUser(),
+    supabase.from("registrations").select("team_id", { count: "exact", head: true }).eq("event_id", id).eq("status", "approved"),
   ]);
+
+  let isAdminUser = false;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle<{ role: "user" | "admin" | "owner" }>();
+    isAdminUser = profile?.role === "admin" || profile?.role === "owner";
+  }
+
+  const approvedTeamsCount = approvedTeamsCountRaw ?? 0;
+  const isRegistrationClosed = event.status !== "registrations_open";
+  const hasEnoughTeams = approvedTeamsCount >= 2;
+  const hasNoBracketYet = matches.length === 0;
+  const canGenerateFirstRound = isAdminUser && isRegistrationClosed && hasEnoughTeams && hasNoBracketYet;
 
   const teams = (teamsRaw ?? []).map((team) => ({ id: String(team.id), name: String(team.name) }));
   const events = [{ id: event.id, title: event.title }];
@@ -62,6 +81,16 @@ export default async function TournamentMatchesPage({ params, searchParams }: Pr
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Gerencie resultados, status e histórico das partidas deste torneio.
         </p>
+
+        {canGenerateFirstRound ? (
+          <div className="mt-4">
+            <FirstRoundDrawButton
+              eventId={id}
+              approvedTeamsCount={approvedTeamsCount}
+              estimatedFirstRoundMatches={Math.ceil(approvedTeamsCount / 2)}
+            />
+          </div>
+        ) : null}
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Link

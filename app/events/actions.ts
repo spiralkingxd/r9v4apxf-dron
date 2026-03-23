@@ -1,8 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
+import { getRequestContext, writeSecurityAlert } from "@/lib/security/alerts";
 import { createClient } from "@/lib/supabase/server";
 
 const registerSchema = z.object({
@@ -167,17 +169,37 @@ export async function updateMatchResult(
   formData: FormData,
 ): Promise<UpdateMatchState> {
   const supabase = await createClient();
+  const headerStore = await headers();
+  const context = getRequestContext(headerStore);
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
+    await writeSecurityAlert({
+      action: "auth_401_update_match_result",
+      targetType: "match",
+      riskLevel: "high",
+      context,
+    });
     return { error: "Você precisa estar logado." };
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
 
   if (profile?.role !== "admin" && profile?.role !== "owner") {
+    await writeSecurityAlert({
+      adminUserId: user.id,
+      action: "auth_403_update_match_result",
+      targetType: "match",
+      targetId: String(formData.get("match_id") ?? ""),
+      riskLevel: "critical",
+      context: {
+        ...context,
+        role: profile?.role ?? null,
+        eventId: formData.get("event_id"),
+      },
+    });
     return { error: "Apenas administradores podem editar partidas." };
   }
 
@@ -224,6 +246,10 @@ export async function updateMatchResult(
 
   revalidatePath(`/events/${event_id}`);
   revalidatePath(`/events/${event_id}/bracket`);
+  revalidateTag("events", "max");
+  revalidateTag("public-data", "max");
+  revalidateTag(`event:${event_id}`, "max");
+  revalidateTag(`event-bracket:${event_id}`, "max");
   revalidatePath("/ranking");
 
   return { success: "Confronto atualizado com sucesso." };

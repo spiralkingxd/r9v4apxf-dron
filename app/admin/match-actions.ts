@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 
 import { assertAdminAccess, enforceAdminRateLimit, logAdminAction } from "@/app/admin/_lib";
@@ -79,6 +79,10 @@ const generateBracketSchema = z.object({
   format: z.enum(["single_elimination", "double_elimination", "round_robin"]),
 });
 
+const generateFirstRoundMatchesSchema = z.object({
+  eventId: z.string().uuid(),
+});
+
 const advanceWinnerSchema = z.object({
   matchId: z.string().uuid(),
 });
@@ -115,6 +119,10 @@ function revalidateMatchPaths(eventId?: string, matchId?: string) {
   revalidatePath("/admin/results");
   revalidatePath("/admin/dashboard");
   if (eventId) {
+    revalidateTag("events", "max");
+    revalidateTag("public-data", "max");
+    revalidateTag(`event:${eventId}`, "max");
+    revalidateTag(`event-bracket:${eventId}`, "max");
     revalidatePath(`/events/${eventId}`);
     revalidatePath(`/events/${eventId}/bracket`);
     revalidatePath(`/admin/tournaments/${eventId}`);
@@ -985,6 +993,242 @@ export async function generateBracket(
     };
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Falha ao gerar chaveamento." };
+  }
+}
+
+export async function generateFirstRoundMatches(
+  eventId: string,
+  _adminId?: string,
+): Promise<ActionResult<{ totalMatches: number; firstRoundMatches: number; byeCount: number }>> {
+  const parsed = generateFirstRoundMatchesSchema.safeParse({ eventId });
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Evento inválido." };
+
+  try {
+    const { supabase, adminId } = await assertAdminAccess();
+    await enforceAdminRateLimit(supabase, adminId, "generate_first_round_matches");
+
+    const { data: event } = await supabase
+      .from("events")
+      .select("id, title, status, start_date, tournament_format")
+      .eq("id", parsed.data.eventId)
+      .maybeSingle<{
+        id: string;
+        title: string;
+        status: "registrations_open" | "check_in" | "started" | "finished";
+        start_date: string | null;
+        tournament_format: "single_elimination" | "double_elimination" | "round_robin" | null;
+      }>();
+
+    if (!event) return { error: "Evento não encontrado." };
+    if (event.status === "finished") return { error: "Não é permitido gerar partidas para evento finalizado." };
+    if (event.status === "registrations_open") {
+      return { error: "As inscrições ainda estão abertas. Encerre inscrições/check-in antes do sorteio." };
+    }
+    if (event.tournament_format && event.tournament_format !== "single_elimination") {
+      return { error: "O sorteio automático da primeira fase está disponível apenas para eliminação simples." };
+    }
+
+    const { count: existingMatchesCount } = await supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", parsed.data.eventId);
+
+    if ((existingMatchesCount ?? 0) > 0) {
+      return { error: "Já existe chaveamento gerado para este torneio." };
+    }
+
+    const { data: approvedRows } = await supabase
+      .from("registrations")
+      .select("team_id")
+      .eq("event_id", parsed.data.eventId)
+      .eq("status", "approved");
+
+    const teamIds = [...new Set((approvedRows ?? []).map((row) => String(row.team_id)).filter(Boolean))];
+    if (teamIds.length < 2) {
+      return { error: "São necessárias ao menos 2 equipes aprovadas para realizar o sorteio." };
+    }
+
+    const shuffledTeamIds = shuffle(teamIds);
+    const matchCountsByRound: number[] = [];
+    let participantsInRound = shuffledTeamIds.length;
+    while (participantsInRound > 1) {
+      const matchesInRound = Math.ceil(participantsInRound / 2);
+      matchCountsByRound.push(matchesInRound);
+      participantsInRound = matchesInRound;
+    }
+
+    const rows: Array<{
+      event_id: string;
+      team_a_id: string | null;
+      team_b_id: string | null;
+      winner_id: string | null;
+      score_a: number;
+      score_b: number;
+      round: number;
+      bracket_position: string;
+      status: "pending" | "finished";
+      scheduled_at: string | null;
+      updated_at: string;
+      updated_by: string;
+    }> = [];
+
+    const defaultScheduledAt = isoOrNull(event.start_date);
+
+    for (let roundIndex = 0; roundIndex < matchCountsByRound.length; roundIndex += 1) {
+      const round = roundIndex + 1;
+      const matchCount = matchCountsByRound[roundIndex];
+
+      for (let index = 0; index < matchCount; index += 1) {
+        if (round === 1) {
+          const teamA = shuffledTeamIds[index * 2] ?? null;
+          const teamB = shuffledTeamIds[index * 2 + 1] ?? null;
+          const byeWinner = teamA && !teamB ? teamA : null;
+
+          rows.push({
+            event_id: parsed.data.eventId,
+            team_a_id: teamA,
+            team_b_id: teamB,
+            winner_id: byeWinner,
+            score_a: 0,
+            score_b: 0,
+            round,
+            bracket_position: `R${round}-M${index + 1}`,
+            status: byeWinner ? "finished" : "pending",
+            scheduled_at: defaultScheduledAt,
+            updated_at: nowIso(),
+            updated_by: adminId,
+          });
+          continue;
+        }
+
+        rows.push({
+          event_id: parsed.data.eventId,
+          team_a_id: null,
+          team_b_id: null,
+          winner_id: null,
+          score_a: 0,
+          score_b: 0,
+          round,
+          bracket_position: `R${round}-M${index + 1}`,
+          status: "pending",
+          scheduled_at: null,
+          updated_at: nowIso(),
+          updated_by: adminId,
+        });
+      }
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from("matches")
+      .insert(rows)
+      .select("id, round, bracket_position, winner_id, team_a_id, team_b_id, status");
+
+    if (insertError) {
+      return { error: "Não foi possível criar as partidas da primeira fase." };
+    }
+
+    const byRound = new Map<number, Array<{ id: string; bracket_position: string }>>();
+    for (const row of inserted ?? []) {
+      const round = Number(row.round);
+      const list = byRound.get(round) ?? [];
+      list.push({ id: String(row.id), bracket_position: String(row.bracket_position) });
+      byRound.set(round, list);
+    }
+
+    const totalRounds = matchCountsByRound.length;
+    for (let round = 1; round < totalRounds; round += 1) {
+      const current = [...(byRound.get(round) ?? [])].sort((a, b) => a.bracket_position.localeCompare(b.bracket_position, "en"));
+      const next = [...(byRound.get(round + 1) ?? [])].sort((a, b) => a.bracket_position.localeCompare(b.bracket_position, "en"));
+
+      for (let index = 0; index < current.length; index += 1) {
+        const nextMatch = next[Math.floor(index / 2)];
+        if (!nextMatch) continue;
+        const slot = index % 2 === 0 ? "team_a" : "team_b";
+        await supabase
+          .from("matches")
+          .update({ next_match_id: nextMatch.id, next_slot: slot, updated_at: nowIso(), updated_by: adminId })
+          .eq("id", current[index].id);
+      }
+    }
+
+    const roundOneByes = (inserted ?? []).filter((row) => Number(row.round) === 1 && row.status === "finished" && row.winner_id);
+
+    for (const byeMatch of roundOneByes) {
+      const match = {
+        id: String(byeMatch.id),
+        event_id: parsed.data.eventId,
+        team_a_id: (byeMatch.team_a_id as string | null) ?? null,
+        team_b_id: (byeMatch.team_b_id as string | null) ?? null,
+        winner_id: (byeMatch.winner_id as string | null) ?? null,
+        score_a: 0,
+        score_b: 0,
+        round: 1,
+        bracket_position: String(byeMatch.bracket_position ?? "R1-M?"),
+        status: "finished" as const,
+        scheduled_at: defaultScheduledAt,
+        started_at: null,
+        ended_at: null,
+        duration_minutes: null,
+        evidence: [],
+        cancel_reason: null,
+        updated_at: nowIso(),
+        updated_by: adminId,
+        next_match_id: null,
+        next_slot: null,
+      };
+
+      const { data: withNext } = await supabase
+        .from("matches")
+        .select("id, event_id, team_a_id, team_b_id, winner_id, score_a, score_b, round, bracket_position, status, scheduled_at, started_at, ended_at, duration_minutes, evidence, cancel_reason, updated_at, updated_by, next_match_id, next_slot")
+        .eq("id", match.id)
+        .maybeSingle<MatchRow>();
+
+      if (withNext?.winner_id) {
+        await pushWinnerToNextMatch(supabase, withNext, withNext.winner_id);
+        await writeMatchLog(supabase, {
+          matchId: withNext.id,
+          eventId: withNext.event_id,
+          adminId,
+          action: "auto_bye_round_1",
+          note: "Equipe avançou automaticamente por BYE na rodada 1.",
+          nextState: {
+            winner_id: withNext.winner_id,
+            status: "finished",
+            round: withNext.round,
+          },
+        });
+      }
+    }
+
+    await logAdminAction(supabase, {
+      adminId,
+      action: "generate_first_round_matches",
+      targetType: "event",
+      targetId: parsed.data.eventId,
+      details: {
+        eventTitle: event.title,
+        totalTeams: shuffledTeamIds.length,
+        firstRoundMatches: matchCountsByRound[0] ?? 0,
+        totalMatches: rows.length,
+        byeCount: roundOneByes.length,
+      },
+      severity: roundOneByes.length > 0 ? "warning" : "info",
+    });
+
+    revalidateMatchPaths(parsed.data.eventId);
+    return {
+      success:
+        roundOneByes.length > 0
+          ? `Sorteio da primeira fase concluído. ${roundOneByes.length} equipe(s) avançaram por BYE.`
+          : "Sorteio da primeira fase concluído com sucesso.",
+      data: {
+        totalMatches: rows.length,
+        firstRoundMatches: matchCountsByRound[0] ?? 0,
+        byeCount: roundOneByes.length,
+      },
+    };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Falha ao gerar sorteio da primeira fase." };
   }
 }
 

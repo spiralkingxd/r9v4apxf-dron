@@ -66,13 +66,18 @@ export type BracketMatchRow = {
   status: "pending" | "in_progress" | "finished" | "cancelled";
   team_a_id: string | null;
   team_a_name: string;
+  team_a_logo_url: string | null;
+  team_a_member_count: number | null;
   team_b_id: string | null;
   team_b_name: string;
+  team_b_logo_url: string | null;
+  team_b_member_count: number | null;
   score_a: number;
   score_b: number;
   winner_id: string | null;
   next_match_id: string | null;
   next_slot: "team_a" | "team_b" | null;
+  created_at: string;
   updated_at: string;
 };
 
@@ -100,15 +105,37 @@ async function getEventMap(supabase: Awaited<ReturnType<typeof createClient>>) {
 }
 
 async function getTeamNameMap(supabase: Awaited<ReturnType<typeof createClient>>) {
-  const { data } = await supabase.from("teams").select("id, name, logo_url");
-  const map = new Map<string, { name: string; logoUrl: string | null }>();
-  for (const row of data ?? []) {
+  const [{ data: teams }, { data: members }] = await Promise.all([
+    supabase.from("teams").select("id, name, logo_url"),
+    supabase.from("team_members").select("team_id"),
+  ]);
+
+  const memberCountByTeam = new Map<string, number>();
+  for (const row of members ?? []) {
+    const teamId = String(row.team_id);
+    memberCountByTeam.set(teamId, (memberCountByTeam.get(teamId) ?? 0) + 1);
+  }
+
+  const map = new Map<string, { name: string; logoUrl: string | null; memberCount: number }>();
+  for (const row of teams ?? []) {
+    const teamId = String(row.id);
     map.set(String(row.id), {
       name: String(row.name),
       logoUrl: (row.logo_url as string | null) ?? null,
+      // Inclui capitão na contagem, além dos membros da tabela team_members.
+      memberCount: (memberCountByTeam.get(teamId) ?? 0) + 1,
     });
   }
   return map;
+}
+
+function getBracketOrderValue(position: string | null) {
+  if (!position) return Number.MAX_SAFE_INTEGER;
+  const match = /^R(\d+)-M(\d+)$/i.exec(position.trim());
+  if (!match) return Number.MAX_SAFE_INTEGER - 1;
+  const round = Number(match[1]);
+  const slot = Number(match[2]);
+  return round * 10_000 + slot;
 }
 
 export async function getAdminMatches() {
@@ -270,10 +297,11 @@ export async function getTournamentBracketData(eventId: string) {
   const [{ data: matchesRaw }, eventMap, teamMap] = await Promise.all([
     supabase
       .from("matches")
-      .select("id, round, bracket_position, status, team_a_id, team_b_id, score_a, score_b, winner_id, next_match_id, next_slot, updated_at")
+      .select("id, round, bracket_position, status, team_a_id, team_b_id, score_a, score_b, winner_id, next_match_id, next_slot, created_at, updated_at")
       .eq("event_id", eventId)
       .order("round", { ascending: true })
-      .order("bracket_position", { ascending: true }),
+      .order("bracket_position", { ascending: true })
+      .order("created_at", { ascending: true }),
     getEventMap(supabase),
     getTeamNameMap(supabase),
   ]);
@@ -285,6 +313,8 @@ export async function getTournamentBracketData(eventId: string) {
     const teamAId = row.team_a_id ? String(row.team_a_id) : null;
     const teamBId = row.team_b_id ? String(row.team_b_id) : null;
     const winnerId = row.winner_id ? String(row.winner_id) : null;
+    const teamA = teamAId ? teamMap.get(teamAId) : null;
+    const teamB = teamBId ? teamMap.get(teamBId) : null;
 
     return {
       id: String(row.id),
@@ -292,16 +322,26 @@ export async function getTournamentBracketData(eventId: string) {
       bracket_position: (row.bracket_position as string | null) ?? null,
       status: (row.status as BracketMatchRow["status"]) ?? "pending",
       team_a_id: teamAId,
-      team_a_name: teamAId ? teamMap.get(teamAId)?.name ?? "Equipe removida" : "A definir",
+      team_a_name: teamAId ? teamA?.name ?? "Equipe removida" : "A definir",
+      team_a_logo_url: teamA?.logoUrl ?? null,
+      team_a_member_count: teamA?.memberCount ?? null,
       team_b_id: teamBId,
-      team_b_name: teamBId ? teamMap.get(teamBId)?.name ?? "Equipe removida" : "A definir",
+      team_b_name: teamBId ? teamB?.name ?? "Equipe removida" : "A definir",
+      team_b_logo_url: teamB?.logoUrl ?? null,
+      team_b_member_count: teamB?.memberCount ?? null,
       score_a: Number(row.score_a ?? 0),
       score_b: Number(row.score_b ?? 0),
       winner_id: winnerId,
       next_match_id: (row.next_match_id as string | null) ?? null,
       next_slot: (row.next_slot as BracketMatchRow["next_slot"]) ?? null,
+      created_at: String(row.created_at),
       updated_at: String(row.updated_at),
     };
+  }).sort((a, b) => {
+    if (a.round !== b.round) return a.round - b.round;
+    const posDiff = getBracketOrderValue(a.bracket_position) - getBracketOrderValue(b.bracket_position);
+    if (posDiff !== 0) return posDiff;
+    return a.created_at.localeCompare(b.created_at);
   });
 
   return {
