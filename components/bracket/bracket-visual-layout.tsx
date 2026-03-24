@@ -481,16 +481,50 @@ export function BracketVisualLayout({
     [matches, totalRounds, round1Count],
   );
 
+  const sideRounds = useMemo(
+    () => rounds.filter((round) => round < maxRound),
+    [rounds, maxRound],
+  );
+
+  const splitByRound = useMemo(() => {
+    const map = new Map<number, { left: LayoutSlot[]; right: LayoutSlot[] }>();
+    for (const round of sideRounds) {
+      const slots = roundSlots.get(round) ?? [];
+      const half = Math.ceil(slots.length / 2);
+      map.set(round, {
+        left: slots.slice(0, half),
+        right: slots.slice(half),
+      });
+    }
+    return map;
+  }, [sideRounds, roundSlots]);
+
+  const rightSideRounds = useMemo(
+    () => [...sideRounds].reverse(),
+    [sideRounds],
+  );
+
+  const centerSlots = useMemo(
+    () => roundSlots.get(maxRound) ?? [],
+    [roundSlots, maxRound],
+  );
+
   /**
-   * Total height of card content inside every round column.
-   * Each column uses the same height so all rounds line up:
-   *   round-R slot height = 2^(R-1) × UNIT_H
-   *   sum across N slots in round R = N × 2^(R-1) × UNIT_H = round1Count × UNIT_H
+   * Side height for mirrored layout (left and right trees).
+   * round-1 is split in half, one side for each finalist path.
    */
   const columnContentHeight = useMemo(() => {
-    const r1Slots = roundSlots.get(1)?.length ?? Math.max(round1Count, 1);
-    return r1Slots * UNIT_H;
-  }, [roundSlots, round1Count]);
+    const split = splitByRound.get(1);
+    const sideRound1Slots = split
+      ? Math.max(split.left.length, split.right.length, 1)
+      : Math.max(1, Math.ceil((roundSlots.get(1)?.length ?? Math.max(round1Count, 1)) / 2));
+    return sideRound1Slots * UNIT_H;
+  }, [splitByRound, roundSlots, round1Count]);
+
+  const centerSlotHeight = useMemo(
+    () => Math.max(UNIT_H, columnContentHeight / Math.max(centerSlots.length, 1)),
+    [columnContentHeight, centerSlots.length],
+  );
 
   // ── DOM measurement ────────────────────────────────────────────────────────
 
@@ -570,6 +604,65 @@ export function BracketVisualLayout({
   const cardWidthClass = getCardWidthClass(viewport);
   const colGap = COL_GAP[viewport] ?? COL_GAP.desktop;
 
+  function renderColumn(round: number, slots: LayoutSlot[], keyPrefix: string, slotHeight: number) {
+    return (
+      <div
+        key={`${keyPrefix}-${round}`}
+        className="shrink-0 flex flex-col"
+        style={{
+          width: `${cardW}px`,
+          contentVisibility: "auto",
+          containIntrinsicSize: "420px",
+        }}
+      >
+        {/* Minimal visual top spacing: no heavy round metadata for clean bracket look */}
+        <div style={{ height: `${HEADER_H}px` }} />
+
+        <div className="flex flex-col" style={{ height: `${columnContentHeight}px` }}>
+          {slots.map((slot, idx) => {
+            if (isVirtual(slot)) {
+              return (
+                <div
+                  key={slot.id}
+                  className="flex items-center justify-start"
+                  style={{ height: `${slotHeight}px` }}
+                >
+                  <GhostMatchCard position={idx + 1} widthPx={cardW} />
+                </div>
+              );
+            }
+
+            const match = slot as BracketMatchRow;
+            const isFinal = isFinalMatch(match, maxRound);
+
+            return (
+              <div
+                key={match.id}
+                ref={setCardRef(match.id)}
+                className={cn(
+                  "flex items-center justify-start transition-transform duration-150",
+                  onMatchClick && "cursor-pointer hover:scale-[1.02]",
+                )}
+                style={{ height: `${slotHeight}px` }}
+              >
+                {renderMatchCard
+                  ? renderMatchCard(match)
+                  : (
+                    <MatchCard
+                      match={match}
+                      isFinal={isFinal}
+                      widthClass={cardWidthClass}
+                      onClick={onMatchClick}
+                    />
+                  )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // ── Render full bracket ─────────────────────────────────────────────────
 
   return (
@@ -610,109 +703,20 @@ export function BracketVisualLayout({
           </svg>
         )}
 
-        {/* ── Round columns ────────────────────────────────────────────────── */}
+        {/* ── Mirrored bracket columns (left tree -> center final <- right tree) ── */}
         <div className="relative flex px-4 sm:px-6 pt-6 pb-8" style={{ zIndex: 1, gap: `${colGap}px` }}>
-          {rounds.map((round) => {
-            const slots = roundSlots.get(round) ?? [];
-            const { title, sub } = getRoundLabel(round, totalRounds);
-            const realCount = slots.filter((s) => !isVirtual(s)).length;
-            const virtualCount = slots.length - realCount;
+          {sideRounds.map((round) => {
+            const slots = splitByRound.get(round)?.left ?? [];
+            const slotHeight = Math.pow(2, round - 1) * UNIT_H;
+            return renderColumn(round, slots, "left", slotHeight);
+          })}
 
-            /**
-             * Each slot in round R occupies 2^(R-1) "units" vertically.
-             * This ensures a round-2 card sits centered between its two
-             * round-1 source cards, a round-3 card between its four, etc.
-             */
-            const slotH = Math.pow(2, round - 1) * UNIT_H;
+          {renderColumn(maxRound, centerSlots, "center", centerSlotHeight)}
 
-            return (
-              <div
-                key={round}
-                className="shrink-0 flex flex-col"
-                style={{
-                  width: `${cardW}px`,
-                  contentVisibility: "auto",
-                  containIntrinsicSize: "420px",
-                }}
-              >
-                {/* Round header */}
-                <div
-                  className="flex flex-col justify-end pb-3"
-                  style={{ height: `${HEADER_H}px` }}
-                >
-                  <h2
-                    className={cn(
-                      "font-bold text-sm uppercase tracking-widest leading-tight",
-                      round === maxRound
-                        ? "text-yellow-500 dark:text-yellow-400"
-                        : "text-slate-500 dark:text-slate-400",
-                    )}
-                  >
-                    {title}
-                  </h2>
-                  {sub && (
-                    <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">{sub}</p>
-                  )}
-                  <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
-                    {realCount}{" "}
-                    {realCount === 1 ? "partida" : "partidas"}
-                    {virtualCount > 0 && (
-                      <span className="ml-1 text-slate-300 dark:text-slate-700">
-                        · {virtualCount} {virtualCount === 1 ? "slot vazio" : "slots vazios"}
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-                {/* Cards column — same total height for every round column */}
-                <div
-                  className="flex flex-col"
-                  style={{ height: `${columnContentHeight}px` }}
-                >
-                  {slots.map((slot, idx) => {
-                    if (isVirtual(slot)) {
-                      return (
-                        // Slot container: flex items-center ensures ghost card is
-                        // vertically centered within the 2^(R-1) × UNIT_H slice.
-                        <div
-                          key={slot.id}
-                          className="flex items-center justify-start"
-                          style={{ height: `${slotH}px` }}
-                        >
-                          <GhostMatchCard position={idx + 1} widthPx={cardW} />
-                        </div>
-                      );
-                    }
-
-                    const match = slot as BracketMatchRow;
-                    const isFinal = isFinalMatch(match, maxRound);
-
-                    return (
-                      <div
-                        key={match.id}
-                        ref={setCardRef(match.id)}
-                        className={cn(
-                          "flex items-center justify-start transition-transform duration-150",
-                          onMatchClick && "cursor-pointer hover:scale-[1.02]",
-                        )}
-                        style={{ height: `${slotH}px` }}
-                      >
-                        {renderMatchCard
-                          ? renderMatchCard(match)
-                          : (
-                            <MatchCard
-                              match={match}
-                              isFinal={isFinal}
-                              widthClass={cardWidthClass}
-                              onClick={onMatchClick}
-                            />
-                          )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
+          {rightSideRounds.map((round) => {
+            const slots = splitByRound.get(round)?.right ?? [];
+            const slotHeight = Math.pow(2, round - 1) * UNIT_H;
+            return renderColumn(round, slots, "right", slotHeight);
           })}
         </div>
       </div>
