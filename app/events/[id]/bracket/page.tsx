@@ -6,6 +6,7 @@ import { Crown, Swords } from "lucide-react";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createPublicServerClient } from "@/lib/supabase/public-server";
 import { cn } from "@/lib/utils";
+import { BracketLayoutView } from "@/components/bracket/bracket-layout-view";
 
 type EventRow = {
   id: string;
@@ -152,6 +153,32 @@ export default async function EventBracketPage({ params }: Props) {
 
   const shouldShowComingSoon = (event.status === "registrations_open" || event.status === "check_in") && matches.length === 0;
 
+  // Convert to BracketMatchRow format for new visual component
+  const bracketMatches = matches.map((match) => ({
+    id: match.id,
+    round: match.round,
+    bracket_position: match.bracket_position,
+    status: match.status,
+    team_a_id: match.team_a_id,
+    team_a_name: match.team_a_id ? (teamById.get(match.team_a_id)?.name ?? "Equipe removida") : "A definir",
+    team_a_logo_url: match.team_a_id ? (teamById.get(match.team_a_id)?.logoUrl ?? null) : null,
+    team_a_member_count: match.team_a_id ? (teamById.get(match.team_a_id)?.memberCount ?? null) : null,
+    team_a_seed: null as number | null,
+    team_b_id: match.team_b_id,
+    team_b_name: match.team_b_id ? (teamById.get(match.team_b_id)?.name ?? "Equipe removida") : "A definir",
+    team_b_logo_url: match.team_b_id ? (teamById.get(match.team_b_id)?.logoUrl ?? null) : null,
+    team_b_member_count: match.team_b_id ? (teamById.get(match.team_b_id)?.memberCount ?? null) : null,
+    team_b_seed: null as number | null,
+    score_a: match.score_a,
+    score_b: match.score_b,
+    winner_id: match.winner_id,
+    next_match_id: null as string | null,
+    next_slot: null as "team_a" | "team_b" | null,
+    scheduled_at: match.scheduled_at,
+    created_at: match.created_at,
+    updated_at: match.created_at,
+  }));
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_#13293d_0%,_#0b1826_40%,_#050b12_100%)] px-6 py-10 text-slate-100 lg:px-10">
       <div className="mx-auto w-full max-w-7xl space-y-8">
@@ -179,30 +206,41 @@ export default async function EventBracketPage({ params }: Props) {
             Nenhum confronto cadastrado para este evento.
           </section>
         ) : (
-          <section className="overflow-x-auto pb-4">
-            <div className="flex min-w-max gap-6 md:gap-8">
-              {rounds.map(([roundNumber, roundMatches]) => (
-                <div key={roundNumber} className="relative w-[300px] shrink-0 space-y-4 md:w-[320px]">
-                  <h2 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-cyan-200">
-                    Rodada {roundNumber}
-                  </h2>
+          <section className="space-y-6">
+            {/* New Professional Visual Layout */}
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur">
+              <BracketLayoutView matches={bracketMatches} format="single_elimination" />
+            </div>
 
-                  {roundMatches.map((match) => {
-                    const teamA = match.team_a_id ? teamById.get(match.team_a_id) : null;
-                    const teamB = match.team_b_id ? teamById.get(match.team_b_id) : null;
-                    const teamAName = match.team_a_id ? teamA?.name ?? "Equipe removida" : "A definir (TBD)";
-                    const teamBName = match.team_b_id ? teamB?.name ?? "Equipe removida" : "A definir (TBD)";
-                    const showScores = match.status === "in_progress" || match.status === "finished";
-                    const hasBothTeams = Boolean(match.team_a_id && match.team_b_id);
-                    const isByeMatch = Boolean(match.winner_id && (!match.team_a_id || !match.team_b_id));
+            {/* Original Horizontal View (Tabular) */}
+            <details className="group">
+              <summary className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-4 py-3 font-semibold text-slate-200 hover:bg-white/10">
+                📋 Visualização Tabular
+              </summary>
+              <div className="mt-4 overflow-x-auto pb-4">
+                <div className="flex min-w-max gap-6 md:gap-8">
+                  {rounds.map(([roundNumber, roundMatches]) => (
+                    <div key={roundNumber} className="relative w-[300px] shrink-0 space-y-4 md:w-[320px]">
+                      <h2 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-cyan-200">
+                        Rodada {roundNumber}
+                      </h2>
 
-                    return (
-                      <article
-                        key={match.id}
-                        className={cn(
-                          "relative rounded-2xl border p-4 shadow-xl shadow-black/20",
-                          hasBothTeams ? "border-white/10 bg-slate-950/60" : "border-dashed border-white/20 bg-slate-950/45",
-                        )}
+                      {roundMatches.map((match) => {
+                        const teamA = match.team_a_id ? teamById.get(match.team_a_id) : null;
+                        const teamB = match.team_b_id ? teamById.get(match.team_b_id) : null;
+                        const teamAName = match.team_a_id ? teamA?.name ?? "Equipe removida" : "A definir (TBD)";
+                        const teamBName = match.team_b_id ? teamB?.name ?? "Equipe removida" : "A definir (TBD)";
+                        const showScores = match.status === "in_progress" || match.status === "finished";
+                        const hasBothTeams = Boolean(match.team_a_id && match.team_b_id);
+                        const isByeMatch = Boolean(match.winner_id && (!match.team_a_id || !match.team_b_id));
+
+                        return (
+                          <article
+                            key={match.id}
+                            className={cn(
+                              "relative rounded-2xl border p-4 shadow-xl shadow-black/20",
+                              hasBothTeams ? "border-white/10 bg-slate-950/60" : "border-dashed border-white/20 bg-slate-950/45",
+                            )}
                       >
                         {/* Conector visual para próxima rodada (desktop) */}
                         {roundNumber !== rounds[rounds.length - 1]?.[0] ? (
@@ -265,13 +303,15 @@ export default async function EventBracketPage({ params }: Props) {
                           {!hasBothTeams ? <span className="text-amber-200/80">Aguardando definição de equipes</span> : null}
                         </div>
 
-                      </article>
-                    );
-                  })}
+                        </article>
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
+              </div>
+              </details>
+            </section>
         )}
       </div>
     </main>
