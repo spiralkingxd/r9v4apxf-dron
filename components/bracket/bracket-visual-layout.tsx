@@ -12,10 +12,10 @@ import { MatchCard } from "@/components/bracket/match-card";
  * Height of one "bracket unit" — determines vertical spacing.
  * Compact spacing tuned for minimal match cards.
  */
-const UNIT_H = 80;
+const UNIT_H = 72;
 
 /** Pixel height reserved for the round header column */
-const HEADER_H = 68;
+const HEADER_H = 12;
 
 /** Card widths (px) per viewport breakpoint */
 const CARD_W = { desktop: 196, tablet: 172, mobile: 152 } as const;
@@ -483,14 +483,16 @@ export function BracketVisualLayout({
 
   /**
    * Total height of card content inside every round column.
-   * Each column uses the same height so all rounds line up:
-   *   round-R slot height = 2^(R-1) × UNIT_H
-   *   sum across N slots in round R = N × 2^(R-1) × UNIT_H = round1Count × UNIT_H
+   * Uses the max slot count across rounds, so every column has the same total
+   * height even when the bracket is not a power-of-two shape.
    */
   const columnContentHeight = useMemo(() => {
-    const r1Slots = roundSlots.get(1)?.length ?? Math.max(round1Count, 1);
-    return r1Slots * UNIT_H;
-  }, [roundSlots, round1Count]);
+    const maxSlotsInAnyRound = Math.max(
+      1,
+      ...Array.from(roundSlots.values()).map((slots) => slots.length),
+    );
+    return maxSlotsInAnyRound * UNIT_H;
+  }, [roundSlots]);
 
   // ── DOM measurement ────────────────────────────────────────────────────────
 
@@ -673,7 +675,7 @@ export function BracketVisualLayout({
         <div className="relative flex px-4 sm:px-6 pt-6 pb-8" style={{ zIndex: 1, gap: `${colGap}px` }}>
           {rounds.map((round) => {
             const slots = roundSlots.get(round) ?? [];
-            const slotHeight = Math.pow(2, round - 1) * UNIT_H;
+            const slotHeight = Math.max(UNIT_H, columnContentHeight / Math.max(slots.length, 1));
             return renderColumn(round, slots, slotHeight);
           })}
         </div>
