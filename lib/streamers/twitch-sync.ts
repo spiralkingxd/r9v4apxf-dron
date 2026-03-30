@@ -85,7 +85,7 @@ export async function syncTwitchStreamersStatus() {
   const { data: rows, error } = await supabase
     .from("streamers")
     .select("id, username, twitch_login")
-    .eq("is_active", true)
+    .eq("community_enabled", true)
     .eq("platform", "twitch");
 
   if (error) {

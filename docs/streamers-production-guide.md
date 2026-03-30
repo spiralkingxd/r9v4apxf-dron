@@ -19,6 +19,9 @@ Defina no Vercel:
 - Rota: `/streamers`
 - Backend usa função SQL `public.get_madnessarena_streamers(...)`
 - Filtro principal é garantido no SQL (`slug = 'madnessarena'`)
+- Administração separada:
+  - `/admin/streamers` -> controla apenas `/transmissoes` e `/multiview`
+  - `/admin/community-streamers` -> controla apenas a comunidade da página `/streamers`
 
 ## 4) Sync automático de status online
 - Cron endpoint: `GET /api/cron/streamers-sync`

@@ -24,6 +24,7 @@ alter table public.streamers add column if not exists channel_url text;
 alter table public.streamers add column if not exists avatar_url text;
 alter table public.streamers add column if not exists bio text;
 alter table public.streamers add column if not exists is_featured boolean;
+alter table public.streamers add column if not exists community_enabled boolean;
 alter table public.streamers add column if not exists twitch_id text;
 alter table public.streamers add column if not exists twitch_login text;
 alter table public.streamers add column if not exists is_live boolean;
@@ -44,6 +45,7 @@ set
   ),
   twitch_login = coalesce(nullif(trim(twitch_login), ''), nullif(trim(username), '')),
   is_featured = coalesce(is_featured, false),
+  community_enabled = coalesce(community_enabled, true),
   is_live = coalesce(is_live, false),
   viewers = coalesce(viewers, 0);
 
@@ -52,6 +54,8 @@ alter table public.streamers alter column platform set not null;
 alter table public.streamers alter column channel_url set not null;
 alter table public.streamers alter column is_featured set default false;
 alter table public.streamers alter column is_featured set not null;
+alter table public.streamers alter column community_enabled set default true;
+alter table public.streamers alter column community_enabled set not null;
 alter table public.streamers alter column is_live set default false;
 alter table public.streamers alter column is_live set not null;
 alter table public.streamers alter column viewers set default 0;
@@ -75,6 +79,7 @@ create unique index if not exists streamers_twitch_id_uidx on public.streamers (
 create unique index if not exists streamers_twitch_login_uidx on public.streamers (lower(twitch_login)) where twitch_login is not null;
 create index if not exists streamers_live_idx on public.streamers (is_live desc, is_featured desc, viewers desc, display_name);
 create index if not exists streamers_active_platform_idx on public.streamers (is_active, platform);
+create index if not exists streamers_community_enabled_idx on public.streamers (community_enabled, platform);
 create index if not exists stl_tag_idx on public.streamer_tag_links (tag_id, streamer_id);
 create index if not exists stl_streamer_idx on public.streamer_tag_links (streamer_id, tag_id);
 create index if not exists streamer_tags_slug_idx on public.streamer_tags (slug);
@@ -170,7 +175,7 @@ as $$
   with base as (
     select s.*
     from public.streamers s
-    where s.is_active = true
+    where s.community_enabled = true
       and exists (
         select 1
         from public.streamer_tag_links stl

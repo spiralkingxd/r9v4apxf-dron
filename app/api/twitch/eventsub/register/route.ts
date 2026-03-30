@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   const { data: rows, error } = await supabase
     .from("streamers")
     .select("id, twitch_id")
-    .eq("is_active", true)
+    .eq("community_enabled", true)
     .eq("platform", "twitch")
     .not("twitch_id", "is", null);
 
