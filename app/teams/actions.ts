@@ -22,6 +22,10 @@ export type SearchUsersResult = {
   avatar_url: string | null;
 }[];
 
+function sanitizeSearchTerm(input: string) {
+  return input.replace(/[^a-zA-Z0-9 _-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 64);
+}
+
 function toFriendlyTeamError(message?: string | null): string {
   const msg = (message ?? "").toLowerCase();
 
@@ -64,7 +68,7 @@ const createTeamSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export async function searchUsers(term: string): Promise<SearchUsersResult> {
-  const q = term.trim();
+  const q = sanitizeSearchTerm(term);
   if (q.length < 2) return [];
 
   const supabase = await createClient();

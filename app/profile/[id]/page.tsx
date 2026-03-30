@@ -300,7 +300,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   <div className="flex items-start gap-4">
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/5">
                       {team.logo_url ? (
-                        <img src={team.logo_url} alt={team.name} className="h-full w-full object-contain" />
+                        <Image src={team.logo_url} alt={team.name} width={56} height={56} className="h-full w-full object-contain" />
                       ) : (
                         <Users className="h-6 w-6 text-amber-400/70" />
                       )}

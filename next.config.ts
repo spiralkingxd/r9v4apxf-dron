@@ -65,6 +65,30 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      {
+        source: "/",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=30, stale-while-revalidate=300" }],
+      },
+      {
+        source: "/events",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=20, stale-while-revalidate=120" }],
+      },
+      {
+        source: "/events/:path*",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=15, stale-while-revalidate=90" }],
+      },
+      {
+        source: "/teams",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=20, stale-while-revalidate=120" }],
+      },
+      {
+        source: "/ranking",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=15, stale-while-revalidate=90" }],
+      },
+      {
+        source: "/transmissoes",
+        headers: [{ key: "Cache-Control", value: "public, s-maxage=10, stale-while-revalidate=60" }],
+      },
     ];
   },
 };

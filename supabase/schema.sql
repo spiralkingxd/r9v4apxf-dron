@@ -175,7 +175,7 @@ end
 $$;
 
 update public.profiles
-set role = 'admin'
+set role = 'user'
 where role::text not in ('user', 'admin', 'owner');
 
 do $$
@@ -1910,8 +1910,13 @@ create index if not exists backup_jobs_status_idx on public.backup_jobs (status,
 create index if not exists backup_jobs_created_idx on public.backup_jobs (created_at desc);
 
 create index if not exists profiles_role_idx on public.profiles (role);
+create index if not exists profiles_display_name_lower_idx on public.profiles (lower(display_name));
+create index if not exists profiles_username_lower_idx on public.profiles (lower(username));
+create index if not exists profiles_xbox_gamertag_lower_idx on public.profiles (lower(xbox_gamertag));
 create index if not exists events_status_idx on public.events (status);
 create index if not exists events_kind_idx on public.events (event_kind, status);
+create index if not exists events_name_lower_idx on public.events (lower(name));
+create index if not exists events_title_lower_idx on public.events (lower(title));
 create index if not exists events_start_date_idx on public.events (start_date desc);
 create index if not exists events_tournament_type_idx on public.events (tournament_type);
 create index if not exists events_crew_type_idx on public.events (crew_type);
@@ -1923,6 +1928,7 @@ create index if not exists matches_event_id_idx on public.matches (event_id);
 create index if not exists matches_status_idx on public.matches (event_id, status, round);
 create index if not exists matches_schedule_idx on public.matches (scheduled_at);
 create index if not exists rankings_points_idx on public.rankings (points desc);
+create index if not exists teams_name_lower_idx on public.teams (lower(name));
 create index if not exists team_notifications_team_idx on public.team_notifications (team_id, created_at desc);
 create index if not exists team_notifications_event_idx on public.team_notifications (event_id, kind);
 create index if not exists notifications_outbox_status_idx on public.notifications_outbox (status, scheduled_at);
@@ -1989,22 +1995,22 @@ create policy "Authenticated users can create teams"
 on public.teams
 for insert
 to authenticated
-with check (captain_id = auth.uid());
+with check (captain_id = (select auth.uid()));
 
 drop policy if exists "Captains and admins update teams" on public.teams;
 create policy "Captains and admins update teams"
 on public.teams
 for update
 to authenticated
-using (captain_id = auth.uid() or public.is_admin())
-with check (captain_id = auth.uid() or public.is_admin());
+using (captain_id = (select auth.uid()) or public.is_admin())
+with check (captain_id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists "Captains and admins delete teams" on public.teams;
 create policy "Captains and admins delete teams"
 on public.teams
 for delete
 to authenticated
-using (captain_id = auth.uid() or public.is_admin());
+using (captain_id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists "Public can read team members" on public.team_members;
 create policy "Public can read team members"
@@ -2018,7 +2024,7 @@ create policy "Users can read own participations"
 on public.team_members
 for select
 to authenticated
-using (user_id = auth.uid());
+using (user_id = (select auth.uid()));
 
 drop policy if exists "Captains and admins insert team members" on public.team_members;
 create policy "Captains and admins insert team members"
@@ -2030,7 +2036,7 @@ with check (
     select 1
     from public.teams
     where teams.id = team_members.team_id
-      and (teams.captain_id = auth.uid() or public.is_admin())
+      and (teams.captain_id = (select auth.uid()) or public.is_admin())
   )
 );
 
@@ -2044,7 +2050,7 @@ using (
     select 1
     from public.teams
     where teams.id = team_members.team_id
-      and (teams.captain_id = auth.uid() or public.is_admin())
+      and (teams.captain_id = (select auth.uid()) or public.is_admin())
   )
 )
 with check (
@@ -2052,7 +2058,7 @@ with check (
     select 1
     from public.teams
     where teams.id = team_members.team_id
-      and (teams.captain_id = auth.uid() or public.is_admin())
+      and (teams.captain_id = (select auth.uid()) or public.is_admin())
   )
 );
 
@@ -2066,7 +2072,7 @@ using (
     select 1
     from public.teams
     where teams.id = team_members.team_id
-      and (teams.captain_id = auth.uid() or public.is_admin())
+      and (teams.captain_id = (select auth.uid()) or public.is_admin())
   )
 );
 
@@ -2076,7 +2082,7 @@ create policy "Users read own join requests"
 on public.team_join_requests
 for select
 to authenticated
-using (user_id = auth.uid());
+using (user_id = (select auth.uid()));
 
 -- Team join requests: capitães veem solicitações da equipe que lideram.
 drop policy if exists "Captains read team join requests" on public.team_join_requests;
@@ -2089,7 +2095,7 @@ using (
     select 1
     from public.teams t
     where t.id = team_join_requests.team_id
-      and t.captain_id = auth.uid()
+      and t.captain_id = (select auth.uid())
   )
 );
 
@@ -2100,12 +2106,12 @@ on public.team_join_requests
 for insert
 to authenticated
 with check (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   and not exists (
     select 1
     from public.team_members tm
     where tm.team_id = team_join_requests.team_id
-      and tm.user_id = auth.uid()
+      and tm.user_id = (select auth.uid())
   )
 );
 
@@ -2120,7 +2126,7 @@ using (
     select 1
     from public.teams t
     where t.id = team_join_requests.team_id
-      and t.captain_id = auth.uid()
+      and t.captain_id = (select auth.uid())
   )
 )
 with check (
@@ -2128,7 +2134,7 @@ with check (
     select 1
     from public.teams t
     where t.id = team_join_requests.team_id
-      and t.captain_id = auth.uid()
+      and t.captain_id = (select auth.uid())
   )
   and status in ('approved', 'rejected')
 );
@@ -2140,11 +2146,11 @@ on public.team_join_requests
 for update
 to authenticated
 using (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   and status = 'pending'
 )
 with check (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   and status = 'rejected'
 );
 
@@ -2155,7 +2161,7 @@ on public.team_join_requests
 for delete
 to authenticated
 using (
-  user_id = auth.uid()
+  user_id = (select auth.uid())
   and status = 'pending'
 );
 
@@ -2170,7 +2176,7 @@ using (
     select 1
     from public.teams t
     where t.id = team_join_requests.team_id
-      and t.captain_id = auth.uid()
+      and t.captain_id = (select auth.uid())
   )
 );
 
@@ -2284,7 +2290,7 @@ create policy "Users read own bans"
 on public.bans
 for select
 to authenticated
-using (user_id = auth.uid());
+using (user_id = (select auth.uid()));
 
 drop policy if exists "Admins read security alerts" on public.admin_security_alerts;
 create policy "Admins read security alerts"
@@ -2318,30 +2324,42 @@ with check (public.is_owner());
 
 drop policy if exists "Users can read own profile" on public.profiles;
 drop policy if exists "Public can read profiles" on public.profiles;
-create policy "Public can read profiles"
+drop policy if exists "Anon can read public profiles" on public.profiles;
+create policy "Authenticated can read non-deleted profiles"
 on public.profiles
 for select
-to anon, authenticated
-using (true);
+to authenticated
+using (deleted_at is null);
+
+create policy "Anon can read public profiles"
+on public.profiles
+for select
+to anon
+using (deleted_at is null);
+
+revoke all on table public.profiles from anon;
+grant select (id, display_name, username, avatar_url, xbox_gamertag, custom_status, boat_role, role, created_at, updated_at, deleted_at)
+on table public.profiles
+to anon;
 
 drop policy if exists "Users update own profile" on public.profiles;
 create policy "Users update own profile"
 on public.profiles
 for update
 to authenticated
-using (id = auth.uid() or public.is_admin())
+using (id = (select auth.uid()) or public.is_admin())
 with check (
   (
-    id = auth.uid()
-    and role = (select p.role from public.profiles p where p.id = auth.uid())
-    and is_banned = (select p.is_banned from public.profiles p where p.id = auth.uid())
-    and coalesce(ban_reason, '') = coalesce((select p.ban_reason from public.profiles p where p.id = auth.uid()), '')
-    and coalesce(banned_reason, '') = coalesce((select p.banned_reason from public.profiles p where p.id = auth.uid()), '')
-    and banned_at is not distinct from (select p.banned_at from public.profiles p where p.id = auth.uid())
-    and banned_by is not distinct from (select p.banned_by from public.profiles p where p.id = auth.uid())
-    and force_logout_after is not distinct from (select p.force_logout_after from public.profiles p where p.id = auth.uid())
-    and deleted_at is not distinct from (select p.deleted_at from public.profiles p where p.id = auth.uid())
-    and deleted_by is not distinct from (select p.deleted_by from public.profiles p where p.id = auth.uid())
+    id = (select auth.uid())
+    and role = (select p.role from public.profiles p where p.id = (select auth.uid()))
+    and is_banned = (select p.is_banned from public.profiles p where p.id = (select auth.uid()))
+    and coalesce(ban_reason, '') = coalesce((select p.ban_reason from public.profiles p where p.id = (select auth.uid())), '')
+    and coalesce(banned_reason, '') = coalesce((select p.banned_reason from public.profiles p where p.id = (select auth.uid())), '')
+    and banned_at is not distinct from (select p.banned_at from public.profiles p where p.id = (select auth.uid()))
+    and banned_by is not distinct from (select p.banned_by from public.profiles p where p.id = (select auth.uid()))
+    and force_logout_after is not distinct from (select p.force_logout_after from public.profiles p where p.id = (select auth.uid()))
+    and deleted_at is not distinct from (select p.deleted_at from public.profiles p where p.id = (select auth.uid()))
+    and deleted_by is not distinct from (select p.deleted_by from public.profiles p where p.id = (select auth.uid()))
   )
   or public.is_admin()
 );
@@ -2351,7 +2369,7 @@ create policy "Users insert own profile"
 on public.profiles
 for insert
 to authenticated
-with check (id = auth.uid() or public.is_admin());
+with check (id = (select auth.uid()) or public.is_admin());
 
 drop policy if exists "Event admins manage registrations" on public.registrations;
 create policy "Event admins manage registrations"
@@ -2371,7 +2389,7 @@ with check (
     select 1
     from public.teams
     where teams.id = registrations.team_id
-      and (teams.captain_id = auth.uid() or public.is_admin())
+      and (teams.captain_id = (select auth.uid()) or public.is_admin())
   )
 );
 
@@ -2386,7 +2404,7 @@ using (
     select 1
     from public.teams
     where teams.id = registrations.team_id
-      and teams.captain_id = auth.uid()
+      and teams.captain_id = (select auth.uid())
   )
 );
 
@@ -2416,13 +2434,13 @@ using (
     select 1
     from public.team_members tm
     where tm.team_id = team_notifications.team_id
-      and tm.user_id = auth.uid()
+      and tm.user_id = (select auth.uid())
   )
   or exists (
     select 1
     from public.teams t
     where t.id = team_notifications.team_id
-      and t.captain_id = auth.uid()
+      and t.captain_id = (select auth.uid())
   )
 );
 

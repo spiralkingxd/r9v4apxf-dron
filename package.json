@@ -6,7 +6,9 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "perf:compare": "node scripts/compare-explain-json.mjs",
+    "perf:report": "node scripts/compare-explain-json.mjs docs/performance/before.template.json docs/performance/after.template.json --out docs/performance/report.md"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

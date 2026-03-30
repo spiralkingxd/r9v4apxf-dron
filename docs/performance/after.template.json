@@ -1,0 +1,52 @@
+[
+  {
+    "_query": "Q1 profiles search",
+    "QUERY PLAN": [
+      {
+        "Plan": {},
+        "Planning Time": 0,
+        "Execution Time": 0
+      }
+    ]
+  },
+  {
+    "_query": "Q2 teams search",
+    "QUERY PLAN": [
+      {
+        "Plan": {},
+        "Planning Time": 0,
+        "Execution Time": 0
+      }
+    ]
+  },
+  {
+    "_query": "Q3 events search",
+    "QUERY PLAN": [
+      {
+        "Plan": {},
+        "Planning Time": 0,
+        "Execution Time": 0
+      }
+    ]
+  },
+  {
+    "_query": "Q4 registrations (RLS captain)",
+    "QUERY PLAN": [
+      {
+        "Plan": {},
+        "Planning Time": 0,
+        "Execution Time": 0
+      }
+    ]
+  },
+  {
+    "_query": "Q5 team_notifications (RLS member)",
+    "QUERY PLAN": [
+      {
+        "Plan": {},
+        "Planning Time": 0,
+        "Execution Time": 0
+      }
+    ]
+  }
+]

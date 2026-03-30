@@ -11,9 +11,13 @@ export type SearchResult = {
   url: string;
 };
 
+function sanitizeSearchTerm(input: string) {
+  return input.replace(/[^a-zA-Z0-9 _-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 64);
+}
+
 export async function globalSearchAction(query: string, filter?: "user" | "tournament" | "team" | "all"): Promise<SearchResult[]> {
   const supabase = await createClient();
-  const safeQuery = query.trim();
+  const safeQuery = sanitizeSearchTerm(query);
   if (safeQuery.length < 2) return [];
 
   const results: SearchResult[] = [];

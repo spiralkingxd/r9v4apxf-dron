@@ -130,6 +130,20 @@ function normalizeOptionalText(value: string | null | undefined) {
   return text.length > 0 ? text : null;
 }
 
+function sanitizeRichTextInput(value: string | null | undefined) {
+  const text = (value ?? "").trim();
+  if (!text) return "";
+
+  // Defesa em profundidade no backend para bloquear XSS armazenado
+  // mesmo quando a chamada ignora a UI oficial.
+  return text
+    .replace(/<\s*(script|style|iframe|object|embed|meta|link)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|iframe|object|embed|meta|link)[^>]*\/?\s*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, "")
+    .replace(/\son[a-z]+\s*=\s*[^\s>]+/gi, "")
+    .replace(/javascript:/gi, "");
+}
+
 function normalizeOptionalDate(value: string | null | undefined) {
   const text = (value ?? "").trim();
   return text.length > 0 ? new Date(text).toISOString() : null;
@@ -569,14 +583,14 @@ export async function createEvent(data: EventMutationInput): Promise<ActionResul
 
     const payload: EventMutationInput = {
       ...parsed.data,
-      description: parsed.data.description.trim(),
+      description: sanitizeRichTextInput(parsed.data.description),
       prize: parsed.data.prize,
       tournament_type: parsed.data.tournament_type,
       crew_type: parsed.data.crew_type,
       end_date: normalizeOptionalDate(parsed.data.end_date),
       registration_deadline: normalizeOptionalDate(parsed.data.registration_deadline),
       prize_description: normalizeOptionalText(parsed.data.prize),
-      rules: normalizeOptionalText(parsed.data.rules),
+      rules: normalizeOptionalText(sanitizeRichTextInput(parsed.data.rules)),
       event_type: normalizeEventType(parsed.data.event_kind, parsed.data.event_type),
       visibility: parsed.data.visibility,
       logo_url: normalizeOptionalText(parsed.data.logo_url),
@@ -649,14 +663,14 @@ export async function updateEvent(eventId: string, data: EventMutationInput): Pr
     const existing = await loadEventOrThrow(supabase, parsedId.data.eventId);
     const payload: EventMutationInput = {
       ...parsed.data,
-      description: parsed.data.description.trim(),
+      description: sanitizeRichTextInput(parsed.data.description),
       prize: parsed.data.prize,
       tournament_type: parsed.data.tournament_type,
       crew_type: parsed.data.crew_type,
       end_date: normalizeOptionalDate(parsed.data.end_date),
       registration_deadline: normalizeOptionalDate(parsed.data.registration_deadline),
       prize_description: normalizeOptionalText(parsed.data.prize),
-      rules: normalizeOptionalText(parsed.data.rules),
+      rules: normalizeOptionalText(sanitizeRichTextInput(parsed.data.rules)),
       event_type: normalizeEventType(parsed.data.event_kind, parsed.data.event_type),
       visibility: parsed.data.visibility,
       logo_url: normalizeOptionalText(parsed.data.logo_url),

@@ -7,6 +7,7 @@ import madnessArenaBackground from "../madness_arena_background_hero.jpg";
 import { formatTeamSize } from "@/lib/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createPublicServerClient } from "@/lib/supabase/public-server";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { getDictionary, getLocale } from "@/lib/i18n";
 
@@ -196,7 +197,7 @@ export default async function Home() {
                   </div>
                   <h2 className="text-3xl font-bold text-white lg:text-4xl">{featuredEvent.title}</h2>
                   {featuredEvent.description && (
-                    <div className="prose prose-invert max-w-2xl text-sm leading-7 text-slate-300" dangerouslySetInnerHTML={{ __html: featuredEvent.description }} />
+                    <MarkdownRenderer content={featuredEvent.description} className="max-w-2xl text-sm leading-7 text-slate-300" />
                   )}
                 </div>
                 <div className="flex flex-col items-start gap-4 lg:items-end">  

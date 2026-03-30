@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { Calendar, Scroll, Shield, Trophy } from "lucide-react";
 
 import { RegisterTeamForm } from "@/components/register-team-form";
@@ -185,7 +186,7 @@ export default async function EventDetailPage({ params }: Props) {
         <section className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-950/80 to-slate-900/40 p-8">
           {event.banner_url ? (
             <div className="mb-6 overflow-hidden rounded-2xl border border-white/10">
-              <img src={event.banner_url} alt={event.title} className="h-52 w-full object-cover" />
+              <Image src={event.banner_url} alt={event.title} width={1280} height={320} className="h-52 w-full object-cover" />
             </div>
           ) : null}
           <div
@@ -197,7 +198,7 @@ export default async function EventDetailPage({ params }: Props) {
             <div className="space-y-3">
               <StatusBadge status={event.status} />
               <div className="flex items-center gap-3">
-                {event.logo_url ? <img src={event.logo_url} alt={event.title} className="h-14 w-14 rounded-2xl object-cover" /> : null}
+                {event.logo_url ? <Image src={event.logo_url} alt={event.title} width={56} height={56} className="h-14 w-14 rounded-2xl object-cover" /> : null}
                 <h1 className="text-3xl font-bold text-white lg:text-4xl">{event.name || event.title}</h1>
               </div>
             </div>
@@ -234,7 +235,7 @@ export default async function EventDetailPage({ params }: Props) {
                   <Shield className="h-5 w-5 text-cyan-400" />
                   Regras Especificas
                 </h2>
-                <div className="prose prose-sm prose-invert mt-4 max-w-none text-slate-300" dangerouslySetInnerHTML={{ __html: event.rules }} />
+                <MarkdownRenderer content={event.rules} className="mt-4 text-sm text-slate-300" />
               </section>
             ) : null}
 

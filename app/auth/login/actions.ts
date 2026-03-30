@@ -7,19 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { writeSecurityAlert, getRequestContext } from "@/lib/security/alerts";
 import { enforceWindowRateLimit } from "@/lib/security/rate-limit";
 
-function getBaseUrl(originFromHeaders: string | null) {
-  if (originFromHeaders) {
-    return originFromHeaders;
-  }
-
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-}
-
 export async function loginWithDiscord(formData: FormData) {
-  const headerStore = await headers();
-  const origin = headerStore.get("origin");
   const next = String(formData.get("next") ?? "/");
-  const context = getRequestContext(headerStore);
+  const context = getRequestContext(await headers());
 
   enforceWindowRateLimit({
     key: `login:discord:${context.ip ?? "unknown"}`,
@@ -28,7 +18,11 @@ export async function loginWithDiscord(formData: FormData) {
   });
 
   const supabase = await createClient();
-  const redirectTo = `${getBaseUrl(origin)}/auth/callback?next=${encodeURIComponent(next)}`;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!appUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL não configurada para OAuth seguro.");
+  }
+  const redirectTo = `${appUrl}/auth/callback?next=${encodeURIComponent(next)}`;
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "discord",
