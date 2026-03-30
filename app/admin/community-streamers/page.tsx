@@ -54,11 +54,12 @@ async function getCommunityStreamersData() {
 export default async function AdminCommunityStreamersPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ ops?: string }>;
+  searchParams?: Promise<{ ops?: string; reason?: string }>;
 }) {
   const data = await getCommunityStreamersData();
   const resolvedSearchParams = (await searchParams) ?? {};
   const opsMessage = OPS_MESSAGES[resolvedSearchParams.ops ?? ""];
+  const reason = resolvedSearchParams.reason ? decodeURIComponent(resolvedSearchParams.reason) : null;
 
   async function registerEventSubSubscriptions() {
     "use server";
@@ -75,7 +76,18 @@ export default async function AdminCommunityStreamersPage({
       cache: "no-store",
     });
 
-    redirect(`/admin/community-streamers?ops=${response.ok ? "eventsub_ok" : "eventsub_err"}`);
+    if (response.ok) {
+      redirect("/admin/community-streamers?ops=eventsub_ok");
+    }
+
+    let detail = "Erro desconhecido";
+    try {
+      const payload = (await response.json()) as { error?: string };
+      detail = payload.error ?? detail;
+    } catch {
+      detail = `HTTP ${response.status}`;
+    }
+    redirect(`/admin/community-streamers?ops=eventsub_err&reason=${encodeURIComponent(detail)}`);
   }
 
   async function runStreamersSyncNow() {
@@ -126,6 +138,7 @@ export default async function AdminCommunityStreamersPage({
           }`}
         >
           {opsMessage.text}
+          {reason && opsMessage.tone === "error" ? <span className="ml-2 opacity-90">Motivo: {reason}</span> : null}
         </div>
       ) : null}
 
