@@ -64,6 +64,9 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  const resolvedClientId = clientId as string;
+  const resolvedSecret = secret as string;
+  const resolvedCallback = callback as string;
 
   const token = await getTwitchAppToken();
   if (!token) {
@@ -99,7 +102,7 @@ export async function POST(request: Request) {
       const response = await fetch("https://api.twitch.tv/helix/eventsub/subscriptions", {
         method: "POST",
         headers: {
-          "Client-ID": clientId,
+          "Client-ID": resolvedClientId,
           Authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
@@ -109,8 +112,8 @@ export async function POST(request: Request) {
           condition: { broadcaster_user_id: broadcasterUserId },
           transport: {
             method: "webhook",
-            callback,
-            secret,
+            callback: resolvedCallback,
+            secret: resolvedSecret,
           },
         }),
       });
@@ -126,5 +129,5 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, registered, skipped, callback });
+  return NextResponse.json({ ok: true, registered, skipped, callback: resolvedCallback });
 }
