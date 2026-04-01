@@ -21,6 +21,7 @@ type StreamerRow = {
   live_title: string | null;
   community_enabled: boolean | null;
   is_featured: boolean | null;
+  stream_origin: "manual_event" | "community_auto" | null;
   has_madnessarena_tag: boolean | null;
   twitch_live_tags: unknown;
 };
@@ -37,6 +38,7 @@ async function getCommunityStreamersData() {
   const { data, error } = await supabase
     .from("streamers")
     .select("*")
+    .eq("stream_origin", "community_auto")
     .order("is_live", { ascending: false })
     .order("viewers", { ascending: false })
     .order("display_name", { ascending: true });

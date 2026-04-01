@@ -26,6 +26,7 @@ alter table public.streamers add column if not exists avatar_url text;
 alter table public.streamers add column if not exists bio text;
 alter table public.streamers add column if not exists is_featured boolean;
 alter table public.streamers add column if not exists community_enabled boolean;
+alter table public.streamers add column if not exists stream_origin text;
 alter table public.streamers add column if not exists twitch_id text;
 alter table public.streamers add column if not exists twitch_login text;
 alter table public.streamers add column if not exists is_live boolean;
@@ -50,6 +51,7 @@ set
   twitch_login = coalesce(nullif(trim(twitch_login), ''), nullif(trim(username), '')),
   is_featured = coalesce(is_featured, false),
   community_enabled = coalesce(community_enabled, true),
+  stream_origin = coalesce(nullif(trim(stream_origin), ''), case when twitch_id is not null then 'community_auto' else 'manual_event' end),
   is_live = coalesce(is_live, false),
   viewers = coalesce(viewers, 0),
   twitch_live_tags = coalesce(twitch_live_tags, '[]'::jsonb),
@@ -62,6 +64,8 @@ alter table public.streamers alter column is_featured set default false;
 alter table public.streamers alter column is_featured set not null;
 alter table public.streamers alter column community_enabled set default true;
 alter table public.streamers alter column community_enabled set not null;
+alter table public.streamers alter column stream_origin set default 'manual_event';
+alter table public.streamers alter column stream_origin set not null;
 alter table public.streamers alter column is_live set default false;
 alter table public.streamers alter column is_live set not null;
 alter table public.streamers alter column viewers set default 0;
@@ -80,6 +84,17 @@ begin
     alter table public.streamers
       add constraint streamers_platform_check
       check (platform in ('twitch', 'youtube'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'streamers_origin_check'
+      and conrelid = 'public.streamers'::regclass
+  ) then
+    alter table public.streamers
+      add constraint streamers_origin_check
+      check (stream_origin in ('manual_event', 'community_auto'));
   end if;
 end
 $$;
@@ -186,6 +201,8 @@ as $$
     select s.*
     from public.streamers s
     where s.community_enabled = true
+      and s.stream_origin = 'community_auto'
+      and s.twitch_id is not null
       and s.has_madnessarena_tag = true
       and (
         p_secondary_tag is null
@@ -277,6 +294,8 @@ as $$
   from public.streamers s,
        lateral jsonb_array_elements_text(coalesce(s.twitch_live_tags, '[]'::jsonb)) as tag(value)
   where s.community_enabled = true
+    and s.stream_origin = 'community_auto'
+    and s.twitch_id is not null
     and s.has_madnessarena_tag = true
     and lower(regexp_replace(unaccent(trim(tag.value)), '\s+', '', 'g')) <> 'madnessarena'
   group by

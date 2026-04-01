@@ -235,6 +235,7 @@ async function upsertStreamerFromTwitch(input: {
     twitch_id: input.twitchId,
     twitch_login: input.login,
     community_enabled: true,
+    stream_origin: "community_auto",
     is_live: input.isLive,
     live_title: input.isLive ? input.liveTitle ?? null : null,
     live_game: input.isLive ? input.liveGame ?? null : null,
@@ -373,6 +374,7 @@ export async function syncTwitchStreamersStatus() {
     .from("streamers")
     .select("id, username, twitch_login, twitch_id")
     .eq("community_enabled", true)
+    .eq("stream_origin", "community_auto")
     .eq("platform", "twitch");
 
   if (error) {
