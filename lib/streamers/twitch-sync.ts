@@ -40,6 +40,12 @@ type TwitchChannelInfo = {
 };
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
+const STREAMERS_DEBUG = process.env.STREAMERS_DEBUG?.trim() === "true";
+
+function debugLog(event: string, payload?: Record<string, unknown>) {
+  if (!STREAMERS_DEBUG) return;
+  console.log(`[streamers/${event}]`, payload ?? {});
+}
 
 async function getTwitchAppToken() {
   const clientId = process.env.TWITCH_CLIENT_ID?.trim();
@@ -62,7 +68,10 @@ async function getTwitchAppToken() {
     cache: "no-store",
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    debugLog("token_error", { status: response.status });
+    return null;
+  }
   const data = (await response.json()) as { access_token: string; expires_in: number };
   cachedToken = {
     value: data.access_token,
@@ -167,7 +176,10 @@ async function fetchTwitchChannelInformation(broadcasterId: string) {
     },
     cache: "no-store",
   });
-  if (!response.ok) return null;
+  if (!response.ok) {
+    debugLog("channel_info_error", { broadcasterId, status: response.status });
+    return null;
+  }
   const payload = (await response.json()) as { data?: TwitchChannelInfo[] };
   return payload.data?.[0] ?? null;
 }
@@ -196,7 +208,10 @@ async function fetchTwitchSearchChannels(query: string) {
       cache: "no-store",
     });
 
-    if (!response.ok) break;
+    if (!response.ok) {
+      debugLog("search_channels_error", { status: response.status, query });
+      break;
+    }
     const payload = (await response.json()) as {
       data?: TwitchSearchChannel[];
       pagination?: { cursor?: string };
@@ -256,6 +271,13 @@ async function upsertStreamerFromTwitch(input: {
     console.error("[streamers/upsert] failed", error);
     return { ok: false };
   }
+  debugLog("upsert_ok", {
+    twitchId: input.twitchId,
+    login: input.login,
+    isLive: input.isLive,
+    hasMainTag,
+    tagsCount: input.twitchTags.length,
+  });
 
   return { ok: true, hasMainTag };
 }
@@ -275,6 +297,12 @@ export async function processTwitchStreamOnline(broadcasterId: string) {
   }
 
   const rawTags = normalizeTagList(channel?.tags ?? []);
+  debugLog("online_tags", {
+    broadcasterId,
+    login,
+    tags: rawTags,
+    hasMainTag: hasMadnessArenaTag(rawTags),
+  });
   const result = await upsertStreamerFromTwitch({
     twitchId: broadcasterId,
     login,
@@ -307,6 +335,7 @@ export async function processTwitchStreamOffline(broadcasterId: string) {
       last_checked_at: nowIso,
     })
     .eq("twitch_id", broadcasterId);
+  debugLog("offline_processed", { broadcasterId, ok: !error });
 
   return { ok: !error };
 }
@@ -317,6 +346,11 @@ export async function processTwitchChannelUpdate(broadcasterId: string) {
 
   const normalizedTags = normalizeTagList(channel.tags ?? []);
   const hasMainTag = hasMadnessArenaTag(normalizedTags);
+  debugLog("channel_update_tags", {
+    broadcasterId,
+    tags: normalizedTags,
+    hasMainTag,
+  });
   const supabase = createAdminClient();
   if (!supabase) return { ok: false };
 
@@ -343,12 +377,15 @@ export async function discoverMadnessArenaStreamers() {
   }
 
   const channels = await fetchTwitchSearchChannels("madnessarena");
+  debugLog("discover_search_result", { total: channels.length });
   if (channels.length === 0) {
     return { ok: true, discovered: 0, upserted: 0 };
   }
 
   let upserted = 0;
   let included = 0;
+  let ignored = 0;
+  const samples: Array<{ login: string; included: boolean }> = [];
 
   for (const channel of channels) {
     const username = String(channel.broadcaster_login ?? "").trim().toLowerCase();
@@ -357,11 +394,19 @@ export async function discoverMadnessArenaStreamers() {
     const processed = await processTwitchStreamOnline(twitchId);
     if (processed.ok) {
       upserted += 1;
-      if (processed.included) included += 1;
+      if (processed.included) {
+        included += 1;
+        if (samples.length < 10) samples.push({ login: username, included: true });
+      } else {
+        ignored += 1;
+        if (samples.length < 10) samples.push({ login: username, included: false });
+      }
     }
   }
 
-  return { ok: true, discovered: channels.length, upserted, included };
+  const result = { ok: true, discovered: channels.length, upserted, included, ignored, samples };
+  debugLog("discover_result", result);
+  return result;
 }
 
 export async function syncTwitchStreamersStatus() {
@@ -398,15 +443,30 @@ export async function syncTwitchStreamersStatus() {
   }
 
   const nowIso = new Date().toISOString();
+  let liveWithTag = 0;
+  let liveWithoutTag = 0;
+  let offline = 0;
+  const samples: Array<{ login: string; status: "live_with_tag" | "live_without_tag" | "offline" }> = [];
+
   const updates = streamers.map(async (streamer) => {
     const stream = byLogin.get(streamer.login);
     if (!stream) {
+      offline += 1;
+      if (samples.length < 20) samples.push({ login: streamer.login, status: "offline" });
       return processTwitchStreamOffline(streamer.twitchId);
     }
 
     const channel = await fetchTwitchChannelInformation(stream.user_id);
     const user = (await fetchTwitchUsersByIds([stream.user_id]))[0];
     const tags = normalizeTagList(channel?.tags ?? []);
+    const hasMainTag = hasMadnessArenaTag(tags);
+    if (hasMainTag) {
+      liveWithTag += 1;
+      if (samples.length < 20) samples.push({ login: streamer.login, status: "live_with_tag" });
+    } else {
+      liveWithoutTag += 1;
+      if (samples.length < 20) samples.push({ login: streamer.login, status: "live_without_tag" });
+    }
     return upsertStreamerFromTwitch({
       twitchId: stream.user_id,
       login: streamer.login,
@@ -423,5 +483,16 @@ export async function syncTwitchStreamersStatus() {
 
   await Promise.all(updates);
 
-  return { ok: true, checked: streamers.length, live: streams.length, at: nowIso };
+  const result = {
+    ok: true,
+    checked: streamers.length,
+    live: streams.length,
+    liveWithTag,
+    liveWithoutTag,
+    offline,
+    at: nowIso,
+    samples,
+  };
+  debugLog("sync_result", result);
+  return result;
 }

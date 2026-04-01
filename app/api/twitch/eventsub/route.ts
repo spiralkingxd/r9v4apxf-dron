@@ -22,6 +22,7 @@ function verifySignature(params: {
 }
 
 export async function POST(request: Request) {
+  const debug = process.env.STREAMERS_DEBUG?.trim() === "true";
   const secret = process.env.TWITCH_EVENTSUB_SECRET?.trim();
   if (!secret) {
     return NextResponse.json({ error: "TWITCH_EVENTSUB_SECRET missing" }, { status: 500 });
@@ -54,6 +55,9 @@ export async function POST(request: Request) {
   };
 
   if (messageType === "webhook_callback_verification" && payload.challenge) {
+    if (debug) {
+      console.log("[streamers/eventsub] verification", { messageId });
+    }
     return new NextResponse(payload.challenge, { status: 200 });
   }
 
@@ -66,17 +70,24 @@ export async function POST(request: Request) {
   if (!type || !broadcasterId) {
     return NextResponse.json({ ok: true });
   }
+  if (debug) {
+    console.log("[streamers/eventsub] notification", { type, broadcasterId, messageId });
+  }
 
   let handled = true;
+  let result: unknown = null;
   if (type === "stream.online") {
-    await processTwitchStreamOnline(broadcasterId);
+    result = await processTwitchStreamOnline(broadcasterId);
   } else if (type === "stream.offline") {
-    await processTwitchStreamOffline(broadcasterId);
+    result = await processTwitchStreamOffline(broadcasterId);
   } else if (type === "channel.update") {
-    await processTwitchChannelUpdate(broadcasterId);
+    result = await processTwitchChannelUpdate(broadcasterId);
   } else {
     handled = false;
   }
+  if (debug) {
+    console.log("[streamers/eventsub] handled", { type, broadcasterId, handled, result });
+  }
 
-  return NextResponse.json({ ok: true, handled, type });
+  return NextResponse.json({ ok: true, handled, type, result });
 }
