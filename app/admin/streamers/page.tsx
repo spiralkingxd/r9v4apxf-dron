@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Plus, Trash2, ShieldAlert, Star, MonitorUp } from "lucide-react";
 import { revalidatePath } from "next/cache";
 
@@ -153,15 +152,6 @@ export default async function AdminStreamersPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Gerenciar Streamers (Multiview/Transmissões)</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-2">Esta tela controla apenas /transmissoes e /multiview.</p>
-      </div>
-
-      <div className="mb-4">
-        <Link
-          href="/admin/community-streamers"
-          className="inline-flex items-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:bg-cyan-500/20 transition"
-        >
-          Abrir aba da comunidade
-        </Link>
       </div>
 
       <div className="mt-8 max-w-2xl bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-6">

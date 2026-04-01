@@ -19,7 +19,6 @@ type NavDict = {
     teams?: string;
     ranking?: string;
     streams?: string;
-    streamers?: string;
   };
 };
 
@@ -35,7 +34,6 @@ export function NavLinks({ dict }: { dict: NavDict }) {
     { href: "/ranking", label: dict?.navlinks?.ranking ?? "Ranking" },
     { href: "/transmissoes", label: dict?.navlinks?.streams ?? "Transmissões" },
   ];
-  const STREAMERS_LINK = { href: "/streamers", label: dict?.navlinks?.streamers ?? "Streamers" };
 
   function isActive(href: string) {
     if (!href) return false;
@@ -54,37 +52,13 @@ export function NavLinks({ dict }: { dict: NavDict }) {
     <>
       {/* Desktop nav */}
       <nav className="hidden items-center gap-0.5 md:flex">
-        {LINKS.map((item) => {
-          if (item.href === "/transmissoes") {
-            return (
-              <div key={item.href} className="relative p-1 group">
-                <Link href={item.href as string} className={linkCls(item.href)}>
-                  {item.label}
-                </Link>
-
-                <div className="pointer-events-none absolute left-1/2 top-full z-50 -translate-x-1/2 pt-2 opacity-0 translate-y-1 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100 group-hover:translate-y-0">
-                  <div className="rounded-xl border border-cyan-300/20 bg-slate-950/90 p-1.5 shadow-[0_12px_35px_rgba(0,0,0,0.45)] backdrop-blur-md">
-                  <Link
-                    href={STREAMERS_LINK.href}
-                    className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-cyan-300/15 bg-gradient-to-r from-cyan-400/15 to-sky-400/10 px-4 py-2 text-sm font-semibold text-cyan-100 hover:from-cyan-400/25 hover:to-sky-400/20"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.8)]" />
-                    {STREAMERS_LINK.label}
-                  </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={item.href} className="p-1">
-              <Link href={item.href as string} className={linkCls(item.href)}>
-                {item.label}
-              </Link>
-            </div>
-          );
-        })}
+        {LINKS.map((item) => (
+          <div key={item.href} className="p-1">
+            <Link href={item.href as string} className={linkCls(item.href)}>
+              {item.label}
+            </Link>
+          </div>
+        ))}
       </nav>
 
       {/* Mobile hamburger */}
@@ -112,13 +86,6 @@ export function NavLinks({ dict }: { dict: NavDict }) {
                 </Link>
               );
             })}
-            <Link
-              href={STREAMERS_LINK.href}
-              onClick={() => setOpen(false)}
-              className={cn(linkCls(STREAMERS_LINK.href), "py-3 text-base")}
-            >
-              {STREAMERS_LINK.label}
-            </Link>
             
             <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 md:hidden">
               <span className="text-sm font-medium text-slate-400">Preferências</span>
