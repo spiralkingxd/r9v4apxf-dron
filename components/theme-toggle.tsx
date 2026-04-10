@@ -32,7 +32,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/8 text-slate-100 transition hover:bg-white/14"
+      className="topbar-icon-btn inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/8 text-slate-100 transition hover:bg-white/14"
       aria-label="Alternar tema"
       title={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
     >

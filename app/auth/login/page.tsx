@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {reason === "supabase_not_configured" ? (
           <p className={"mt-4 rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-300/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-100"}>
-            Configure suas variáveis de ambiente do Supabase antes de autenticar.
+            Configure suas variáveis de ambiente do antes de autenticar.
           </p>
         ) : null}
 
@@ -43,12 +43,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             type={"submit"}
             className={"inline-flex w-full items-center justify-center rounded-xl bg-[#5865F2] hover:bg-[#4752C4] px-5 py-3 text-sm font-semibold text-white shadow-md transition disabled:opacity-50"}
           >
-            Conectar com Discord
+            Conectar com Discord.
           </button>
         </form>
 
         <Link href={"/"} className={"mt-6 inline-flex font-medium text-sm text-cyan-600 dark:text-cyan-200 transition hover:text-cyan-500 dark:hover:text-cyan-100"}>
-           Voltar para a home
+           Voltar para a tela de incio.
         </Link>
       </section>
     </main>

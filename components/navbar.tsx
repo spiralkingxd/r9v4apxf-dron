@@ -11,6 +11,7 @@ import { GlobalSearch } from "@/components/global-search";
 import { UserDropdown } from "@/components/user-dropdown";
 import { UserDropdownSkeleton } from "@/components/user-dropdown-skeleton";
 import { upsertProfileFromOAuth } from "@/lib/auth/profile";
+import { NavbarShell } from "@/components/navbar-shell";
 
 import { NotificationsBell } from "@/components/notifications-bell";
 
@@ -121,7 +122,7 @@ export async function Navbar() {
   }
 
   return (
-    <header className="site-topbar sticky top-0 z-50">
+    <NavbarShell>
       <div className="relative mx-auto flex h-[72px] w-full max-w-[1920px] items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 lg:px-10">
         <Link
           href="/"
@@ -165,6 +166,6 @@ export async function Navbar() {
           )}
         </div>
       </div>
-    </header>
+    </NavbarShell>
   );
 }

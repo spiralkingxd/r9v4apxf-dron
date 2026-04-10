@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description:
       locale === "en"
         ? "Follow official championships and community streams live on Twitch."
-        : "Acompanhe as transmissões ao vivo dos campeonatos e da nossa comunidade.",
+        : "Acompanhe as transmissões ao vivo dos campeonatos.",
   };
 }
 

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { Navbar } from "@/components/navbar";
+import { ScrollReveal } from "@/components/scroll-reveal";
 import NextTopLoader from "nextjs-toploader";
 import { getLocale } from "@/lib/i18n";
 
@@ -52,6 +53,7 @@ export default async function RootLayout({
       >
         <NextTopLoader color="#fbbf24" showSpinner={false} />
         <Navbar />
+        <ScrollReveal />
         {children}
         <SpeedInsights />
       </body>

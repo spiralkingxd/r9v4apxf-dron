@@ -74,6 +74,12 @@ export default async function Home() {
   const dict = await getDictionary();
   const locale = await getLocale();
   const fmt = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "long" });
+  const stats = [
+    { label: "Torneios finalizados", value: String(finishedEvents.length), icon: <Trophy className="h-4 w-4" /> },
+    { label: "Status da temporada", value: featuredEvent ? "Ativa" : "Aguardando", icon: <Flame className="h-4 w-4" /> },
+    { label: "Premiação em destaque", value: featuredEvent?.prize_description ?? "Em anúncio", icon: <Coins className="h-4 w-4" /> },
+    { label: "Formato principal", value: featuredEvent ? formatTeamSize(featuredEvent.team_size) : "Tripulação livre", icon: <Users className="h-4 w-4" /> },
+  ];
 
   return (
     <main className="page-shell">
@@ -108,13 +114,15 @@ export default async function Home() {
               <span className="truncate whitespace-normal">{dict.home.heroSubtitle}</span>
             </div>
 
-            <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.04] tracking-tight text-white sm:text-7xl lg:text-8xl drop-shadow-[0_10px_30px_rgba(2,8,20,0.65)]">
-              {dict.home.heroTitle1}
-              <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent ml-0 sm:ml-4">
-                {dict.home.heroTitle2}
-              </span>
-            </h1>
+            <div className="hero-title-wrap">
+              <h1 className="max-w-4xl text-4xl font-bold leading-[1.08] tracking-tight text-white sm:text-6xl lg:text-7xl drop-shadow-[0_10px_30px_rgba(2,8,20,0.65)]">
+                {dict.home.heroTitle1}
+                <br className="hidden sm:block" />
+                <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-300 bg-clip-text text-transparent ml-0 sm:ml-4">
+                  {dict.home.heroTitle2}
+                </span>
+              </h1>
+            </div>
 
             <p className="max-w-2xl text-base leading-relaxed text-slate-100/90 dark:text-slate-300 sm:text-lg lg:text-xl drop-shadow-[0_4px_14px_rgba(2,8,20,0.55)]">
               {dict.home.heroDesc}
@@ -135,10 +143,60 @@ export default async function Home() {
       </section>
 
       <div className="mx-auto w-full max-w-[1400px] space-y-16 sm:space-y-20 px-4 sm:px-6 py-12 sm:py-16 lg:px-10">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((item) => (
+            <article key={item.label} className="glass-card soft-ring rounded-2xl px-5 py-4">
+              <div className="flex items-center gap-2 text-cyan-300">
+                {item.icon}
+                <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400">{item.label}</p>
+              </div>
+              <p className="mt-2 line-clamp-2 text-base font-bold text-white">{item.value}</p>
+            </article>
+          ))}
+        </section>
+
+        <section className="grid gap-5 lg:grid-cols-3">
+          {[
+            {
+              title: "Rota do Competidor",
+              desc: "Monte equipe, escolha torneio e acompanhe sua evolução no ranking da temporada.",
+              href: "/teams",
+              cta: "Começar agora",
+              icon: <Anchor className="h-5 w-5" />,
+            },
+            {
+              title: "Calendário da Arena",
+              desc: featuredEvent?.start_date
+                ? `Próxima janela: ${fmt.format(new Date(featuredEvent.start_date))}.`
+                : "Novas datas serão publicadas em breve no painel de eventos.",
+              href: "/events",
+              cta: "Ver calendário",
+              icon: <Calendar className="h-5 w-5" />,
+            },
+            {
+              title: "Objetivo da Semana",
+              desc: "Entre nas partidas oficiais e acumule pontos para subir posições no ranking geral.",
+              href: "/ranking",
+              cta: "Ir ao ranking",
+              icon: <Flame className="h-5 w-5" />,
+            },
+          ].map((item) => (
+            <article key={item.title} className="quick-card glass-card soft-ring rounded-2xl p-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-amber-400/25 bg-amber-400/10 text-amber-300">
+                {item.icon}
+              </span>
+              <h3 className="mt-4 text-lg font-bold text-white">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">{item.desc}</p>
+              <Link href={item.href} className="mt-4 inline-flex text-xs font-semibold text-cyan-300 transition hover:text-cyan-200">
+                {item.cta}
+              </Link>
+            </article>
+          ))}
+        </section>
 
         <section>
           <SectionHeader eyebrow={dict.home.quickActions} title={dict.home.startHere} />  
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="mt-6 grid gap-5 sm:grid-cols-3">
             {[
               {
                 icon: <Users className="h-6 w-6" />,
@@ -162,12 +220,12 @@ export default async function Home() {
                 cta: dict.home.openRanking,
               },
             ].map(({ icon, title, desc, href, cta }) => (
-              <article key={title} className="glass-card soft-ring rounded-2xl p-6">
+              <article key={title} className="quick-card glass-card soft-ring rounded-2xl p-6 sm:p-7">
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-cyan-400/20 bg-cyan-400/8 text-cyan-400">
                   {icon}
                 </span>
-                <h3 className="mt-4 font-bold text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">{desc}</p> 
+                <h3 className="mt-5 text-lg font-bold text-white">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-300">{desc}</p> 
                 <Link href={href} className="mt-5 inline-flex text-xs font-semibold text-cyan-300 transition hover:text-cyan-200">
                   {cta} 
                 </Link>
@@ -223,7 +281,9 @@ export default async function Home() {
           </section>
         ) : (
           <section className="rounded-[2rem] border border-dashed border-slate-200/50 dark:border-white/10 px-8 py-16 text-center">
-            <Trophy className="mx-auto h-12 w-12 text-slate-600" />
+            <span className="empty-state-illustration mx-auto h-20 w-20">
+              <Trophy className="h-10 w-10 text-slate-400" />
+            </span>
             <h2 className="mt-4 text-xl font-bold text-slate-300">{dict.home.noActiveTornament}</h2>
             <p className="mt-2 text-sm text-slate-500">{dict.home.noActiveTornamentDesc}</p>
             <Link
@@ -311,7 +371,7 @@ function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string })
   return (
     <div>
       <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-300/70">{eyebrow}</p>
-      <h2 className="black-goth mt-1 text-2xl font-bold text-white">{title}</h2>
+      <h2 className="mt-1 text-2xl font-bold text-white">{title}</h2>
     </div>
   );
 }

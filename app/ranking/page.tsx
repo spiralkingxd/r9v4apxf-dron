@@ -1,7 +1,7 @@
 ﻿import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Trophy, Anchor } from "lucide-react";
+import { Trophy } from "lucide-react";
 
 import { RankingLiveSync } from "@/components/ranking-live-sync";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -82,7 +82,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   const dict = await getDictionary();
   const resolvedParams = await searchParams;
   const currentBoat = resolvedParams.boat || "all";
-  let rows = await getRankingData();
+  const rows = await getRankingData();
 
   // Temporary mock filter logic for visual purpose, until backend explicitly supports boat-based rankings.
   if (currentBoat !== "all") {
@@ -128,7 +128,53 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
           </section>
         ) : (
           <section className="glass-card soft-ring overflow-hidden rounded-2xl">
-            <div className="overflow-x-auto">
+            <div className="grid gap-3 p-3 sm:hidden">
+              {rows.map((row, index) => {
+                const displayName = row.profile?.display_name ?? row.profile?.username ?? dict.ranking.player;
+                const avatar = row.profile?.avatar_url;
+                const topClass =
+                  index === 0
+                    ? "border-amber-300/40 bg-amber-400/10"
+                    : index === 1
+                      ? "border-slate-300/40 bg-slate-300/10"
+                      : index === 2
+                        ? "border-orange-400/40 bg-orange-400/10"
+                        : "border-white/10 bg-white/5";
+
+                return (
+                  <article key={row.id} className={cn("rounded-xl border p-3", topClass)}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="relative h-9 w-9 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                          {avatar ? (
+                            <Image src={avatar} alt={displayName} fill sizes="36px" className="object-cover" />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-xs font-bold text-cyan-200">
+                              {displayName.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                        </span>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-100">{displayName}</p>
+                          <p className="text-xs text-slate-400">{row.profile?.xbox_gamertag ?? dict.ranking.unlinked}</p>
+                        </div>
+                      </div>
+                      <PositionBadge position={index + 1} dict={dict} />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-sm">
+                      <span className="text-slate-400">{dict.ranking.table.points}</span>
+                      <span className="font-bold text-amber-300">{row.points}</span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-sm">
+                      <span className="text-slate-400">{dict.ranking.table.winLoss}</span>
+                      <span className="text-slate-200">{row.wins} / {row.losses}</span>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto sm:block">
               <table className="w-full min-w-[720px]">
                 <thead className="border-b border-white/10 bg-white/5 text-left text-xs uppercase tracking-wide text-slate-400">
                   <tr>
@@ -146,15 +192,15 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
                     const avatar = row.profile?.avatar_url;
                     const topClass =
                       index === 0
-                        ? "bg-amber-400/10"
+                        ? "bg-gradient-to-r from-amber-400/14 to-transparent"
                         : index === 1
-                          ? "bg-slate-300/8"
+                          ? "bg-gradient-to-r from-slate-300/12 to-transparent"
                           : index === 2
-                            ? "bg-orange-700/20"
+                            ? "bg-gradient-to-r from-orange-500/14 to-transparent"
                             : "";
 
                     return (
-                      <tr key={row.id} className={cn("border-b border-white/6", topClass)}>
+                      <tr key={row.id} className={cn("border-b border-white/6 transition-colors hover:bg-white/4", topClass)}>
                         <td className="px-4 py-3">
                           <PositionBadge position={index + 1} dict={dict} />
                         </td>
@@ -192,7 +238,7 @@ export default async function RankingPage({ searchParams }: { searchParams: Prom
   );
 }
 
-function PositionBadge({ position, dict }: { position: number, dict: any }) {
+function PositionBadge({ position, dict }: { position: number, dict: Awaited<ReturnType<typeof getDictionary>> }) {
   if (position === 1) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-300/15 px-2.5 py-1 text-xs font-semibold text-amber-200">
