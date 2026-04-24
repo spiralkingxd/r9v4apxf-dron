@@ -72,11 +72,11 @@ export function UserDropdown({
       >
         <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full border border-[color:var(--surface-border)] bg-black/10 dark:bg-white/10">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={nickname} className="h-full w-full object-cover" />
+            <Image src={avatarUrl} alt={nickname} fill sizes="28px" className="object-cover" />
           ) : (
-            <span className="flex h-full w-full items-center justify-center text-xs font-bold text-[color:var(--accent-cyan)]">
-              {nickname.slice(0, 1).toUpperCase()}
-            </span>
+            <div className="flex h-full w-full items-center justify-center bg-black/10 dark:bg-white/10">
+              <User className="h-4 w-4 text-slate-500 opacity-60" />
+            </div>
           )}
         </span>
         <span className="hidden max-w-[130px] truncate sm:inline">{nickname}</span>
@@ -98,11 +98,11 @@ export function UserDropdown({
           <div className="flex items-center gap-3">
             <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[color:var(--surface-border)] bg-black/10 dark:bg-white/10">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={nickname} className="h-full w-full object-cover" />
+                <Image src={avatarUrl} alt={nickname} fill sizes="40px" className="object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-sm font-bold text-[color:var(--accent-cyan)]">
-                  {nickname.slice(0, 1).toUpperCase()}
-                </span>
+                <div className="flex h-full w-full items-center justify-center bg-black/10 dark:bg-white/10">
+                  <User className="h-5 w-5 text-slate-500 opacity-60" />
+                </div>
               )}
             </span>
             <div className="min-w-0">
