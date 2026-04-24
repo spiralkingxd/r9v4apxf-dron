@@ -15,7 +15,7 @@ import {
 } from "@/lib/events";
 
 const TOURNAMENT_STATUS_VALUES = ["registrations_open", "check_in", "started", "finished"] as const;
-const TOURNAMENT_TYPE_VALUES = ["1v1_elimination", "free_for_all_points"] as const;
+const TOURNAMENT_TYPE_VALUES = ["1v1_elimination", "free_for_all_points", "tdm"] as const;
 const CREW_TYPE_VALUES = ["solo_sloop", "sloop", "brig", "galleon"] as const;
 
 const eventStatusSchema = z.enum(TOURNAMENT_STATUS_VALUES);
@@ -76,7 +76,7 @@ export type EventMutationInput = {
   title: string;
   description: string;
   prize: string;
-  tournament_type: "1v1_elimination" | "free_for_all_points";
+  tournament_type: "1v1_elimination" | "free_for_all_points" | "tdm";
   crew_type: "solo_sloop" | "sloop" | "brig" | "galleon";
   start_date: string;
   end_date?: string | null;
@@ -255,7 +255,7 @@ function crewTypeToTeamSize(crewType: EventMutationInput["crew_type"]) {
 }
 
 function tournamentTypeToLegacyFormat(type: EventMutationInput["tournament_type"]): EventMutationInput["tournament_format"] {
-  if (type === "free_for_all_points") return "round_robin";
+  if (type === "free_for_all_points" || type === "tdm") return "round_robin";
   return "single_elimination";
 }
 

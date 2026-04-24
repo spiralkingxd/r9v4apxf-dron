@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { getDictionary } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "Torneios",
+  title: "Eventos",
 };
 
 type EventRow = {
@@ -18,7 +18,7 @@ type EventRow = {
   title: string;
   name: string;
   status: "registrations_open" | "check_in" | "started" | "finished";
-  tournament_type: "1v1_elimination" | "free_for_all_points";
+  tournament_type: "1v1_elimination" | "free_for_all_points" | "tdm";
   crew_type: "solo_sloop" | "sloop" | "brig" | "galleon";
   prize: string;
   start_date: string;
@@ -165,7 +165,7 @@ export default async function EventsPage({ searchParams }: Props) {
         {/* Contagem */}
         <p className="mb-5 text-sm text-slate-500">
           {events.length > 0
-            ? `${events.length} torneio${events.length !== 1 ? "s" : ""}${status ? ` · ${STATUS_LABELS[status]}` : ""}`
+            ? `${events.length} evento${events.length !== 1 ? "s" : ""}${status ? ` · ${STATUS_LABELS[status]}` : ""}`
             : "Nenhum resultado"}
         </p>
 

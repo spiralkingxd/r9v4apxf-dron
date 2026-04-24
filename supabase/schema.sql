@@ -1249,7 +1249,7 @@ begin
 
   alter table public.events
     add constraint events_tournament_type_check
-    check (tournament_type in ('1v1_elimination', 'free_for_all_points'));
+    check (tournament_type in ('1v1_elimination', 'free_for_all_points', 'tdm'));
 end
 $$;
 

@@ -14,7 +14,7 @@ type Row = {
 };
 
 const STATUS_OPTIONS = ["registrations_open", "check_in", "started", "finished"] as const;
-const TOURNAMENT_TYPE_OPTIONS = ["1v1_elimination", "free_for_all_points"] as const;
+const TOURNAMENT_TYPE_OPTIONS = ["1v1_elimination", "free_for_all_points", "tdm"] as const;
 const CREW_TYPE_OPTIONS = ["solo_sloop", "sloop", "brig", "galleon"] as const;
 
 const STATUS_LABELS: Record<(typeof STATUS_OPTIONS)[number], string> = {
@@ -40,7 +40,8 @@ const STATUS_DOT: Record<(typeof STATUS_OPTIONS)[number], string> = {
 
 const TOURNAMENT_TYPE_LABELS: Record<(typeof TOURNAMENT_TYPE_OPTIONS)[number], string> = {
   "1v1_elimination": "1v1",
-  free_for_all_points: "FFA",
+  free_for_all_points: "Modo Arena FFA",
+  tdm: "Modo TDM",
 };
 
 const CREW_TYPE_LABELS: Record<(typeof CREW_TYPE_OPTIONS)[number], string> = {
@@ -52,8 +53,11 @@ const CREW_TYPE_LABELS: Record<(typeof CREW_TYPE_OPTIONS)[number], string> = {
 
 const dateFmt = new Intl.DateTimeFormat("pt-BR", {
   timeZone: "America/Sao_Paulo",
-  dateStyle: "short",
-  timeStyle: "short",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
 });
 
 function normalizeFirst(value: string | string[] | undefined) {
@@ -114,7 +118,7 @@ export default async function AdminTournamentsPage({
         <p className="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Admin</p>
         <div className="mt-2 flex items-center gap-3">
           <Trophy className="h-6 w-6 text-amber-300" />
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Torneios</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Gerenciamento de Eventos</h1>
         </div>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Lista com tipo, tripulação, status e inscrições.</p>
       </header>
@@ -125,7 +129,7 @@ export default async function AdminTournamentsPage({
           <input
             name="q"
             defaultValue={q}
-            placeholder="Nome do torneio"
+            placeholder="Nome do evento"
             className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 outline-none"
           />
         </label>
@@ -168,7 +172,7 @@ export default async function AdminTournamentsPage({
             Limpar
           </Link>
           <Link href="/admin/tournaments/new" className="ml-auto rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900">
-            Novo torneio
+            Novo Evento
           </Link>
         </div>
       </form>
@@ -177,7 +181,7 @@ export default async function AdminTournamentsPage({
         <table className="min-w-[980px] w-full text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-              <th className="px-3 py-3">Nome do Torneio</th>
+              <th className="px-3 py-3">Nome do Evento</th>
               <th className="px-3 py-3">Tipo</th>
               <th className="px-3 py-3">Tripulação</th>
               <th className="px-3 py-3">Status</th>
@@ -211,7 +215,7 @@ export default async function AdminTournamentsPage({
                     <Link href={`/admin/tournaments/${row.id}/registrations`} className="rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
                       Inscrições
                     </Link>
-                    <Link href={`/admin/tournaments/${row.id}/matches`} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-300 hover:bg-cyan-400/20" title="Gerenciar Partidas deste Torneio">
+                    <Link href={`/admin/tournaments/${row.id}/matches`} className="rounded-lg border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-xs text-cyan-300 hover:bg-cyan-400/20" title="Gerenciar Partidas deste Evento">
                       Partidas
                     </Link>
                   </div>
@@ -222,7 +226,7 @@ export default async function AdminTournamentsPage({
         </table>
 
         {filtered.length === 0 ? (
-          <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum torneio encontrado para os filtros atuais.</div>
+          <div className="p-6 text-center text-sm text-slate-500 dark:text-slate-400">Nenhum evento encontrado para os filtros atuais.</div>
         ) : null}
       </div>
     </section>

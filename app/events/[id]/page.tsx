@@ -16,7 +16,7 @@ type EventDetail = {
   description: string | null;
   rules: string | null;
   status: "registrations_open" | "check_in" | "started" | "finished";
-  tournament_type: "1v1_elimination" | "free_for_all_points";
+  tournament_type: "1v1_elimination" | "free_for_all_points" | "tdm";
   crew_type: "solo_sloop" | "sloop" | "brig" | "galleon";
   start_date: string;
   end_date: string | null;
@@ -52,7 +52,8 @@ const STATUS_LABELS: Record<string, string> = {
 
 const TOURNAMENT_TYPE_LABELS = {
   "1v1_elimination": "1v1",
-  free_for_all_points: "FFA",
+  free_for_all_points: "Modo Arena FFA",
+  tdm: "Modo TDM",
 } as const;
 
 const CREW_TYPE_LABELS = {
@@ -314,7 +315,7 @@ export default async function EventDetailPage({ params }: Props) {
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <InfoCard label="Tipo de torneio" value={TOURNAMENT_TYPE_LABELS[event.tournament_type]} />
+            <InfoCard label="Tipo de evento" value={TOURNAMENT_TYPE_LABELS[event.tournament_type]} />
             <InfoCard label="Tipo de tripulação" value={CREW_TYPE_LABELS[event.crew_type]} />
             <InfoCard
               label="Equipes inscritas"

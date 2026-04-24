@@ -4,7 +4,7 @@ import { Calendar, Coins, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type TournamentStatus = "registrations_open" | "check_in" | "started" | "finished";
-type TournamentType = "1v1_elimination" | "free_for_all_points";
+type TournamentType = "1v1_elimination" | "free_for_all_points" | "tdm";
 type CrewType = "solo_sloop" | "sloop" | "brig" | "galleon";
 
 export type TournamentCardData = {
@@ -34,7 +34,8 @@ const STATUS_LABELS: Record<TournamentStatus, string> = {
 
 const TOURNAMENT_TYPE_LABELS: Record<TournamentType, string> = {
   "1v1_elimination": "1v1",
-  free_for_all_points: "FFA",
+  free_for_all_points: "Modo Arena FFA",
+  tdm: "Modo TDM",
 };
 
 const CREW_TYPE_LABELS: Record<CrewType, string> = {

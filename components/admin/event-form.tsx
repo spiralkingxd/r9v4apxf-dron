@@ -14,7 +14,7 @@ import { useAdminToast } from "@/components/admin/admin-toast";
 import { EVENT_KIND_LABELS, toDatetimeLocalValue } from "@/lib/events";
 
 const STATUS_VALUES = ["registrations_open", "check_in", "started", "finished"] as const;
-const TOURNAMENT_TYPE_VALUES = ["1v1_elimination", "free_for_all_points"] as const;
+const TOURNAMENT_TYPE_VALUES = ["1v1_elimination", "free_for_all_points", "tdm"] as const;
 const CREW_TYPE_VALUES = ["solo_sloop", "sloop", "brig", "galleon"] as const;
 
 const STATUS_LABELS: Record<(typeof STATUS_VALUES)[number], string> = {
@@ -25,8 +25,9 @@ const STATUS_LABELS: Record<(typeof STATUS_VALUES)[number], string> = {
 };
 
 const TOURNAMENT_TYPE_LABELS: Record<(typeof TOURNAMENT_TYPE_VALUES)[number], string> = {
-  "1v1_elimination": "1v1 - Eliminação Única",
-  free_for_all_points: "Free For All - Pontuação",
+  "1v1_elimination": "1v1",
+  free_for_all_points: "Modo Arena FFA",
+  tdm: "Modo TDM",
 };
 
 const CREW_TYPE_LABELS: Record<(typeof CREW_TYPE_VALUES)[number], string> = {
@@ -136,7 +137,7 @@ function crewTypeToTeamSize(crewType: (typeof CREW_TYPE_VALUES)[number]) {
 }
 
 function tournamentTypeToFormat(type: (typeof TOURNAMENT_TYPE_VALUES)[number]): EventMutationInput["tournament_format"] {
-  if (type === "free_for_all_points") return "round_robin";
+  if (type === "free_for_all_points" || type === "tdm") return "round_robin";
   return "single_elimination";
 }
 
@@ -238,7 +239,7 @@ export function EventForm({
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Admin</p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
-            {mode === "create" ? "Novo torneio" : "Editar torneio"}
+            {mode === "create" ? "Novo Evento" : "Editar Evento"}
           </h1>
         </div>
         <AdminBadge tone="info">{EVENT_KIND_LABELS[(fixedKind ?? "tournament") as keyof typeof EVENT_KIND_LABELS]}</AdminBadge>
@@ -247,13 +248,13 @@ export function EventForm({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-200 lg:col-span-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Nome do Torneio</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Nome do Evento</span>
             <input {...register("title")} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-4 py-3 text-sm outline-none" />
             {errors.title ? <span className="text-xs text-rose-300">{errors.title.message}</span> : null}
           </label>
 
           <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-200">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Tipo de Torneio</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Tipo de Evento</span>
             <select {...register("tournament_type")} className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 px-4 py-3 text-sm outline-none">
               {TOURNAMENT_TYPE_VALUES.map((value) => (
                 <option key={value} value={value}>{TOURNAMENT_TYPE_LABELS[value]}</option>
@@ -318,7 +319,7 @@ export function EventForm({
           label="Descrição"
           value={description}
           onChange={setDescription}
-          placeholder="Descreva o torneio em Markdown..."
+          placeholder="Descreva o evento em Markdown..."
           previewLabel="Preview em tempo real"
           helperText="Use Markdown para formatar a descrição."
           minHeight={440}
@@ -328,7 +329,7 @@ export function EventForm({
         <section className="space-y-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-black/20 p-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Pontuação</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Usada no recálculo automático do ranking ao finalizar o torneio.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Usada no recálculo automático do ranking ao finalizar o evento.</p>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
             <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-200">
