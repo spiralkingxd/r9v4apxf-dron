@@ -67,8 +67,7 @@ async function UserSection() {
       }
     }
 
-    const avatarUrl =
-      profile?.avatar_url ?? user?.user_metadata?.avatar_url ?? null;
+    const avatarUrl = profile ? profile.avatar_url : (user?.user_metadata?.avatar_url ?? null);
     const nickname =
       profile?.display_name ?? profile?.username ?? user?.email ?? "Jogador";
 
