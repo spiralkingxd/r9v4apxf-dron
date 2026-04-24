@@ -101,15 +101,15 @@ export default async function Home() {
             quality={85}
             placeholder="blur"
             sizes="100vw"
-            className="object-cover object-[center_20%] opacity-40 mix-blend-luminosity brightness-75 scale-105 transform transition-transform duration-[20s] ease-out hover:scale-110"
+            className="object-cover object-[center_20%] opacity-40 brightness-75 transition-opacity duration-1000 ease-out hover:opacity-50"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#050b12]/60 via-[#050b12]/80 to-[#050b12] backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#050b12]/60 via-[#050b12]/80 to-[#050b12]" />
         </div>
 
         <div className="relative z-10 mx-auto flex flex-col items-center text-center max-w-6xl gap-8 px-4 sm:px-6 py-24 sm:py-32 lg:px-10 lg:py-40">     
           <div className="space-y-8 flex flex-col items-center animate-in fade-in slide-in-from-bottom-8 duration-1000">
             
-            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-cyan-400/30 bg-cyan-950/40 backdrop-blur-md px-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-cyan-200 shadow-[0_0_20px_rgba(34,211,238,0.15)] transition-all hover:bg-cyan-900/50 hover:border-cyan-400/50">
+            <div className="inline-flex w-fit items-center gap-3 rounded-full border border-cyan-400/30 bg-cyan-950/80 px-4 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-cyan-200 shadow-lg shadow-cyan-900/20 transition-colors hover:bg-cyan-900 hover:border-cyan-400/50">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
@@ -137,7 +137,7 @@ export default async function Home() {
                 <Flame className="h-5 w-5" />
                 <span>{dict.home.heroBtnEvents}</span>
               </Link>
-              <Link href="/profile/me?action=new-team#teams" className="inline-flex items-center gap-2 rounded-xl border border-cyan-800/60 bg-slate-900/50 backdrop-blur-md px-8 py-4 text-base font-semibold text-cyan-50 transition-all hover:bg-slate-800 hover:border-cyan-500/60 shadow-lg transform hover:-translate-y-1">
+              <Link href="/profile/me?action=new-team#teams" className="inline-flex items-center gap-2 rounded-xl border border-cyan-800/60 bg-slate-900/80 px-8 py-4 text-base font-semibold text-cyan-50 transition-all hover:bg-slate-800 hover:border-cyan-500/60 shadow-lg transform hover:-translate-y-1">
                 <Users className="h-5 w-5 text-cyan-400" />
                 {dict.home.heroBtnTeam}
               </Link>
@@ -154,7 +154,7 @@ export default async function Home() {
         {/* Stats Section */}
         <section className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 -mt-16 sm:-mt-24 relative z-30">
           {stats.map((item) => (
-            <article key={item.label} className="group rounded-2xl border border-white/5 bg-slate-900/60 backdrop-blur-xl px-6 py-5 shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:border-cyan-500/30 hover:bg-slate-900/80 hover:shadow-[0_8px_30px_rgba(34,211,238,0.1)]">
+            <article key={item.label} className="group rounded-2xl border border-white/5 bg-slate-900/90 px-6 py-5 shadow-lg transition-transform hover:-translate-y-1 hover:border-cyan-500/30 hover:bg-slate-900">
               <div className="flex items-center gap-3 text-cyan-400">
                 <div className="p-2 rounded-lg bg-cyan-950/50 group-hover:bg-cyan-900/50 transition-colors">
                   {item.icon}
@@ -197,7 +197,7 @@ export default async function Home() {
             },
           ].map((item) => (
             <article key={item.title} className="group relative rounded-3xl border border-white/5 bg-slate-900/40 p-8 transition-all duration-300 hover:bg-slate-800/60 hover:shadow-[0_0_40px_rgba(0,0,0,0.3)] overflow-hidden">
-              <div className={`absolute top-0 right-0 w-32 h-32 bg-${item.color}-500/10 blur-[50px] rounded-full group-hover:bg-${item.color}-500/20 transition-all`} />
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-${item.color}-500/10 blur-2xl rounded-full group-hover:bg-${item.color}-500/20 transition-all`} />
               
               <span className={`flex h-14 w-14 items-center justify-center rounded-2xl border border-${item.color}-400/20 bg-${item.color}-500/10 text-${item.color}-400 mb-6 group-hover:scale-110 transition-transform`}>
                 {item.icon}
@@ -218,7 +218,7 @@ export default async function Home() {
           <section>
             <SectionHeader eyebrow={dict.home.nextTournament} title={dict.home.highlightArena} />
             <article className="relative mt-8 overflow-hidden rounded-[2.5rem] border border-amber-500/20 bg-gradient-to-br from-slate-900/80 to-black p-8 lg:p-12 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
-              <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-amber-500/10 blur-[100px]" />
+              <div aria-hidden className="pointer-events-none absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-amber-500/10 blur-3xl" />
               <div className="relative grid gap-10 lg:grid-cols-[1fr_auto]">     
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-center gap-4">
@@ -241,7 +241,7 @@ export default async function Home() {
                   )}
                 </div>
                 
-                <div className="flex flex-col items-start gap-6 lg:items-end justify-center bg-black/40 p-8 rounded-3xl border border-white/5 backdrop-blur-sm">  
+                <div className="flex flex-col items-start gap-6 lg:items-end justify-center bg-black/60 p-8 rounded-3xl border border-white/5">  
                   {featuredEvent.prize_description && (
                     <div className="text-center w-full">
                       <p className="text-xs font-bold uppercase tracking-[0.3em] text-amber-500/80 mb-2">{dict.home.prize}</p>
@@ -353,7 +353,7 @@ export default async function Home() {
                 <Anchor className="h-5 w-5" /> 
                 {dict.home.heroBtnTeam}
               </Link>
-              <Link href="/ranking" className="inline-flex items-center gap-2 rounded-xl border border-cyan-700 bg-cyan-950/50 backdrop-blur px-8 py-4 text-base font-bold text-cyan-50 transition-all hover:bg-cyan-900/80 hover:border-cyan-500 transform hover:-translate-y-1">
+              <Link href="/ranking" className="inline-flex items-center gap-2 rounded-xl border border-cyan-700 bg-cyan-950/80 px-8 py-4 text-base font-bold text-cyan-50 transition-all hover:bg-cyan-900/90 hover:border-cyan-500 transform hover:-translate-y-1">
                 <Trophy className="h-5 w-5" />
                 {dict.home.openRanking}
               </Link>
