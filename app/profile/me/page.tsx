@@ -252,12 +252,10 @@ export default async function MyProfilePage() {
 
                     <div className="relative mb-4 h-32 w-32 overflow-hidden rounded-full border-2 border-amber-400/70 bg-slate-200 sm:h-36 sm:w-36 dark:bg-slate-800">
                       {profile.avatar_url ? (
-                        <Image
+                        <img
                           src={profile.avatar_url}
                           alt={profile.display_name}
-                          fill
-                          sizes="(min-width: 1024px) 176px, (min-width: 640px) 160px, 160px"
-                          className="object-cover"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-yellow-600 dark:text-yellow-400">
