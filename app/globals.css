@@ -56,7 +56,7 @@ html {
 
 body {
   background: var(--page-bg);
-  background-attachment: fixed;
+  
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
   min-height: 100vh;
