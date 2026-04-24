@@ -780,18 +780,13 @@ body::selection {
 
 /* Global scroll reveal */
 .scroll-reveal {
-  opacity: 0;
-  transform: translateY(20px) scale(0.985);
-  transition:
-    opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: var(--reveal-delay, 0ms);
-  will-change: opacity, transform;
+  opacity: 1;
+  transform: none;
 }
 
 .scroll-reveal--visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
 }
 
 @keyframes dashboard-fade-in {
