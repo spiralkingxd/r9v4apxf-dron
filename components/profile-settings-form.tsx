@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useState, useCallback, useEffect } from "react";
-import { updateProfileFeatures, syncDiscordAvatarAction } from "@/app/actions/profile-actions";
-import { RefreshCcw, Settings, X, CheckCircle2, ImagePlus } from "lucide-react";
+import { updateProfileFeatures, syncDiscordAvatarAction, removeProfileAvatarAction } from "@/app/actions/profile-actions";
+import { RefreshCcw, Settings, X, CheckCircle2, ImagePlus, Trash2 } from "lucide-react";
 import Cropper, { Area } from "react-easy-crop";
 import { getCroppedImg } from "@/lib/crop-image";
 import Image from "next/image";
@@ -49,6 +49,7 @@ export function ProfileSettingsForm({
 
   const [state, formAction, isPending] = useActionState(updateProfileFeatures, null);
   const [syncState, syncAction, isSyncing] = useActionState(syncDiscordAvatarAction, null);
+  const [removeState, removeAction, isRemoving] = useActionState(removeProfileAvatarAction, null);
 
   const inputClass = "w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition-colors";
 
@@ -127,6 +128,19 @@ export function ProfileSettingsForm({
                 </form>
                 {syncState?.error && <p className="text-xs text-rose-500">{syncState.error}</p>}
                 {syncState?.success && <p className="text-xs text-emerald-500">{syncState.success}</p>}
+                
+                <form action={removeAction} className="flex justify-end mt-1">
+                  <button 
+                    type="submit"
+                    disabled={isRemoving}
+                    className="w-full inline-flex justify-center items-center gap-2 rounded-md bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 px-4 py-2 text-sm font-medium transition disabled:opacity-50"
+                  >
+                    <Trash2 className={`h-4 w-4 ${isRemoving ? "animate-pulse" : ""}`} />
+                    {isRemoving ? "Removendo..." : "Remover Foto Atual"}
+                  </button>
+                </form>
+                {removeState?.error && <p className="text-xs text-rose-500">{removeState.error}</p>}
+                {removeState?.success && <p className="text-xs text-emerald-500">{removeState.success}</p>}
               </div>
 
               <div className="relative flex items-center py-2">

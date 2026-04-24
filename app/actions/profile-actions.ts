@@ -77,3 +77,14 @@ export async function syncDiscordAvatarAction(prevState: any, formData: FormData
   return { success: "Sincronizado via Discord!" };
 }
 
+export async function removeProfileAvatarAction(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Sem usuário" };
+
+  await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+
+  revalidatePath("/profile/me");
+  return { success: "Foto removida com sucesso!" };
+}
