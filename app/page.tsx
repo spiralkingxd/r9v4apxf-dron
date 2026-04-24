@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { unstable_cache } from "next/cache";
 import { Anchor, Calendar, Coins, Flame, Trophy, Users, ArrowRight } from "lucide-react";   
-import madnessArenaBackground from "../madness_arena_background_hero.jpg";
+
 
 import { formatTeamSize } from "@/lib/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -93,16 +93,7 @@ export default async function Home() {
         <div aria-hidden className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] [background-size:64px_64px]" />
         
         <div aria-hidden className="absolute inset-0 z-0">
-          <Image
-            src={madnessArenaBackground}
-            alt=""
-            fill
-            priority
-            quality={85}
-            placeholder="blur"
-            sizes="100vw"
-            className="object-cover object-[center_20%] opacity-40 brightness-75 transition-opacity duration-1000 ease-out hover:opacity-50"
-          />
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/10 to-[#050b12] opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-b from-[#050b12]/60 via-[#050b12]/80 to-[#050b12]" />
         </div>
 
